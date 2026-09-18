@@ -1367,7 +1367,7 @@
         <option value="">-- Dukan Chunein --</option>
     </select>
     <button type="button" class="outline-btn" style="padding: 6px 10px; font-size: 0.78rem;" onclick="openBranchStockOverviewModal()" title="Dukanon ka stock check karein">
-        <i class='bx bx-buildings'></i> Dukan Stock
+        <i class='bx bx-buildings'></i> Shop Stock
     </button>
 </div>
 
@@ -4354,13 +4354,17 @@ const auth = firebase.auth();
 
             pSelect.innerHTML = `<option value="">-- Choose Product --</option>`;
 
-            window.menuItems.forEach(prod => {
+            (window.menuItems || []).forEach(prod => {
                 let availStock = 0;
+
                 if (fromStore === 'main') {
+                    // Main Godown ka stock
                     availStock = Number(prod.stock || 0);
                 } else {
-                    const bStock = window.branchStockList.find(bs => bs.branchId === fromStore && bs.productId === prod.id);
-                    availStock = bStock ? Number(bStock.qty || 0) : 0;
+                    // Dukan / Store ka kul stock (agar multiple entries hon to unka sum)
+                    availStock = (window.branchStockList || [])
+                        .filter(bs => bs.branchId === fromStore && bs.productId === prod.id)
+                        .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
                 }
 
                 if (availStock > 0) {
@@ -4504,54 +4508,69 @@ const auth = firebase.auth();
             document.getElementById('batch-units-count-disp').textContent = `${totalUnits} units`;
         };
 
+// EXECUTE BATCH TRANSFER (STORE -> GODOWN & GODOWN -> STORE 100% FIXED)
         window.executeBatchTransfer = async function() {
             const executeBtn = document.getElementById('execute-batch-transfer-btn');
 
-            if (window.currentTransferQueue.length === 0) {
-                alert("Please add at least one item to the transfer list!");
+            if (!window.currentTransferQueue || window.currentTransferQueue.length === 0) {
+                alert("Baraye meherbani transfer list mein kam az kam 1 item shamil karein!");
                 return;
             }
 
-            const totalUnits = window.currentTransferQueue.reduce((acc, it) => acc + it.qty, 0);
+            const totalUnits = window.currentTransferQueue.reduce((acc, it) => acc + Number(it.qty || 0), 0);
             const challanNo = "CHL-" + new Date().toISOString().slice(2, 10).replace(/-/g, '') + "-" + Math.floor(100 + Math.random() * 900);
             const now = new Date();
             const dispatchDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
             try {
                 executeBtn.disabled = true;
-                executeBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Transferring Stock...";
+                executeBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Stock Move Ho Raha Hai...";
 
                 for (let item of window.currentTransferQueue) {
+                    const transferQty = parseInt(item.qty) || 0;
+
+                    // 1. SOURCE SE STOCK NIKALNA (- QTY)
                     if (item.fromStoreId === 'main') {
+                        // Godown se minus
                         await productsDB.doc(item.productId).update({
-                            stock: firebase.firestore.FieldValue.increment(-item.qty)
+                            stock: firebase.firestore.FieldValue.increment(-transferQty)
                         });
+                        // In-memory update
+                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
+                        if (localP) localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
                     } else {
-                        const srcBStock = window.branchStockList.find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
+                        // Dukan / Store se minus
+                        const srcBStock = (window.branchStockList || []).find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
                         if (srcBStock) {
                             await branchStockDB.doc(srcBStock.id).update({
-                                qty: firebase.firestore.FieldValue.increment(-item.qty),
+                                qty: firebase.firestore.FieldValue.increment(-transferQty),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
+                            srcBStock.qty = Math.max(0, Number(srcBStock.qty || 0) - transferQty);
                         }
                     }
 
-                   // Agar maal wapas Main Godown / Warehouse ja raha ho
+                    // 2. DESTINATION MEIN STOCK SHAMIL KARNA (+ QTY)
                     if (item.toStoreId === 'main') {
+                        // Wapas Main Godown mein daalna
                         await productsDB.doc(item.productId).update({
-                            stock: firebase.firestore.FieldValue.increment(item.qty)
+                            stock: firebase.firestore.FieldValue.increment(transferQty)
                         });
+                        // In-memory update
+                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
+                        if (localP) localP.stock = Number(localP.stock || 0) + transferQty;
                     } else {
-                        // Agar kisi doosri Branch / Store par ja raha ho
-                        const destBStock = window.branchStockList.find(bs => bs.branchId === item.toStoreId && bs.productId === item.productId);
+                        // Kisi doosri Branch / Store par bhejna
+                        const destBStock = (window.branchStockList || []).find(bs => bs.branchId === item.toStoreId && bs.productId === item.productId);
                         if (destBStock) {
                             await branchStockDB.doc(destBStock.id).update({
-                                qty: firebase.firestore.FieldValue.increment(item.qty),
+                                qty: firebase.firestore.FieldValue.increment(transferQty),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
+                            destBStock.qty = Number(destBStock.qty || 0) + transferQty;
                         } else {
-                            const bObj = window.branchesList.find(b => b.id === item.toStoreId);
-                            await branchStockDB.add({
+                            const bObj = (window.branchesList || []).find(b => b.id === item.toStoreId);
+                            const newDocRef = await branchStockDB.add({
                                 branchId: item.toStoreId,
                                 branchName: bObj ? bObj.name : item.toStoreName,
                                 branchArea: bObj ? bObj.area : '',
@@ -4559,13 +4578,25 @@ const auth = firebase.auth();
                                 productName: item.productName,
                                 productPrice: item.price,
                                 productBarcode: item.barcode || '',
-                                qty: item.qty,
+                                qty: transferQty,
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            window.branchStockList.push({
+                                id: newDocRef.id,
+                                branchId: item.toStoreId,
+                                branchName: bObj ? bObj.name : item.toStoreName,
+                                branchArea: bObj ? bObj.area : '',
+                                productId: item.productId,
+                                productName: item.productName,
+                                productPrice: item.price,
+                                productBarcode: item.barcode || '',
+                                qty: transferQty
                             });
                         }
                     }
                 }
 
+                // 3. CHALLAN RECORD SAVE KARNA
                 const transferRecord = {
                     challanNo: challanNo,
                     date: dispatchDate,
@@ -4576,13 +4607,17 @@ const auth = firebase.auth();
 
                 await transfersDB.add(transferRecord);
 
-                alert(`Success! ${totalUnits} units dispatched under Challan #${challanNo}.`);
+                alert(`Kamyabi! ${totalUnits} units ka Challan #${challanNo} generate hogaya aur stock successfully shift hogaya.`);
 
+                // PDF Gate Pass
                 window.printTransferGatePassPDF(transferRecord);
 
+                // List aur Dropdowns foran refresh karein
                 window.currentTransferQueue = [];
                 window.renderBatchTransferTable();
                 window.populateBatchProductDropdown();
+                if (typeof window.renderStockReport === 'function') window.renderStockReport();
+                if (typeof window.filterMenu === 'function') window.filterMenu();
 
             } catch (e) {
                 console.error("Transfer Error:", e);
@@ -5284,7 +5319,7 @@ const auth = firebase.auth();
                 window.populateTransferStoreDropdowns();
             });
 
-            branchStockDB.onSnapshot(snapshot => {
+           branchStockDB.onSnapshot(snapshot => {
                 window.branchStockList = [];
                 snapshot.forEach(doc => {
                     window.branchStockList.push({ id: doc.id, ...doc.data() });
@@ -5292,6 +5327,9 @@ const auth = firebase.auth();
                 window.renderBranchOverviewModalTable();
                 if (typeof window.filterMenu === 'function') {
                     window.filterMenu();
+                }
+                if (typeof window.populateBatchProductDropdown === 'function') {
+                    window.populateBatchProductDropdown();
                 }
             });
 
@@ -5401,7 +5439,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
     filteredItems.forEach(item => {
         const displayStock = item.currentBranchStock;
-        const branchTag = `<div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:4px;"><i class='bx bx-store'></i> Dukan Stock</div>`;
+        const branchTag = `<div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:4px;"><i class='bx bx-store'></i> Shop Stock</div>`;
 
         const originalPrice = parseFloat(item.price || 0);
         let finalSellingPrice = originalPrice;
