@@ -1362,14 +1362,14 @@
                         </div>
 
                         <div class="pos-branch-select-box">
-                            <label><i class='bx bx-git-branch' style="color:var(--primary); font-size:1.15rem;"></i> Store:</label>
-                            <select id="pos-selected-branch" onchange="onPosBranchSelectionChange()">
-                                <option value="all">Main Store (All)</option>
-                            </select>
-                            <button type="button" class="outline-btn" style="padding: 6px 10px; font-size: 0.78rem;" onclick="openBranchStockOverviewModal()" title="View Stock Across Stores">
-                                <i class='bx bx-buildings'></i> Store Stock
-                            </button>
-                        </div>
+    <label><i class='bx bx-store-alt' style="color:var(--primary); font-size:1.15rem;"></i>Store:</label>
+    <select id="pos-selected-branch" onchange="onPosBranchSelectionChange()">
+        <option value="">-- Dukan Chunein --</option>
+    </select>
+    <button type="button" class="outline-btn" style="padding: 6px 10px; font-size: 0.78rem;" onclick="openBranchStockOverviewModal()" title="Dukanon ka stock check karein">
+        <i class='bx bx-buildings'></i> Dukan Stock
+    </button>
+</div>
 
                         <div class="category-filters" id="pos-category-filters"></div>
                     </div>
@@ -3360,6 +3360,83 @@
     <script>
        
        
+
+// =========================================================
+// STORE EXPENSES: ADD & MODAL CONTROLLER (FIXED)
+// =========================================================
+
+// 1. Add Expense ka Popup (Modal) kholne ka function
+window.openExpenseModal = function() {
+    const modal = document.getElementById('expense-modal');
+    if (!modal) return;
+
+    // Purani likhi hui values ko saaf (Reset) karein
+    const titleInput = document.getElementById('expense-title');
+    const catSelect = document.getElementById('expense-category');
+    const amtInput = document.getElementById('expense-amount');
+
+    if (titleInput) titleInput.value = '';
+    if (catSelect) catSelect.selectedIndex = 0;
+    if (amtInput) amtInput.value = '';
+
+    // Modal ko screen par open karein
+    modal.classList.add('visible');
+    setTimeout(() => titleInput?.focus(), 100);
+};
+
+// 2. Add Expense ka Popup (Modal) band karne ka function
+window.closeExpenseModal = function() {
+    const modal = document.getElementById('expense-modal');
+    if (modal) {
+        modal.classList.remove('visible');
+    }
+};
+
+// 3. Kharcha Firebase Database mein save karne ka function
+window.saveExpense = async function() {
+    const title = document.getElementById('expense-title')?.value.trim();
+    const category = document.getElementById('expense-category')?.value || 'Other';
+    const amount = parseFloat(document.getElementById('expense-amount')?.value);
+
+    // Validation checks
+    if (!title) {
+        alert("Baraye meherbani kharchay ka naam / detail darj karein!");
+        return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Baraye meherbani durust raqam (amount) darj karein!");
+        return;
+    }
+
+    // Aaj ki live tareekh aur time
+    const now = new Date();
+    const expDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    try {
+        // Firebase Firestore mein kharcha save karna
+        await expensesDB.add({
+            title: title,
+            category: category,
+            amount: amount,
+            date: expDate,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        Toast.fire({
+            icon: 'success',
+            title: 'Kharcha kamyabi say save hogaya!'
+        });
+
+        // Form popup ko band karein
+        window.closeExpenseModal();
+
+    } catch (err) {
+        console.error("Expense Save Error:", err);
+        alert("Kharcha save karne mein masla aaya: " + err.message);
+    }
+};
+
        // ==========================================
 // PROFESSIONAL TOAST NOTIFICATION OVERRIDE
 // ==========================================
@@ -4191,17 +4268,58 @@ const auth = firebase.auth();
         };
 
         window.renderBranchListView = function() {
-            const posBranchSelect = document.getElementById('pos-selected-branch');
-            const currentSelected = posBranchSelect ? posBranchSelect.value : 'all';
+    const posBranchSelect = document.getElementById('pos-selected-branch');
+    if (!posBranchSelect) return;
 
-            if (posBranchSelect) {
-                posBranchSelect.innerHTML = '<option value="all">Main Store (All)</option>';
-                window.branchesList.forEach(branch => {
-                    posBranchSelect.innerHTML += `<option value="${branch.id}">${branch.name} - ${branch.area}</option>`;
-                });
-                posBranchSelect.value = currentSelected;
-            }
-        };
+    const currentUserStr = sessionStorage.getItem('pos_current_user');
+    let assignedBranch = 'all';
+    let isSuper = false;
+
+    if (currentUserStr) {
+        try {
+            const u = JSON.parse(currentUserStr);
+            assignedBranch = u.assignedBranch || 'all';
+            if (u.role === 'superadmin' || u.role === 'supermaster') isSuper = true;
+        } catch(e) {}
+    }
+
+    posBranchSelect.innerHTML = '';
+
+    // Agar koi dukan add hi nahi hui
+    if (!window.branchesList || window.branchesList.length === 0) {
+        posBranchSelect.innerHTML = '<option value="">Koi Dukan Mojood Nahi (Pehle Add Karein)</option>';
+        posBranchSelect.disabled = true;
+        return;
+    }
+
+    // Agar user ko specific dukan assign hai (Staff User)
+    if (!isSuper && assignedBranch && assignedBranch !== 'all') {
+        const assignedObj = window.branchesList.find(b => b.id === assignedBranch);
+        if (assignedObj) {
+            posBranchSelect.innerHTML = `<option value="${assignedObj.id}">${assignedObj.name} - ${assignedObj.area}</option>`;
+            posBranchSelect.value = assignedObj.id;
+            posBranchSelect.disabled = true; // User kisi doosri dukan ya godown par switch nahi kar sakta
+        } else {
+            posBranchSelect.innerHTML = '<option value="">Assigned Dukan Nahi Mili</option>';
+            posBranchSelect.disabled = true;
+        }
+    } else {
+        // Super Admin / Master Admin ke liye sirf bani hui dukanain aayengi (Godown bilkul nahi aayega)
+        posBranchSelect.disabled = false;
+        window.branchesList.forEach(branch => {
+            posBranchSelect.innerHTML += `<option value="${branch.id}">${branch.name} - ${branch.area}</option>`;
+        });
+
+        // Agar pehle se kuch select nahi to pehli dukan auto-select karlo
+        if (!posBranchSelect.value && window.branchesList.length > 0) {
+            posBranchSelect.value = window.branchesList[0].id;
+        }
+    }
+
+    if (typeof window.filterMenu === 'function') {
+        window.filterMenu();
+    }
+};
 
         window.populateTransferStoreDropdowns = function() {
             const fromSelect = document.getElementById('transfer-from-store');
@@ -5222,98 +5340,125 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
         };
 
        window.filterMenu = function() {
-            const searchTerm = (document.getElementById('menu-search')?.value || '').toLowerCase().trim();
-            const activeBtn = document.querySelector('#pos-category-filters button.active');
-            const activeCategory = activeBtn ? activeBtn.dataset.category : 'all';
-            const selectedBranch = document.getElementById('pos-selected-branch')?.value || 'all';
-            
-            const filteredItems = window.menuItems.filter(item => {
-                const matchesCategory = (activeCategory === 'all' || item.category === activeCategory);
-                const matchesSearch = ((item.name && item.name.toLowerCase().includes(searchTerm)) || 
-                                       (item.barcode && String(item.barcode).toLowerCase().includes(searchTerm)));
+    const searchTerm = (document.getElementById('menu-search')?.value || '').toLowerCase().trim();
+    const activeBtn = document.querySelector('#pos-category-filters button.active');
+    const activeCategory = activeBtn ? activeBtn.dataset.category : 'all';
+    const selectedBranch = document.getElementById('pos-selected-branch')?.value;
+    const menuGrid = document.getElementById('menu-grid');
+    if (!menuGrid) return;
 
-                if (selectedBranch !== 'all') {
-                    const bStockRecord = window.branchStockList.find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-                    const bQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
-                    return matchesCategory && matchesSearch && bQty > 0;
-                }
+    // 1. Agar koi dukan select nahi hai ya dukan bani hi nahi hai
+    if (!selectedBranch) {
+        menuGrid.innerHTML = `
+            <div class="empty-placeholder" style="grid-column: 1/-1; padding: 40px 20px;">
+                <i class='bx bx-error-circle' style="font-size:3.5rem; color:#ef4444; display:block; margin-bottom:10px;"></i>
+                <h3 style="color:#0f172a; margin-bottom:6px;">Main Godown Se Direct Sale Mana Hai!</h3>
+                <p style="color:#64748b; font-size:0.9rem;">
+                    Cheezein sirf Dukan se bikti hain. Upar se pehle Dukan select karein, ya agar dukan nahi bani to pehle Move Store mein jaakar Dukan add karein.
+                </p>
+            </div>
+        `;
+        return;
+    }
 
-                return matchesCategory && matchesSearch && (Number(item.stock || 0) > 0);
-            });
-            
-            const menuGrid = document.getElementById('menu-grid');
-            if (!menuGrid) return;
-            menuGrid.innerHTML = '';
-            
-            if (filteredItems.length === 0) {
-                menuGrid.innerHTML = `<div class="empty-placeholder"><i class='bx bx-box' style="font-size:3rem; display:block; margin-bottom:8px;"></i>No products available for the selected store/filter.</div>`;
-                return;
+    // 2. Sirf usi dukan ka stock filter karein jo Move Store se dukan mein transfer hua hai
+    const filteredItems = [];
+
+    window.menuItems.forEach(item => {
+        const matchesCategory = (activeCategory === 'all' || item.category === activeCategory);
+        const matchesSearch = ((item.name && item.name.toLowerCase().includes(searchTerm)) || 
+                               (item.barcode && String(item.barcode).toLowerCase().includes(searchTerm)));
+
+        if (matchesCategory && matchesSearch) {
+            // Sirf selected branch ka stock record dhoondein
+            const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
+            const branchQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+
+            // Sirf wahi item aayega jiska stock is dukan par mojood ho (> 0)
+            if (branchQty > 0) {
+                filteredItems.push({
+                    ...item,
+                    currentBranchStock: branchQty
+                });
             }
+        }
+    });
 
-            const globalDiscountPercent = parseFloat(localStorage.getItem('pos_global_discount')) || 0;
+    menuGrid.innerHTML = '';
 
-            filteredItems.forEach(item => {
-                let displayStock = item.stock;
-                let branchTag = '';
+    if (filteredItems.length === 0) {
+        menuGrid.innerHTML = `
+            <div class="empty-placeholder" style="grid-column: 1/-1;">
+                <i class='bx bx-box' style="font-size:3rem; display:block; margin-bottom:8px;"></i>
+                Is dukan par filhal koi stock dastyab nahi hai.<br>
+                <small style="color:#64748b;">(Main Godown se is dukan par 'Product to Move Store' ke zariye stock transfer karein)</small>
+            </div>
+        `;
+        return;
+    }
 
-                if (selectedBranch !== 'all') {
-                    const bStockRecord = window.branchStockList.find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-                    displayStock = bStockRecord ? bStockRecord.qty : 0;
-                    branchTag = `<div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:4px;"><i class='bx bx-git-branch'></i> Store Stock</div>`;
-                }
+    const globalDiscountPercent = parseFloat(localStorage.getItem('pos_global_discount')) || 0;
 
-                const originalPrice = parseFloat(item.price || 0);
-                let finalSellingPrice = originalPrice;
-                let priceDisplayHtml = `Rs. ${originalPrice.toLocaleString()}`;
-                let discountBadgeHtml = '';
+    filteredItems.forEach(item => {
+        const displayStock = item.currentBranchStock;
+        const branchTag = `<div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:4px;"><i class='bx bx-store'></i> Dukan Stock</div>`;
 
-                // Agar global discount active hai to cut price + badge dikhao
-                if (globalDiscountPercent > 0) {
-                    const discountAmount = (originalPrice * globalDiscountPercent) / 100;
-                    finalSellingPrice = Math.max(0, originalPrice - discountAmount);
-                    
-                    discountBadgeHtml = `<div style="position:absolute; top:35px; right:10px; background:#ef4444; color:white; padding:2px 7px; border-radius:6px; font-size:0.72rem; font-weight:800; z-index:2;">${globalDiscountPercent}% OFF</div>`;
-                    
-                    priceDisplayHtml = `
-                        <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500; margin-right: 5px;">Rs. ${originalPrice.toLocaleString()}</span>
-                        <span style="color:#10b981; font-weight:800;">Rs. ${finalSellingPrice.toLocaleString()}</span>
-                    `;
-                }
+        const originalPrice = parseFloat(item.price || 0);
+        let finalSellingPrice = originalPrice;
+        let priceDisplayHtml = `Rs. ${originalPrice.toLocaleString()}`;
+        let discountBadgeHtml = '';
 
-                const card = document.createElement('div');
-                card.className = `card ${displayStock <= 3 ? 'low-stock' : ''}`;
-                card.innerHTML = `
-                    <div class="barcode-tag"><i class='bx bx-barcode'></i> ${item.barcode || 'N/A'}</div>
-                    <div class="stock-qty">${displayStock} units</div>
-                    ${discountBadgeHtml}
-                    <img src="${item.img || DEFAULT_PROD_IMG}" alt="${item.name}">
-                    <h4>${item.name}</h4>
-                    <p class="selling-p">${priceDisplayHtml}</p>
-                    ${branchTag}
-                `;
-                card.addEventListener('click', () => addToCart(item.id));
-                menuGrid.appendChild(card);
-            });
-            window.updateDashboardMetrics();
-        };
+        if (globalDiscountPercent > 0) {
+            const discountAmount = (originalPrice * globalDiscountPercent) / 100;
+            finalSellingPrice = Math.max(0, originalPrice - discountAmount);
+            
+            discountBadgeHtml = `<div style="position:absolute; top:35px; right:10px; background:#ef4444; color:white; padding:2px 7px; border-radius:6px; font-size:0.72rem; font-weight:800; z-index:2;">${globalDiscountPercent}% OFF</div>`;
+            
+            priceDisplayHtml = `
+                <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500; margin-right: 5px;">Rs. ${originalPrice.toLocaleString()}</span>
+                <span style="color:#10b981; font-weight:800;">Rs. ${finalSellingPrice.toLocaleString()}</span>
+            `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `card ${displayStock <= 3 ? 'low-stock' : ''}`;
+        card.innerHTML = `
+            <div class="barcode-tag"><i class='bx bx-barcode'></i> ${item.barcode || 'N/A'}</div>
+            <div class="stock-qty">${displayStock} units</div>
+            ${discountBadgeHtml}
+            <img src="${item.img || DEFAULT_PROD_IMG}" alt="${item.name}">
+            <h4>${item.name}</h4>
+            <p class="selling-p">${priceDisplayHtml}</p>
+            ${branchTag}
+        `;
+        card.addEventListener('click', () => addToCart(item.id));
+        menuGrid.appendChild(card);
+    });
+
+    if (typeof window.updateDashboardMetrics === 'function') {
+        window.updateDashboardMetrics();
+    }
+};
 
         window.addToCart = function(itemId) {
-            const item = window.menuItems.find(i => i.id === itemId);
-            if (!item) return;
+    const item = window.menuItems.find(i => i.id === itemId);
+    if (!item) return;
 
-            const selectedBranch = document.getElementById('pos-selected-branch')?.value || 'all';
-            let maxAvailable = Number(item.stock || 0);
+    const selectedBranch = document.getElementById('pos-selected-branch')?.value;
+    if (!selectedBranch) {
+        alert("Main Godown se direct sale mana hai! Pehle dukan select karein.");
+        return;
+    }
 
-            if (selectedBranch !== 'all') {
-                const bStockRecord = window.branchStockList.find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-                maxAvailable = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
-            }
+    // Sirf is dukan ka stock check karein
+    const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
+    const maxAvailable = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
 
-            if (maxAvailable <= 0) {
-                alert(`"${item.name}" is OUT OF STOCK in the selected store!`);
-                window.filterMenu();
-                return;
-            }
+    if (maxAvailable <= 0) {
+        alert(`"${item.name}" ka stock is dukan par khatam (OUT OF STOCK) hai! Godown se transfer karein.`);
+        window.filterMenu();
+        return;
+    }
 
             // Global discount calculation
             const globalDiscountPercent = parseFloat(localStorage.getItem('pos_global_discount')) || 0;
@@ -5699,15 +5844,22 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             }
         };
 
-       // 2. Tamam Dastyab Products ke Barcodes Ek Sath Print Karna (Professional Dialog)
+       // 2. Tamam Dastyab Products ke Barcodes Ek Sath Print Karna (Godown + Tamam Stores)
         window.printAllInventoryBarcodes = async function() {
             const searchTerm = (document.getElementById('barcode-search-input')?.value || '').toLowerCase().trim();
 
             const itemsToPrint = window.menuItems.filter(item => {
-                const inStock = Number(item.stock || 0) > 0;
+                const godownStock = Number(item.stock || 0);
+                const storesStock = (window.branchStockList || [])
+                    .filter(bs => bs.productId === item.id)
+                    .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
+                
+                const totalStock = godownStock + storesStock;
+
+                const hasStock = totalStock > 0;
                 const nameMatch = item.name && item.name.toLowerCase().includes(searchTerm);
                 const codeMatch = item.barcode && String(item.barcode).toLowerCase().includes(searchTerm);
-                return inStock && (nameMatch || codeMatch);
+                return hasStock && (nameMatch || codeMatch);
             });
 
             if (itemsToPrint.length === 0) {
@@ -5745,7 +5897,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             window.triggerBarcodeDirectPrint(printList);
         };
 
-        // 3. Main Grid Render Function with Print Button
+       // 3. Main Grid Render Function with Combined Total Stock (Godown + All Stores)
         window.renderAllProductBarcodesView = function() {
             const container = document.getElementById('all-barcode-cards-container');
             if (!container) return;
@@ -5753,16 +5905,39 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
             const searchTerm = (document.getElementById('barcode-search-input')?.value || '').toLowerCase().trim();
 
-            // Filter: Sirf in-stock items
-            const filtered = window.menuItems.filter(item => {
-                const inStock = Number(item.stock || 0) > 0;
+            // Tamam products par loop laga kar Godown + Har Store ka stock jama karein
+            const itemsWithCombinedStock = window.menuItems.map(item => {
+                const godownStock = Number(item.stock || 0);
+                
+                // Tamam dukanon (1 store ho ya 15 stores) ka stock jama karna
+                const storesStock = (window.branchStockList || [])
+                    .filter(bs => bs.productId === item.id)
+                    .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
+
+                const totalCombinedStock = godownStock + storesStock;
+
+                return {
+                    ...item,
+                    godownStock: godownStock,
+                    storesStock: storesStock,
+                    totalCombinedStock: totalCombinedStock
+                };
+            });
+
+            // Filter: Sirf wahi item screen se hatega jiska TOTAL COMBINED STOCK 0 ho chuka ho
+            const filtered = itemsWithCombinedStock.filter(item => {
+                const hasStockSomewhere = item.totalCombinedStock > 0;
                 const nameMatch = item.name && item.name.toLowerCase().includes(searchTerm);
                 const codeMatch = item.barcode && String(item.barcode).toLowerCase().includes(searchTerm);
-                return inStock && (nameMatch || codeMatch);
+                return hasStockSomewhere && (nameMatch || codeMatch);
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="empty-placeholder" style="grid-column: 1/-1;"><i class='bx bx-barcode' style="font-size:3rem; display:block; margin-bottom:8px;"></i>Koi In-Stock product mojood nahi hai. Stock khatam hone par barcodes automatic yahan se hat jate hain.</div>`;
+                container.innerHTML = `<div class="empty-placeholder" style="grid-column: 1/-1;">
+                    <i class='bx bx-barcode' style="font-size:3rem; display:block; margin-bottom:8px;"></i>
+                    Kisi bhi Store ya Godown mein koi stock mojood nahi hai.<br>
+                    <small style="color:#64748b;">(Jab tak kisi bhi aik store mein bhi 1 piece baqi rahega, barcode yahan dikhta rahega)</small>
+                </div>`;
                 return;
             }
 
@@ -5772,18 +5947,30 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 const canvasId = `all-bc-canvas-${index}`;
                 const safeBarcode = item.barcode || ('890' + Math.floor(10000000 + Math.random() * 90000000));
                 const itemPrice = Number(item.price || 0);
-                const itemStock = Number(item.stock || 0);
                 const escapedName = item.name.replace(/'/g, "\\'");
+
+                // Badge text: Batayega ke maal dukan par hai ya godown mein
+                let stockBreakdownText = `Kul Stock: ${item.totalCombinedStock} pcs`;
+                if (item.storesStock > 0 && item.godownStock > 0) {
+                    stockBreakdownText = `Dukan: ${item.storesStock} | Godown: ${item.godownStock}`;
+                } else if (item.storesStock > 0) {
+                    stockBreakdownText = `Dukanon Par: ${item.storesStock} pcs`;
+                } else {
+                    stockBreakdownText = `Godown: ${item.godownStock} pcs`;
+                }
 
                 card.innerHTML = `
                     <div style="width:100%;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
                             <img src="${item.img || DEFAULT_PROD_IMG}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;">
-                            <span style="background:#dcfce7; color:#15803d; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:6px; border:1px solid #bbf7d0;">
-                                In Stock: ${itemStock} pcs
+                            <span style="background:#dcfce7; color:#15803d; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:6px; border:1px solid #bbf7d0;" title="${stockBreakdownText}">
+                                In Stock: ${item.totalCombinedStock} pcs
                             </span>
                         </div>
                         <h4 style="font-size:1.05rem; font-weight:800; margin:4px 0; color:#0f172a;">${item.name}</h4>
+                        <div style="font-size:0.78rem; color:#0284c7; font-weight:700; margin-bottom:2px;">
+                            <i class='bx bx-buildings'></i> ${stockBreakdownText}
+                        </div>
                         <div style="font-size:0.95rem; font-weight:800; color:var(--primary);">Rs. ${itemPrice.toLocaleString()}</div>
                     </div>
 
@@ -5793,7 +5980,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
                     <!-- Do Buttons: 1. Direct Print  2. Download PNG -->
                     <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
-                        <button type="button" class="save-btn" style="flex:1; justify-content:center; padding:9px 10px; font-size:0.85rem; gap:5px; background:#0f172a; background-image:none;" onclick="printSingleProductBarcodeFromCard('${escapedName}', ${itemPrice}, '${safeBarcode}', ${itemStock})" title="Thermal Printer par sticker print karein">
+                        <button type="button" class="save-btn" style="flex:1; justify-content:center; padding:9px 10px; font-size:0.85rem; gap:5px; background:#0f172a; background-image:none;" onclick="printSingleProductBarcodeFromCard('${escapedName}', ${itemPrice}, '${safeBarcode}', ${item.totalCombinedStock})" title="Thermal Printer par sticker print karein">
                             <i class='bx bx-printer'></i> Print
                         </button>
                         <button type="button" class="outline-btn" style="flex:1; justify-content:center; padding:9px 10px; font-size:0.85rem; gap:5px;" onclick="downloadBarcodeStickerPNG('${escapedName}', ${itemPrice}, '${safeBarcode}')" title="PNG Sticker Download karein">
@@ -6846,23 +7033,32 @@ if (discInput) discInput.value = savedDisc;
                 try {
                     await salesDB.add(saleRecord);
 
-                    for(let item of cart) {
-                        if(item.id) {
-                            if (selectedBranch !== 'all') {
-                                const bStockRecord = window.branchStockList.find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-                                if (bStockRecord) {
-                                    await branchStockDB.doc(bStockRecord.id).update({
-                                        qty: firebase.firestore.FieldValue.increment(-item.qty)
-                                    });
-                                }
-                            } else {
-                                await productsDB.doc(item.id).update({
-                                    stock: firebase.firestore.FieldValue.increment(-item.qty),
-                                    sold: firebase.firestore.FieldValue.increment(item.qty)
-                                });
-                            }
-                        }
-                    }
+                    const selectedBranch = document.getElementById('pos-selected-branch')?.value;
+if (!selectedBranch) {
+    alert("Main Godown se direct sale mana hai! Pehle dukan select karein.");
+    return;
+}
+
+const bObj = (window.branchesList || []).find(b => b.id === selectedBranch);
+const branchNameRecorded = bObj ? `${bObj.name} (${bObj.area})` : 'Dukan Store';
+
+// Cart loop ke andar:
+for (let item of cart) {
+    if (item.id) {
+        // 1. Dukan ke stock se minus karein
+        const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
+        if (bStockRecord) {
+            await branchStockDB.doc(bStockRecord.id).update({
+                qty: firebase.firestore.FieldValue.increment(-item.qty),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        // 2. Global sold count barhayein (lekin godown stock ko touch na karein)
+        await productsDB.doc(item.id).update({
+            sold: firebase.firestore.FieldValue.increment(item.qty)
+        });
+    }
+}
 
                     showInvoiceModal(saleRecord);
 window.print(); // Yeh bina kisi click ke foran print bhej dega
@@ -6948,12 +7144,25 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
                 const cartItem = cart.find(i => i.id === id);
                 const menuItem = window.menuItems.find(i => i.id === id);
                 
-                const selectedBranch = document.getElementById('pos-selected-branch')?.value || 'all';
-                let maxAvailable = menuItem ? Number(menuItem.stock || 0) : 0;
-                if (selectedBranch !== 'all') {
-                    const bStockRecord = window.branchStockList.find(bs => bs.branchId === selectedBranch && bs.productId === id);
-                    maxAvailable = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
-                }
+                const selectedBranch = document.getElementById('pos-selected-branch')?.value;
+if (!selectedBranch) {
+    Toast.fire({
+        icon: 'error',
+        title: "Main Godown se sale nahi ho sakti. Pehle dukan chunein!"
+    });
+    return;
+}
+
+const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === matchedItem.id);
+const availableStock = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+
+if (availableStock <= 0) {
+    Toast.fire({
+        icon: 'error',
+        title: `"${matchedItem.name}" is dukan par dastyab nahi hai!`
+    });
+    return;
+}
 
                 if(e.target.closest('.qty-plus')) { 
                     if(cartItem && maxAvailable > cartItem.qty) { cartItem.qty++; } 
