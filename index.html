@@ -1476,10 +1476,25 @@
                                 </button>
                             </div>
 
-                            <div class="pur-col-box">
+                           <div class="pur-col-box">
                                 <div class="pur-col-title">
                                     <i class='bx bx-user-pin' style="color:#10b981;"></i> Purchaser & Payment Details
                                 </div>
+
+                                <!-- MAAL KAHAN JAYEGA (MAIN GODOWN / WAREHOUSE LABEL) -->
+                                <div class="form-group" style="margin-bottom:10px;">
+                                    <label style="font-weight:800; color:#0f172a; font-size:0.88rem;">
+                                        <i class='bx bx-building' style="color:#0284c7;"></i> Receiving Destination (Maal Kahan Shift Hoga?):
+                                    </label>
+                                    <div style="display:flex; align-items:center; gap:8px; background:#f0fdf4; border:1.5px solid #86efac; padding:10px 12px; border-radius:10px;">
+                                        <i class='bx bxs-check-shield' style="color:#16a34a; font-size:1.3rem;"></i>
+                                        <div>
+                                            <strong style="color:#15803d; font-size:0.92rem; display:block;">Main Warehouse / Godown</strong>
+                                            <small style="color:#166534; font-size:0.75rem;">Naya khareeda gaya maal barah-e-raast Main Godown mein dakhil hoga.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="form-group" style="margin-bottom:10px;">
                                     <label>Purchaser Name *</label>
                                     <input type="text" id="dia-purchaser-name" placeholder="Enter purchaser / vendor name">
@@ -1751,13 +1766,14 @@
                         </div>
                     </div>
 
+                 <!-- STOCK TRANSFER HISTORY & DISPATCH CHALLAN REPORTS -->
                     <div class="pur-diagram-table-card" style="margin-top: 25px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
                             <div>
                                 <h3 style="font-size:1.15rem; font-weight:800; color:#0f172a;">
                                     <i class='bx bx-history' style="color:var(--primary);"></i> Stock Transfer History & Dispatch Challan Reports
                                 </h3>
-                                <p style="font-size:0.83rem; color:#64748b;">Complete history of stock transfers and gate pass dispatch challans.</p>
+                                <p style="font-size:0.83rem; color:#64748b;">Dukanon par bheje gaye gate pass aur dispatch challan ka mukammal record.</p>
                             </div>
                             <div class="search-box" style="max-width:320px;">
                                 <i class='bx bx-search'></i>
@@ -1770,7 +1786,7 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 170px;">Challan # & Date</th>
-                                        <th colspan="3">Dispatched Items & Store Destination</th>
+                                        <th colspan="3">Dispatched Items & Route (From → To)</th>
                                         <th style="text-align:center; width: 120px;">Total Units</th>
                                         <th style="text-align:center; width: 130px;">Actions</th>
                                     </tr>
@@ -2594,62 +2610,19 @@
                             </div>
                         </div>
 
-                       <!-- Cash Book 3 Core KPI Cards (Expenses Removed) -->
-                        <div class="pl-kpi-grid">
-                            <!-- 1. Cash Inflow -->
-                            <div class="pl-kpi-card" style="border-top: 4px solid #10b981;">
-                                <div class="kpi-header"><span class="kpi-title">Total Cash In (Sales)</span><div class="kpi-icon" style="background: #dcfce7; color: #10b981;"><i class='bx bx-arrow-to-bottom'></i></div></div>
-                                <div class="kpi-value" id="kpi-cb-in" style="color: #10b981;">Rs. 0</div>
-                                <div class="kpi-subtitle">Collected from cash customers</div>
-                            </div>
-
-                            <!-- 2. Purchaser Payments Outflow -->
-                            <div class="pl-kpi-card" style="border-top: 4px solid #8b5cf6;">
-                                <div class="kpi-header"><span class="kpi-title">Purchaser Payments</span><div class="kpi-icon" style="background: #f3e8ff; color: #8b5cf6;"><i class='bx bx-cart-download'></i></div></div>
-                                <div class="kpi-value" id="kpi-cb-purchaser" style="color: #8b5cf6;">Rs. 0</div>
-                                <div class="kpi-subtitle">Paid to vendors & suppliers</div>
-                            </div>
-
-                            <!-- 3. Remaining Balance / Net Cash in Hand -->
-                            <div class="pl-kpi-card net-profit" id="kpi-cb-net-card" style="border-top: 4px solid #059669;">
-                                <div class="kpi-header"><span class="kpi-title">Net Cash in Hand</span><div class="kpi-icon" style="background: #d1fae5; color: #059669;"><i class='bx bx-wallet'></i></div></div>
-                                <div class="kpi-value" id="kpi-cb-net" style="color: #059669;">Rs. 0</div>
-                                <div class="kpi-subtitle">Remaining physical drawer balance</div>
-                            </div>
-                        </div>
-
-                      <!-- Cash In & Handover Entries Table (With Edit & Delete Action) -->
-                        <div class="pl-card-section" style="width: 100%; margin-top: 15px; margin-bottom: 20px; background: #ffffff; border-radius: 16px; border: 1px solid var(--border-color); padding: 22px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-                                <div>
-                                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 2px;">
-                                        <i class='bx bx-transfer' style="color:var(--primary);"></i> Cash In & Cash Handover Entries
-                                    </h3>
-                                    <p style="font-size: 0.82rem; color: #64748b;">Yahan se aap kisi bhi Cash In ya Handover ki entry ko Edit ya Delete kar sakte hain.</p>
+                       <!-- Sirf Aik Saaf Aur Prominent Net Cash in Hand Card -->
+                        <div style="margin-bottom: 20px;">
+                            <div class="pl-kpi-card net-profit" style="border-top: 5px solid #059669; max-width: 440px; background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+                                <div class="kpi-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span class="kpi-title" style="font-size: 0.95rem; font-weight: 800; color: #0f172a; letter-spacing: 0.5px;">NET CASH IN HAND (GALLE KA KUL CASH)</span>
+                                    <div class="kpi-icon" style="background: #d1fae5; color: #059669; width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+                                        <i class='bx bx-wallet'></i>
+                                    </div>
                                 </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="save-btn" style="padding: 6px 12px; font-size: 0.8rem; background: #10b981; background-image: none;" onclick="openCashEntryModal('IN')">
-                                        <i class='bx bx-plus-circle'></i> Add Cash In
-                                    </button>
-                                    <button class="save-btn" style="padding: 6px 12px; font-size: 0.8rem; background: #ef4444; background-image: none;" onclick="openCashEntryModal('OUT')">
-                                        <i class='bx bx-minus-circle'></i> Cash Handover (Out)
-                                    </button>
+                                <div class="kpi-value" id="kpi-cb-net" style="color: #059669; font-size: 2.3rem; font-weight: 900; letter-spacing: -0.5px;">Rs. 0</div>
+                                <div class="kpi-subtitle" style="font-size:0.82rem; color:#64748b; margin-top:4px;">
+                                    Dukan ke galle ka live baqaya cash (Sales + Cash In - Purchaser - Handover)
                                 </div>
-                            </div>
-                            <div style="overflow-x: auto; width: 100%; border-radius: 10px; border: 1px solid #e2e8f0;">
-                                <table class="custom-table" style="width: 100%;">
-                                    <thead>
-                                        <tr style="background: #f8fafc;">
-                                            <th style="width: 16%;">Date & Time</th>
-                                            <th style="width: 15%;">Type</th>
-                                            <th style="width: 22%;">Person / Source</th>
-                                            <th style="width: 25%;">Note / Reason</th>
-                                            <th style="width: 12%; text-align: right;">Amount (Rs.)</th>
-                                            <th style="width: 10%; text-align: center;">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="cash-handover-records-tbody"></tbody>
-                                </table>
                             </div>
                         </div>
 
@@ -3990,6 +3963,7 @@ const auth = firebase.auth();
             const now = new Date();
             const purchaseDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
+          // MAAL SEEDHA MAIN GODOWN MEIN SHIFT HOGA
             const purchaseRecord = {
                 serialNo: serialNo,
                 poNumber: serialNo,
@@ -3997,6 +3971,8 @@ const auth = firebase.auth();
                 vendorName: purchaserName,
                 vendorPhone: purchaserPhone,
                 paymentMode: paymentMode,
+                destination: 'Main Warehouse / Godown', // Wazeh destination save hogi
+                destinationId: 'main',
                 items: window.diagramPurchaseItems,
                 totalBill: totalBill,
                 paidAmount: paidAmount,
@@ -4008,7 +3984,7 @@ const auth = firebase.auth();
 
             try {
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Saving Inventory...";
+                saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Godown Mein Maal Save Ho Raha Hai...";
 
                 await purchasesDB.add(purchaseRecord);
 
@@ -4019,6 +3995,7 @@ const auth = firebase.auth();
                     );
 
                     if (existingProduct) {
+                        // Purane product ka stock Main Godown mein barhana
                         await productsDB.doc(existingProduct.id).update({
                             stock: firebase.firestore.FieldValue.increment(prod.qty),
                             costPrice: prod.cost,
@@ -4026,8 +4003,13 @@ const auth = firebase.auth();
                             barcode: prod.barcode,
                             img: prod.img || existingProduct.img
                         });
+                        // In-memory Godown stock foran barhana
+                        existingProduct.stock = Number(existingProduct.stock || 0) + prod.qty;
+                        existingProduct.costPrice = prod.cost;
+                        existingProduct.price = prod.sale;
                     } else {
-                        await productsDB.add({
+                        // Naye product ko Main Godown mein create karna
+                        const newDocRef = await productsDB.add({
                             name: prod.name,
                             barcode: prod.barcode,
                             category: 'General',
@@ -4036,12 +4018,25 @@ const auth = firebase.auth();
                             stock: prod.qty,
                             sold: 0,
                             img: prod.img,
+                            location: 'Main Warehouse / Godown',
                             timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        window.menuItems.push({
+                            id: newDocRef.id,
+                            name: prod.name,
+                            barcode: prod.barcode,
+                            category: 'General',
+                            costPrice: prod.cost,
+                            price: prod.sale,
+                            stock: prod.qty,
+                            sold: 0,
+                            img: prod.img,
+                            location: 'Main Warehouse / Godown'
                         });
                     }
                 }
 
-                alert(`Purchase order [${serialNo}] saved successfully!\nInventory updated.\nPaid: Rs. ${paidAmount.toLocaleString()} | Remaining: Rs. ${remainingDue.toLocaleString()}`);
+                alert(`Purchase Order [${serialNo}] kamyabi say save hogaya!\n\nTamam ${totalQty} units barah-e-raast MAIN WAREHOUSE / GODOWN mein shift ho gaye hain.`);
                 
                 window.diagramPurchaseItems = [];
                 document.getElementById('dia-purchaser-name').value = '';
@@ -4127,11 +4122,14 @@ const auth = firebase.auth();
 
                     const displaySerial = item.serialNo || item.poNumber || '-';
 
-                    tbody.innerHTML += `
+                   tbody.innerHTML += `
                         <tr>
                             <td>
                                 <strong style="color:var(--primary);">${displaySerial}</strong><br>
-                                <small style="color:#64748b;">${(item.date || '').substring(0, 16)}</small>
+                                <small style="color:#64748b;">${(item.date || '').substring(0, 16)}</small><br>
+                                <span style="background:#f0fdf4; color:#15803d; font-size:0.72rem; font-weight:800; padding:2px 6px; border-radius:4px; border:1px solid #bbf7d0; display:inline-block; margin-top:3px;">
+                                    <i class='bx bx-building'></i> Main Godown
+                                </span>
                             </td>
                             <td>
                                 <strong>${item.vendorName || '-'}</strong><br>
@@ -4674,24 +4672,118 @@ const auth = firebase.auth();
             });
         };
 
+       // RENDER TRANSFER REPORTS, PRODUCT LOCATION MATRIX & STORE-WISE BREAKDOWN
         window.renderTransferHistoryReports = function() {
+            // -------------------------------------------------------------
+            // 1. TOP KPI CALCULATIONS (GODOWN VS STORES)
+            // -------------------------------------------------------------
+            let totalGodownUnits = 0;
+            (window.menuItems || []).forEach(p => {
+                totalGodownUnits += Number(p.stock || 0);
+            });
+
+            let totalStoreUnits = 0;
+            (window.branchStockList || []).forEach(bs => {
+                totalStoreUnits += Number(bs.qty || 0);
+            });
+
+            const godownKpiEl = document.getElementById('trf-kpi-godown');
+            const storeKpiEl = document.getElementById('trf-kpi-stores');
+            const totalKpiEl = document.getElementById('trf-kpi-total');
+
+            if (godownKpiEl) godownKpiEl.textContent = `${totalGodownUnits.toLocaleString()} units`;
+            if (storeKpiEl) storeKpiEl.textContent = `${totalStoreUnits.toLocaleString()} units`;
+            if (totalKpiEl) totalKpiEl.textContent = `${(totalGodownUnits + totalStoreUnits).toLocaleString()} units`;
+
+            // -------------------------------------------------------------
+            // 2. PRODUCT-WISE LIVE LOCATION & STORE BREAKDOWN TABLE
+            // -------------------------------------------------------------
+            const locTbody = document.getElementById('product-location-tracker-tbody');
+            const locSearch = (document.getElementById('location-tracker-search')?.value || '').toLowerCase().trim();
+
+            if (locTbody) {
+                locTbody.innerHTML = '';
+                const filteredProducts = (window.menuItems || []).filter(p => {
+                    const nameMatch = (p.name || '').toLowerCase().includes(locSearch);
+                    const bcMatch = (p.barcode || '').toLowerCase().includes(locSearch);
+                    return nameMatch || bcMatch;
+                });
+
+                if (filteredProducts.length === 0) {
+                    locTbody.innerHTML = `<tr><td colspan="5" class="empty-placeholder">Koi product nahi mila.</td></tr>`;
+                } else {
+                    filteredProducts.forEach((prod, idx) => {
+                        const godownQty = Number(prod.stock || 0);
+
+                        // Har store ka stock dhoond kar badge banana
+                        const storePills = [];
+                        let totalInStoresForThisItem = 0;
+
+                        (window.branchesList || []).forEach(b => {
+                            const bStocks = (window.branchStockList || []).filter(bs => bs.branchId === b.id && bs.productId === prod.id);
+                            const storeQty = bStocks.reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
+                            
+                            if (storeQty > 0) {
+                                totalInStoresForThisItem += storeQty;
+                                storePills.push(`
+                                    <span style="background:#e0f2fe; color:#0369a1; padding:3px 9px; border-radius:6px; font-weight:700; font-size:0.82rem; display:inline-block; margin:2px 4px; border:1px solid #bae6fd;">
+                                        <i class='bx bx-store'></i> ${b.name}: <b>${storeQty} pcs</b>
+                                    </span>
+                                `);
+                            }
+                        });
+
+                        const storeDisplayHtml = storePills.length > 0 
+                            ? storePills.join('') 
+                            : `<span style="color:#94a3b8; font-style:italic; font-size:0.82rem;">Kisi store par mojood nahi</span>`;
+
+                        const grandTotalUnits = godownQty + totalInStoresForThisItem;
+
+                        locTbody.innerHTML += `
+                            <tr>
+                                <td><strong>${idx + 1}</strong></td>
+                                <td>
+                                    <strong style="color:#0f172a; font-size:0.95rem;">${prod.name}</strong><br>
+                                    <small style="color:#64748b;"><code>${prod.barcode || 'N/A'}</code></small>
+                                </td>
+                                <td style="text-align:center;">
+                                    <span style="background:${godownQty > 0 ? '#fef3c7' : '#f1f5f9'}; color:${godownQty > 0 ? '#b45309' : '#94a3b8'}; padding:4px 12px; border-radius:8px; font-weight:800; font-size:0.92rem; border:1px solid ${godownQty > 0 ? '#fde68a' : '#e2e8f0'}; display:inline-block;">
+                                        <i class='bx bx-building'></i> ${godownQty} pcs
+                                    </span>
+                                </td>
+                                <td>${storeDisplayHtml}</td>
+                                <td style="text-align:center;">
+                                    <strong style="color:#10b981; font-size:1.02rem; background:#dcfce7; padding:4px 12px; border-radius:8px; border:1px solid #bbf7d0; display:inline-block;">
+                                        ${grandTotalUnits} pcs
+                                    </strong>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+
+            // -------------------------------------------------------------
+            // 3. CHALLAN DISPATCH REPORTS TABLE
+            // -------------------------------------------------------------
             const tbody = document.getElementById('transfer-reports-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
 
             const searchTerm = (document.getElementById('transfer-history-search')?.value || '').toLowerCase().trim();
 
-            const filtered = window.transfersList.filter(t => {
+            const filtered = (window.transfersList || []).filter(t => {
                 const challanMatch = t.challanNo && t.challanNo.toLowerCase().includes(searchTerm);
                 const itemMatch = (t.items || []).some(i => 
                     (i.productName && i.productName.toLowerCase().includes(searchTerm)) ||
-                    (i.toStoreName && i.toStoreName.toLowerCase().includes(searchTerm))
+                    (i.toStoreName && i.toStoreName.toLowerCase().includes(searchTerm)) ||
+                    (i.fromStoreName && i.fromStoreName.toLowerCase().includes(searchTerm))
                 );
                 return challanMatch || itemMatch;
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">No transfer records found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">Koi challan record nahi mila.</td></tr>`;
                 return;
             }
 
@@ -4700,7 +4792,9 @@ const auth = firebase.auth();
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed #e2e8f0; font-size:0.84rem;">
                         <div>
                             <strong>${i.productName}</strong> <code>(${i.barcode || 'N/A'})</code>
-                            <div style="font-size:0.77rem; color:#64748b;">To: <b style="color:#10b981;">${i.toStoreName}</b> (From: ${i.fromStoreName})</div>
+                            <div style="font-size:0.77rem; color:#64748b; margin-top:2px;">
+                                Route: <b style="color:#0284c7;">${i.fromStoreName || 'Godown'}</b> → <b style="color:#10b981;">${i.toStoreName || 'Store'}</b>
+                            </div>
                         </div>
                         <div style="text-align:right;">
                             <span style="font-weight:800; color:var(--primary); font-size:0.92rem;">${i.qty} pcs</span>
@@ -9225,9 +9319,7 @@ updateSalesChart();
         };
 
 
-        // =========================================================================
-        // 4. PRODUCT TO MOVE STORE: EDIT BUTTON IN DISPATCH HISTORY TABLE
-        // =========================================================================
+     // RENDER STOCK TRANSFER & DISPATCH CHALLAN REPORTS (CLEAN & DIRECT)
         window.renderTransferHistoryReports = function() {
             const tbody = document.getElementById('transfer-reports-tbody');
             if (!tbody) return;
@@ -9239,13 +9331,14 @@ updateSalesChart();
                 const challanMatch = t.challanNo && t.challanNo.toLowerCase().includes(searchTerm);
                 const itemMatch = (t.items || []).some(i => 
                     (i.productName && i.productName.toLowerCase().includes(searchTerm)) ||
-                    (i.toStoreName && i.toStoreName.toLowerCase().includes(searchTerm))
+                    (i.toStoreName && i.toStoreName.toLowerCase().includes(searchTerm)) ||
+                    (i.fromStoreName && i.fromStoreName.toLowerCase().includes(searchTerm))
                 );
                 return challanMatch || itemMatch;
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">Koi transfer record nahi mila.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">Koi transfer challan record nahi mila.</td></tr>`;
                 return;
             }
 
@@ -9254,7 +9347,9 @@ updateSalesChart();
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed #e2e8f0; font-size:0.84rem;">
                         <div>
                             <strong>${i.productName}</strong> <code>(${i.barcode || 'N/A'})</code>
-                            <div style="font-size:0.77rem; color:#64748b;">To: <b style="color:#10b981;">${i.toStoreName}</b> (From: ${i.fromStoreName})</div>
+                            <div style="font-size:0.77rem; color:#64748b; margin-top:2px;">
+                                Route: <b style="color:#0284c7;">${i.fromStoreName || 'Godown'}</b> → <b style="color:#10b981;">${i.toStoreName || 'Store'}</b>
+                            </div>
                         </div>
                         <div style="text-align:right;">
                             <span style="font-weight:800; color:var(--primary); font-size:0.92rem;">${i.qty} pcs</span>
@@ -9279,11 +9374,8 @@ updateSalesChart();
                             </strong>
                         </td>
                         <td style="text-align:center; vertical-align:middle; white-space:nowrap;">
-                            <button type="button" class="btn-edit" style="padding:6px 10px; font-size:0.82rem; margin-right:4px;" onclick="openEditTransferModal('${t.id}')" title="Edit Transfer & Adjust Stock">
-                                <i class='bx bx-edit'></i> Edit
-                            </button>
-                            <button type="button" class="btn-view" style="padding:6px 10px; font-size:0.82rem;" onclick="reprintTransferGatePass('${t.id}')" title="Print Gate Pass">
-                                <i class='bx bx-printer'></i> Challan
+                            <button type="button" class="btn-view" style="padding:6px 12px; font-size:0.85rem;" onclick="reprintTransferGatePass('${t.id}')" title="Print Gate Pass">
+                                <i class='bx bx-printer'></i> Challan PDF
                             </button>
                         </td>
                     </tr>
@@ -10247,197 +10339,173 @@ updateSalesChart();
             window.setCashBookReportPreset('all');
         };
 
+   // RENDER UNIFIED CASH BOOK LEDGER (CLEAN 5 COLUMNS - NO ACTION BUTTONS)
     window.renderCashBookReport = function() {
-            const tbody = document.getElementById('cb-transaction-history-tbody');
-            const periodText = document.getElementById('cb-report-period-text');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+        const tbody = document.getElementById('cb-transaction-history-tbody');
+        const periodText = document.getElementById('cb-report-period-text');
+        if (!tbody) return;
+        tbody.innerHTML = '';
 
-            const now = new Date();
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            const fromDate = document.getElementById('cb-rep-date-from')?.value;
-            const toDate = document.getElementById('cb-rep-date-to')?.value;
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fromDate = document.getElementById('cb-rep-date-from')?.value;
+        const toDate = document.getElementById('cb-rep-date-to')?.value;
 
-            function isWithinPeriod(dateStr) {
-                if (!dateStr) return false;
-                const d = dateStr.substring(0, 10);
-                if (window.currentCBRepPreset === 'today') return d === todayStr;
-                if (window.currentCBRepPreset === 'weekly') {
-                    const oneWeekAgo = new Date();
-                    oneWeekAgo.setDate(now.getDate() - 7);
-                    return new Date(d) >= oneWeekAgo;
-                }
-                if (window.currentCBRepPreset === 'monthly') {
-                    const oneMonthAgo = new Date();
-                    oneMonthAgo.setDate(now.getDate() - 30);
-                    return new Date(d) >= oneMonthAgo;
-                }
-                if (window.currentCBRepPreset === 'custom' && fromDate && toDate) {
-                    return d >= fromDate && d <= toDate;
-                }
-                return true;
+        function isWithinPeriod(dateStr) {
+            if (!dateStr) return false;
+            const d = dateStr.substring(0, 10);
+            if (window.currentCBRepPreset === 'today') return d === todayStr;
+            if (window.currentCBRepPreset === 'weekly') {
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(now.getDate() - 7);
+                return new Date(d) >= oneWeekAgo;
             }
+            if (window.currentCBRepPreset === 'monthly') {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setDate(now.getDate() - 30);
+                return new Date(d) >= oneMonthAgo;
+            }
+            if (window.currentCBRepPreset === 'custom' && fromDate && toDate) {
+                return d >= fromDate && d <= toDate;
+            }
+            return true;
+        }
 
-            const allTransactions = [];
+        const allTransactions = [];
 
-            // 1. CASH IN: Daily Sales Collections
-            const dailySalesMap = {};
-            (window.salesHistory || []).forEach(s => {
-                const isCash = (s.paymentMode || 'Cash').toLowerCase().includes('cash');
-                const isPaid = (s.paymentStatus === 'Paid');
-                if (isCash && isPaid && isWithinPeriod(s.date)) {
-                    const d = (s.date || '').substring(0, 10);
-                    if (!dailySalesMap[d]) {
-                        dailySalesMap[d] = {
-                            total: 0,
-                            rawDate: new Date(s.date || now).getTime()
-                        };
-                    }
-                    dailySalesMap[d].total += Number(s.total || 0);
+        // 1. CASH IN: Daily Counter Cash Sales
+        const dailySalesMap = {};
+        (window.salesHistory || []).forEach(s => {
+            const isCash = (s.paymentMode || 'Cash').toLowerCase().includes('cash');
+            const isPaid = (s.paymentStatus === 'Paid');
+            if (isCash && isPaid && isWithinPeriod(s.date)) {
+                const d = (s.date || '').substring(0, 10);
+                if (!dailySalesMap[d]) {
+                    dailySalesMap[d] = {
+                        total: 0,
+                        rawDate: new Date(s.date || now).getTime()
+                    };
                 }
-            });
+                dailySalesMap[d].total += Number(s.total || 0);
+            }
+        });
 
-            Object.keys(dailySalesMap).forEach(d => {
+        Object.keys(dailySalesMap).forEach(d => {
+            allTransactions.push({
+                date: d,
+                desc: 'Daily Cash Sales (Counter Sale)',
+                isSale: true,
+                cashIn: dailySalesMap[d].total,
+                cashOut: 0,
+                rawDate: dailySalesMap[d].rawDate
+            });
+        });
+
+        // 2. CASH OUT: Purchaser Payments (Vendors ko jo cash diya)
+        (window.purchasesList || []).forEach(p => {
+            const paidAmt = Number(p.paidAmount || 0);
+            if (paidAmt > 0 && isWithinPeriod(p.date)) {
+                const vendor = p.vendorName ? p.vendorName.trim() : 'Vendor';
                 allTransactions.push({
-                    date: d,
-                    desc: 'Remaining Balance',
-                    isRemainingBalance: true,
-                    cashIn: dailySalesMap[d].total,
-                    cashOut: 0,
-                    rawDate: dailySalesMap[d].rawDate
+                    date: (p.date || '').substring(0, 10),
+                    desc: `Payment To Purchase (${vendor})`,
+                    isSale: false,
+                    cashIn: 0,
+                    cashOut: paidAmt,
+                    rawDate: new Date(p.date || now).getTime()
                 });
-            });
-
-            // 2. CASH OUT: Purchaser Payments
-            (window.purchasesList || []).forEach(p => {
-                const paidAmt = Number(p.paidAmount || 0);
-                if (paidAmt > 0 && isWithinPeriod(p.date)) {
-                    const vendor = p.vendorName ? p.vendorName.trim() : 'Vendor';
-                    allTransactions.push({
-                        date: (p.date || '').substring(0, 10),
-                        desc: `Payment To Purchase (${vendor})`,
-                        isRemainingBalance: false,
-                        cashIn: 0,
-                        cashOut: paidAmt,
-                        rawDate: new Date(p.date || now).getTime()
-                    });
-                }
-            });
-
-            // EXPENSES KO TRANSACTION HISTORY (LEDGER) SE NIKAL DIYA GAYA HAI.
-
-            // Chronological sort to accurately calculate Running Ledger Balance
-            allTransactions.sort((a, b) => a.rawDate - b.rawDate);
-
-            let runningBalance = 0;
-            allTransactions.forEach(item => {
-                runningBalance += (item.cashIn - item.cashOut);
-                item.balance = runningBalance;
-            });
-
-            // Reverse to display newest transactions on top
-            allTransactions.reverse();
-
-            // Calculate KPI Totals
-            const totalCashIn = allTransactions.reduce((sum, t) => sum + t.cashIn, 0);
-            const totalPurchaserPaid = (window.purchasesList || [])
-                .filter(p => isWithinPeriod(p.date))
-                .reduce((sum, p) => sum + Number(p.paidAmount || 0), 0);
-
-            // Update KPI Cards
-            const inEl = document.getElementById('kpi-cb-in');
-            const purEl = document.getElementById('kpi-cb-purchaser');
-            const netEl = document.getElementById('kpi-cb-net');
-
-            if (inEl) inEl.textContent = `Rs. ${totalCashIn.toLocaleString()}`;
-            if (purEl) purEl.textContent = `Rs. ${totalPurchaserPaid.toLocaleString()}`;
-
-            if (netEl) {
-                netEl.textContent = `Rs. ${runningBalance.toLocaleString()}`;
-                netEl.style.color = runningBalance >= 0 ? '#059669' : '#ef4444';
             }
+        });
 
-            if (periodText) {
-                periodText.textContent = `Duration: ${window.currentCBRepPreset.toUpperCase()} | Net Balance: Rs. ${runningBalance.toLocaleString()}`;
-            }
+        // 3. CASH IN (+) AUR CASH HANDOVER (-) (Galle ki direct entries)
+        (window.cashEntriesList || []).forEach(c => {
+            if (isWithinPeriod(c.date)) {
+                const isOut = (c.type === 'OUT');
+                const person = c.person ? c.person.trim() : '';
+                const note = c.note ? ` - ${c.note.trim()}` : '';
+                const amt = Number(c.amount || 0);
 
-           // Render Cash In & Handover Entries Table
-            const handoverTbody = document.getElementById('cash-handover-records-tbody');
-            if (handoverTbody) {
-                handoverTbody.innerHTML = '';
-                const filteredCashEntries = (window.cashEntriesList || []).filter(c => isWithinPeriod(c.date));
-                if (filteredCashEntries.length === 0) {
-                    handoverTbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">Is muddat ki koi Cash In ya Handover entry nahi hai.</td></tr>`;
+                let entryDesc = '';
+                if (isOut) {
+                    entryDesc = `Cash Handover to Owner / Bank (${person}${note})`;
                 } else {
-                    filteredCashEntries.forEach(c => {
-                        const isOut = (c.type === 'OUT');
-                        const typeBadge = isOut 
-                            ? `<span class="status-badge badge-credit"><i class='bx bx-up-arrow-alt'></i> Handover (Out)</span>` 
-                            : `<span class="status-badge badge-paid"><i class='bx bx-down-arrow-alt'></i> Cash In (+)</span>`;
-                        const amtColor = isOut ? '#dc2626' : '#16a34a';
-
-                        handoverTbody.innerHTML += `
-                            <tr>
-                                <td><small style="color:#64748b; font-weight:600;">${c.date || '-'}</small></td>
-                                <td>${typeBadge}</td>
-                                <td><strong>${c.person}</strong></td>
-                                <td><small style="color:#334155;">${c.note || '-'}</small></td>
-                                <td style="text-align:right; font-weight:800; color:${amtColor};">
-                                    ${isOut ? '-' : '+'} Rs. ${Number(c.amount || 0).toLocaleString()}
-                                </td>
-                                <td style="text-align:center; white-space:nowrap;">
-                                    <div class="action-btns" style="justify-content:center;">
-                                        <button class="btn-edit" onclick="openEditCashEntryModal('${c.id}')" title="Edit Entry">
-                                            <i class='bx bx-edit'></i> Edit
-                                        </button>
-                                        <button class="btn-delete" onclick="deleteCashEntry('${c.id}')" title="Delete Entry">
-                                            <i class='bx bx-trash'></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
+                    entryDesc = `Cash In / Drawer Fund (${person}${note})`;
                 }
+
+                allTransactions.push({
+                    date: (c.date || '').substring(0, 10),
+                    desc: entryDesc,
+                    isSale: false,
+                    cashIn: isOut ? 0 : amt,
+                    cashOut: isOut ? amt : 0,
+                    rawDate: new Date(c.date || now).getTime()
+                });
+            }
+        });
+
+        // Purani se nayi date ke mutabiq sort karein taake Running Balance 100% sahi calculate ho
+        allTransactions.sort((a, b) => a.rawDate - b.rawDate);
+
+        let runningBalance = 0;
+        allTransactions.forEach(item => {
+            runningBalance += (item.cashIn - item.cashOut);
+            item.balance = runningBalance;
+        });
+
+        // Nayi entries ko upar dikhane ke liye reverse karein
+        allTransactions.reverse();
+
+        // Upar ka single card (NET CASH IN HAND) update karein
+        const netEl = document.getElementById('kpi-cb-net');
+        if (netEl) {
+            netEl.textContent = `Rs. ${runningBalance.toLocaleString()}`;
+            netEl.style.color = runningBalance >= 0 ? '#059669' : '#ef4444';
+        }
+
+        if (periodText) {
+            periodText.textContent = `Duration: ${window.currentCBRepPreset.toUpperCase()} | Net Cash in Hand: Rs. ${runningBalance.toLocaleString()}`;
+        }
+
+        // Agar koi entry na ho
+        if (allTransactions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: #94a3b8; font-style: italic;">Is duration ka koi cash record mojood nahi hai.</td></tr>`;
+            return;
+        }
+
+        // Cash Transaction History Table Render Karna (Saaf 5 Columns - No Buttons)
+        tbody.innerHTML = '';
+        allTransactions.forEach((row, idx) => {
+            const parts = row.date.split('-');
+            const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : row.date;
+
+            const cashInText = row.cashIn > 0 ? `<b style="color:#10b981;">+ Rs.${row.cashIn.toFixed(2)}</b>` : '-';
+            const cashOutText = row.cashOut > 0 ? `<b style="color:#ef4444;">- Rs.${row.cashOut.toFixed(2)}</b>` : '-';
+            const balanceText = `Rs.${row.balance.toFixed(2)}`;
+
+            let descHtml = `<span style="color: #1e293b; font-weight: 600;">${row.desc}</span>`;
+            if (row.isSale) {
+                descHtml = `<strong style="color: #0f172a; font-weight: 800;">${row.desc}</strong>`;
             }
 
-            // Render Table Rows
-            if (allTransactions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: #94a3b8; font-style: italic;">No cash transactions found for the selected duration.</td></tr>`;
-                return;
-            }
+            const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
 
-            allTransactions.forEach((row, idx) => {
-                const parts = row.date.split('-');
-                const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : row.date;
-
-                const cashInText = row.cashIn > 0 ? `Rs.${row.cashIn.toFixed(2)}` : '-';
-                const cashOutText = row.cashOut > 0 ? `Rs.${row.cashOut.toFixed(2)}` : '-';
-                const balanceText = `Rs.${row.balance.toFixed(2)}`;
-
-                const descHtml = row.isRemainingBalance 
-                    ? `<strong style="color: #0f172a; font-weight: 800;">${row.desc}</strong>` 
-                    : `<span style="color: #1e293b; font-weight: 600;">${row.desc}</span>`;
-
-                const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
-
-                tbody.innerHTML += `
-                    <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 13px 16px; font-weight: 600; color: #334155; font-size: 0.88rem;">${formattedDate}</td>
-                        <td style="padding: 13px 16px; font-size: 0.88rem;">${descHtml}</td>
-                        <td style="padding: 13px 16px; text-align: right; font-size: 0.88rem; font-weight: 800; color: ${row.cashIn > 0 ? '#0f172a' : '#94a3b8'};">
-                            ${cashInText}
-                        </td>
-                        <td style="padding: 13px 16px; text-align: right; font-size: 0.88rem; font-weight: 800; color: ${row.cashOut > 0 ? '#0f172a' : '#94a3b8'};">
-                            ${cashOutText}
-                        </td>
-                        <td style="padding: 13px 16px; text-align: right; font-size: 0.88rem; font-weight: 900; color: #0f172a;">
-                            ${balanceText}
-                        </td>
-                    </tr>
-                `;
-            });
-        };
+            tbody.innerHTML += `
+                <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 13px 16px; font-weight: 600; color: #334155; font-size: 0.88rem; border:1px solid #cbd5e1;">${formattedDate}</td>
+                    <td style="padding: 13px 16px; font-size: 0.88rem; border:1px solid #cbd5e1;">${descHtml}</td>
+                    <td style="padding: 13px 16px; text-align: right; font-size: 0.88rem; border:1px solid #cbd5e1;">
+                        ${cashInText}
+                    </td>
+                    <td style="padding: 13px 16px; text-align: right; font-size: 0.88rem; border:1px solid #cbd5e1;">
+                        ${cashOutText}
+                    </td>
+                    <td style="padding: 13px 16px; text-align: right; font-size: 0.95rem; font-weight: 900; color: #0f172a; border:1px solid #cbd5e1;">
+                        ${balanceText}
+                    </td>
+                </tr>
+            `;
+        });
+    };
 
 // =========================================================
         // DEDICATED A4 PAGE CASH TRANSACTION HISTORY PDF GENERATOR
