@@ -1361,9 +1361,9 @@
                         <div class="pos-branch-select-box">
     <label><i class='bx bx-store-alt' style="color:var(--primary); font-size:1.15rem;"></i>Store:</label>
     <select id="pos-selected-branch" onchange="onPosBranchSelectionChange()">
-        <option value="">-- Dukan Chunein --</option>
+        <option value="">-- Shop Chunein --</option>
     </select>
-    <button type="button" class="outline-btn" style="padding: 6px 10px; font-size: 0.78rem;" onclick="openBranchStockOverviewModal()" title="Dukanon ka stock check karein">
+    <button type="button" class="outline-btn" style="padding: 6px 10px; font-size: 0.78rem;" onclick="openBranchStockOverviewModal()" title="Shopon ka stock check karein">
         <i class='bx bx-buildings'></i> Shop Stock
     </button>
 </div>
@@ -2394,7 +2394,7 @@
                                 </div>
                                 <div class="kpi-value" id="kpi-cb-net" style="color: #059669; font-size: 2.3rem; font-weight: 900; letter-spacing: -0.5px;">Rs. 0</div>
                                 <div class="kpi-subtitle" style="font-size:0.82rem; color:#64748b; margin-top:4px;">
-                                    Dukan ke galle ka live baqaya cash (Sales + Cash In - Purchaser - Handover)
+                                    Shop ke galle ka live baqaya cash (Sales + Cash In - Purchaser - Handover)
                                 </div>
                             </div>
                         </div>
@@ -4001,32 +4001,32 @@ const auth = firebase.auth();
 
     posBranchSelect.innerHTML = '';
 
-    // Agar koi dukan add hi nahi hui
+    // Agar koi Shop add hi nahi hui
     if (!window.branchesList || window.branchesList.length === 0) {
-        posBranchSelect.innerHTML = '<option value="">Koi Dukan Mojood Nahi (Pehle Add Karein)</option>';
+        posBranchSelect.innerHTML = '<option value="">Koi shop Mojood Nahi (Pehle Add Karein)</option>';
         posBranchSelect.disabled = true;
         return;
     }
 
-    // Agar user ko specific dukan assign hai (Staff User)
+    // Agar user ko specific Shop assign hai (Staff User)
     if (!isSuper && assignedBranch && assignedBranch !== 'all') {
         const assignedObj = window.branchesList.find(b => b.id === assignedBranch);
         if (assignedObj) {
             posBranchSelect.innerHTML = `<option value="${assignedObj.id}">${assignedObj.name} - ${assignedObj.area}</option>`;
             posBranchSelect.value = assignedObj.id;
-            posBranchSelect.disabled = true; // User kisi doosri dukan ya godown par switch nahi kar sakta
+            posBranchSelect.disabled = true; // User kisi doosri Shop ya godown par switch nahi kar sakta
         } else {
-            posBranchSelect.innerHTML = '<option value="">Assigned Dukan Nahi Mili</option>';
+            posBranchSelect.innerHTML = '<option value="">Assigned shop Nahi Mili</option>';
             posBranchSelect.disabled = true;
         }
     } else {
-        // Super Admin / Master Admin ke liye sirf bani hui dukanain aayengi (Godown bilkul nahi aayega)
+        // Super Admin / Master Admin ke liye sirf bani hui Shopain aayengi (Godown bilkul nahi aayega)
         posBranchSelect.disabled = false;
         window.branchesList.forEach(branch => {
             posBranchSelect.innerHTML += `<option value="${branch.id}">${branch.name} - ${branch.area}</option>`;
         });
 
-        // Agar pehle se kuch select nahi to pehli dukan auto-select karlo
+        // Agar pehle se kuch select nahi to pehli Shop auto-select karlo
         if (!posBranchSelect.value && window.branchesList.length > 0) {
             posBranchSelect.value = window.branchesList[0].id;
         }
@@ -4394,7 +4394,7 @@ const auth = firebase.auth();
                         const localP = (window.menuItems || []).find(p => p.id === item.productId);
                         if (localP) localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
                     } else {
-                        // Dukan / Store se minus
+                        // Shop / Store se minus
                         const srcBStock = (window.branchStockList || []).find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
                         if (srcBStock) {
                             await branchStockDB.doc(srcBStock.id).update({
@@ -5326,21 +5326,21 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     const menuGrid = document.getElementById('menu-grid');
     if (!menuGrid) return;
 
-    // 1. Agar koi dukan select nahi hai ya dukan bani hi nahi hai
+    // 1. Agar koi Shop select nahi hai ya Shop bani hi nahi hai
     if (!selectedBranch) {
         menuGrid.innerHTML = `
             <div class="empty-placeholder" style="grid-column: 1/-1; padding: 40px 20px;">
                 <i class='bx bx-error-circle' style="font-size:3.5rem; color:#ef4444; display:block; margin-bottom:10px;"></i>
                 <h3 style="color:#0f172a; margin-bottom:6px;">Main Godown Se Direct Sale Mana Hai!</h3>
                 <p style="color:#64748b; font-size:0.9rem;">
-                    Cheezein sirf Dukan se bikti hain. Upar se pehle Dukan select karein, ya agar dukan nahi bani to pehle Move Store mein jaakar Dukan add karein.
+                    Cheezein sirf Shop se bikti hain. Upar se pehle Shop select karein, ya agar Shop nahi bani to pehle Move Store mein jaakar Shop add karein.
                 </p>
             </div>
         `;
         return;
     }
 
-    // 2. Sirf usi dukan ka stock filter karein jo Move Store se dukan mein transfer hua hai
+    // 2. Sirf usi Shop ka stock filter karein jo Move Store se Shop mein transfer hua hai
     const filteredItems = [];
 
     window.menuItems.forEach(item => {
@@ -5353,7 +5353,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
             const branchQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
 
-            // Sirf wahi item aayega jiska stock is dukan par mojood ho (> 0)
+            // Sirf wahi item aayega jiska stock is Shop par mojood ho (> 0)
             if (branchQty > 0) {
                 filteredItems.push({
                     ...item,
@@ -5369,8 +5369,8 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
         menuGrid.innerHTML = `
             <div class="empty-placeholder" style="grid-column: 1/-1;">
                 <i class='bx bx-box' style="font-size:3rem; display:block; margin-bottom:8px;"></i>
-                Is dukan par filhal koi stock dastyab nahi hai.<br>
-                <small style="color:#64748b;">(Main Godown se is dukan par 'Product to Move Store' ke zariye stock transfer karein)</small>
+                Is Shop par filhal koi stock dastyab nahi hai.<br>
+                <small style="color:#64748b;">(Main Godown se is Shop par 'Product to Move Store' ke zariye stock transfer karein)</small>
             </div>
         `;
         return;
@@ -5425,16 +5425,16 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
     const selectedBranch = document.getElementById('pos-selected-branch')?.value;
     if (!selectedBranch) {
-        alert("Main Godown se direct sale mana hai! Pehle dukan select karein.");
+        alert("Main Godown se direct sale mana hai! Pehle Shop select karein.");
         return;
     }
 
-    // Sirf is dukan ka stock check karein
+    // Sirf is Shop ka stock check karein
     const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
     const maxAvailable = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
 
     if (maxAvailable <= 0) {
-        alert(`"${item.name}" ka stock is dukan par khatam (OUT OF STOCK) hai! Godown se transfer karein.`);
+        alert(`"${item.name}" ka stock is Shop par khatam (OUT OF STOCK) hai! Godown se transfer karein.`);
         window.filterMenu();
         return;
     }
@@ -5888,7 +5888,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             const itemsWithCombinedStock = window.menuItems.map(item => {
                 const godownStock = Number(item.stock || 0);
                 
-                // Tamam dukanon (1 store ho ya 15 stores) ka stock jama karna
+                // Tamam Shopon (1 store ho ya 15 stores) ka stock jama karna
                 const storesStock = (window.branchStockList || [])
                     .filter(bs => bs.productId === item.id)
                     .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
@@ -5928,10 +5928,10 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 const itemPrice = Number(item.price || 0);
                 const escapedName = item.name.replace(/'/g, "\\'");
 
-                // Badge text: Batayega ke maal dukan par hai ya godown mein
+                // Badge text: Batayega ke maal Shop par hai ya godown mein
                 let stockBreakdownText = `Kul Stock: ${item.totalCombinedStock} pcs`;
                 if (item.storesStock > 0 && item.godownStock > 0) {
-                    stockBreakdownText = `Dukan: ${item.storesStock} | Godown: ${item.godownStock}`;
+                    stockBreakdownText = `Shop: ${item.storesStock} | Godown: ${item.godownStock}`;
                 } else if (item.storesStock > 0) {
                     stockBreakdownText = `Shop: ${item.storesStock} pcs`;
                 } else {
@@ -7002,17 +7002,17 @@ if (discInput) discInput.value = savedDisc;
 
                     const selectedBranch = document.getElementById('pos-selected-branch')?.value;
 if (!selectedBranch) {
-    alert("Main Godown se direct sale mana hai! Pehle dukan select karein.");
+    alert("Main Godown se direct sale mana hai! Pehle Shop select karein.");
     return;
 }
 
 const bObj = (window.branchesList || []).find(b => b.id === selectedBranch);
-const branchNameRecorded = bObj ? `${bObj.name} (${bObj.area})` : 'Dukan Store';
+const branchNameRecorded = bObj ? `${bObj.name} (${bObj.area})` : 'Shop Store';
 
 // Cart loop ke andar:
 for (let item of cart) {
     if (item.id) {
-        // 1. Dukan ke stock se minus karein
+        // 1. Shop ke stock se minus karein
         const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
         if (bStockRecord) {
             await branchStockDB.doc(bStockRecord.id).update({
@@ -7115,7 +7115,7 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
 if (!selectedBranch) {
     Toast.fire({
         icon: 'error',
-        title: "Main Godown se sale nahi ho sakti. Pehle dukan chunein!"
+        title: "Main Godown se sale nahi ho sakti. Pehle Shop chunein!"
     });
     return;
 }
@@ -7126,7 +7126,7 @@ const availableStock = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
 if (availableStock <= 0) {
     Toast.fire({
         icon: 'error',
-        title: `"${matchedItem.name}" is dukan par dastyab nahi hai!`
+        title: `"${matchedItem.name}" is Shop par dastyab nahi hai!`
     });
     return;
 }
@@ -7747,8 +7747,8 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
 
             if (type === 'OUT') {
                 if (title) title.innerHTML = `<i class='bx bx-minus-circle' style="color:#ef4444;"></i> Cash Out (Handover to Owner / Bank)`;
-                if (sub) sub.textContent = "Dukan ke galle se raqam nikal kar Malik ko di ya Bank jama karwayi.";
-                if (lblPerson) lblPerson.textContent = "Kisko Cash Diya? (e.g. Dukan Malik / Manager / Bank) *";
+                if (sub) sub.textContent = "Shop ke galle se raqam nikal kar Malik ko di ya Bank jama karwayi.";
+                if (lblPerson) lblPerson.textContent = "Kisko Cash Diya? (e.g. Shop Malik / Manager / Bank) *";
             } else {
                 if (title) title.innerHTML = `<i class='bx bx-plus-circle' style="color:#10b981;"></i> Add Cash In (Drawer Fund)`;
                 if (sub) sub.textContent = "Khulla (change) rakhne ya kharchon ke liye galle mein cash shamil kiya.";
@@ -7877,7 +7877,7 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
             const selectedDate = dateInput.value; // YYYY-MM-DD
 
             // =========================================================
-            // 1. DUKAN KA KUL LIVE CASH IN HAND (All-Time Cumulative)
+            // 1. Shop KA KUL LIVE CASH IN HAND (All-Time Cumulative)
             // =========================================================
             const allTimeCashSales = (window.salesHistory || [])
                 .filter(s => s.paymentStatus === 'Paid' && (s.paymentMode || '').toLowerCase().startsWith('cash'))
@@ -8213,7 +8213,7 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
                 // Return Record Firestore mein save karein
                 await returnsDB.add(returnRecord);
 
-                // Stock usi dukan/branch mein wapas shamil karein jahan se bika tha
+                // Stock usi Shop/branch mein wapas shamil karein jahan se bika tha
                 if (matchedSale && matchedSale.branchId && matchedSale.branchId !== 'all') {
                     const bStockRecord = (window.branchStockList || []).find(bs => 
                         bs.branchId === matchedSale.branchId && bs.productId === productId
