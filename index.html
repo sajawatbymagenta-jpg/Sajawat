@@ -1228,9 +1228,7 @@
                 </li>
 
                 <li id="nav-sales"><a href="#" onclick="switchView('sell')"><i class='bx bx-dollar-circle'></i><span class="links_name">Sales & Ledger</span></a></li>
-                <li id="nav-daily-sheet"><a href="#" onclick="switchView('daily-sheet')"><i class='bx bx-spreadsheet'></i><span class="links_name">Daily Sheet</span></a></li>
                 <li id="nav-all-reports"><a href="#" onclick="switchView('all-reports')"><i class='bx bx-pie-chart-alt-2'></i><span class="links_name">All Reports</span></a></li>
-                <li id="nav-exchanges"><a href="#" onclick="switchView('exchange')"><i class='bx bx-transfer-alt'></i><span class="links_name">Exchange Management</span></a></li>
                 <li id="nav-returns"><a href="#" onclick="switchView('return')"><i class='bx bx-undo'></i><span class="links_name">Return Management</span></a></li>
                 <li id="nav-expenses"><a href="#" onclick="switchView('expense')"><i class='bx bx-wallet'></i><span class="links_name">Expenses</span></a></li>
 
@@ -1245,7 +1243,6 @@
                         <li><a href="#" onclick="switchView('stock-report')"><i class='bx bx-archive-in'></i>Stock Report</a></li>
                         <li><a href="#" onclick="switchView('purchaser-report')"><i class='bx bx-file-blank'></i>Purchaser Report</a></li>
                         <li><a href="#" onclick="switchView('return-report')"><i class='bx bx-undo'></i>Return Report</a></li>
-                        <li><a href="#" onclick="switchView('exchange-report')"><i class='bx bx-transfer-alt'></i>Exchange Report</a></li>
                         <li><a href="#" onclick="switchView('expense-report')"><i class='bx bx-receipt'></i>Expense Report</a></li>
                         <li><a href="#" onclick="switchView('cashbook-report')"><i class='bx bx-book-open'></i>Cash Book Report</a></li>
                     </ul>
@@ -1646,106 +1643,76 @@
                 </div>
             </div>
 
-            <!-- 5. SUBMODULE 3: MULTI-ITEM STOCK TRANSFER & GATE PASS -->
+           <!-- 5. SUBMODULE 3: MULTI-ITEM STOCK TRANSFER & GATE PASS -->
             <div id="branch-transfer-view" class="view">
                 <div class="content-wrapper" style="padding: 22px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
                         <div>
                             <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a;">
-                                <i class='bx bx-git-branch' style="color:var(--primary);"></i> Multi-Item Stock Transfer & Dispatch Challan
+                                <i class='bx bx-git-branch' style="color:var(--primary);"></i> Product to Move Store (Bulk Selection)
                             </h2>
-                            <p style="color:#64748b; font-size:0.88rem;">Transfer products from Main Warehouse to stores (Gulshan, Malir, DHA etc.) with instant live POS sync.</p>
+                            <p style="color:#64748b; font-size:0.88rem;">Products ko checkbox laga kar select karein, quantity darj karein aur destination store mein transfer karein.</p>
                         </div>
                         <div style="display:flex; gap:10px;">
                             <button class="outline-btn" onclick="openAddBranchModal()"><i class='bx bx-plus-circle'></i> Add New Store</button>
                         </div>
                     </div>
 
-                    <div class="pur-header-card">
-                        <div class="pur-top-grid">
-                            <div class="pur-col-box">
-                                <div class="pur-col-title">
-                                    <i class='bx bx-trip' style="color:var(--primary);"></i> 1. Route Selection (Source to Destination)
-                                </div>
-                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                                    <div class="form-group">
-                                        <label><b>From (Source Store / Warehouse):</b></label>
-                                        <select id="transfer-from-store" onchange="onTransferSourceChange()">
-                                            <option value="main">Main Warehouse / Godown</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label><b>To (Destination Store):</b></label>
-                                        <select id="transfer-to-store"></select>
-                                    </div>
-                                </div>
+                    <!-- Route Selection Card -->
+                    <div class="pur-header-card" style="margin-bottom:16px;">
+                        <div class="pur-col-title">
+                            <i class='bx bx-trip' style="color:var(--primary);"></i> 1. Route Selection (Kahan Se Kahan Bhejna Hai?)
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label><b>From (Source Store / Warehouse):</b></label>
+                                <select id="transfer-from-store" onchange="onTransferSourceChange()">
+                                    <option value="main">Main Warehouse / Godown</option>
+                                </select>
                             </div>
-
-                            <div class="pur-col-box">
-                                <div class="pur-col-title">
-                                    <i class='bx bx-cart-add' style="color:#10b981;"></i> 2. Add Product to Transfer List
-                                </div>
-                                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:10px;">
-                                    
-                                    <!-- Scan Barcode Section -->
-                                    <div class="form-group" style="grid-column: span 2; margin-bottom: 4px;">
-                                        <label><i class='bx bx-barcode-reader' style="color:var(--primary);"></i> Scan Barcode (Gun ya Camera) *</label>
-                                        <div style="display:flex; gap:8px;">
-                                            <input type="text" id="transfer-barcode-scan" placeholder="Barcode scan karein ya type karke Enter dabayein..." class="pos-mini-input" style="padding:10px; font-weight:600;">
-                                            <button type="button" class="save-btn" style="padding:8px 14px; font-size:0.82rem; white-space:nowrap; gap:5px;" onclick="startTransferCameraScanner()">
-                                                <i class='bx bx-camera'></i> Cam Scan
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group" style="grid-column: span 2;">
-                                        <label>Select Product *</label>
-                                        <select id="batch-move-prod-select" onchange="onBatchProdSelectChange()"></select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Available Stock:</label>
-                                        <input type="text" id="batch-move-avail" readonly style="background:#f1f5f9; font-weight:800; color:var(--primary);" value="0 units">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Transfer Quantity *</label>
-                                        <input type="number" id="batch-move-qty" min="1" value="1" placeholder="Qty">
-                                    </div>
-                                </div>
-                                <button type="button" class="save-btn" style="width:100%; justify-content:center; margin-top:10px;" onclick="addItemToTransferQueue()">
-                                    <i class='bx bx-plus-circle'></i> Add to Transfer List
-                                </button>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label><b>To (Destination Store):</b></label>
+                                <select id="transfer-to-store"></select>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Products Checklist Table Card -->
                     <div class="pur-diagram-table-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
                             <h3 style="font-size:1.15rem; font-weight:800; color:#0f172a;">
-                                <i class='bx bx-list-check' style="color:var(--primary);"></i> Items Queued for Transfer
+                                <i class='bx bx-checkbox-checked' style="color:var(--primary);"></i> 2. Select Products To Move
                             </h3>
-                            <button type="button" class="outline-btn" style="padding:6px 14px; font-size:0.85rem;" onclick="clearTransferQueue()">
-                                <i class='bx bx-trash'></i> Clear List
-                            </button>
+                            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                <div class="search-box" style="max-width:280px; padding:6px 12px;">
+                                    <i class='bx bx-search'></i>
+                                    <input type="text" id="transfer-products-search" placeholder="Search product or barcode..." oninput="renderAllTransferProductsTable()">
+                                </div>
+                                <button type="button" class="outline-btn" style="padding:7px 12px; font-size:0.82rem;" onclick="toggleSelectAllTransferProducts(true)">
+                                    <i class='bx bx-check-square'></i> Select All
+                                </button>
+                                <button type="button" class="outline-btn" style="padding:7px 12px; font-size:0.82rem;" onclick="toggleSelectAllTransferProducts(false)">
+                                    <i class='bx bx-square'></i> Deselect All
+                                </button>
+                            </div>
                         </div>
 
-                        <div style="overflow-x:auto;">
+                        <div style="max-height: 420px; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px;">
                             <table class="pur-diagram-table">
-                                <thead>
+                                <thead style="position:sticky; top:0; z-index:5;">
                                     <tr>
-                                        <th style="width: 45px;">Sr #</th>
+                                        <th style="width: 45px; text-align:center;">Select</th>
+                                        <th style="width: 50px;">Sr #</th>
                                         <th>Product Name</th>
                                         <th>Barcode</th>
-                                        <th style="color:#00a3ff;">From (Godown)</th>
-                                        <th style="color:#10b981;">To (Destination Store)</th>
-                                        <th style="text-align:center;">Quantity</th>
+                                        <th style="text-align:center;">Available Stock</th>
+                                        <th style="text-align:center; width:150px;">Transfer Qty</th>
                                         <th style="text-align:right;">Sale Price</th>
-                                        <th style="text-align:right;">Estimated Value</th>
-                                        <th style="text-align:center; width: 60px;">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody id="batch-transfer-tbody">
+                                <tbody id="transfer-products-selection-tbody">
                                     <tr>
-                                        <td colspan="9" class="empty-placeholder">No items added yet. Select a product and destination store above to add to the transfer queue.</td>
+                                        <td colspan="7" class="empty-placeholder">Loading available products...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1753,15 +1720,15 @@
 
                         <div style="margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                             <div>
-                                <span style="font-size: 0.9rem; color: #64748b; font-weight: 700;">Total Distinct Items: </span>
-                                <strong id="batch-items-count-disp" style="font-size: 1.1rem; color: #0f172a;">0</strong>
+                                <span style="font-size: 0.9rem; color: #64748b; font-weight: 700;">Selected Products: </span>
+                                <strong id="selected-transfer-items-count" style="font-size: 1.1rem; color: var(--primary);">0</strong>
                                 <span style="margin: 0 12px; color: #cbd5e1;">|</span>
-                                <span style="font-size: 0.9rem; color: #64748b; font-weight: 700;">Total Physical Units: </span>
-                                <strong id="batch-units-count-disp" style="font-size: 1.2rem; color: #10b981;">0 units</strong>
+                                <span style="font-size: 0.9rem; color: #64748b; font-weight: 700;">Total Units to Move: </span>
+                                <strong id="selected-transfer-units-count" style="font-size: 1.2rem; color: #10b981;">0 units</strong>
                             </div>
 
-                            <button type="button" id="execute-batch-transfer-btn" class="save-btn" style="padding: 13px 32px; font-size: 1.05rem;" onclick="executeBatchTransfer()">
-                                <i class='bx bx-check-shield'></i> Execute Transfer & Generate Gate Pass
+                            <button type="button" id="execute-batch-transfer-btn" class="save-btn" style="padding: 13px 32px; font-size: 1.05rem;" onclick="executeSelectedProductsTransfer()">
+                                <i class='bx bx-check-shield'></i> Move Selected Products to Store
                             </button>
                         </div>
                     </div>
@@ -1773,7 +1740,7 @@
                                 <h3 style="font-size:1.15rem; font-weight:800; color:#0f172a;">
                                     <i class='bx bx-history' style="color:var(--primary);"></i> Stock Transfer History & Dispatch Challan Reports
                                 </h3>
-                                <p style="font-size:0.83rem; color:#64748b;">Dukanon par bheje gaye gate pass aur dispatch challan ka mukammal record.</p>
+                                <p style="font-size:0.83rem; color:#64748b;">Shop bheje gaye gate pass aur dispatch challan ka mukammal record.</p>
                             </div>
                             <div class="search-box" style="max-width:320px;">
                                 <i class='bx bx-search'></i>
@@ -1823,76 +1790,6 @@
                 </div>
             </div>
 
-           <!-- 7-A. MANAGER VIEW: DAILY SALES & EXPENSE SHEET -->
-            <div id="daily-sheet-view" class="view">
-                <div class="content-wrapper">
-                    <div class="pl-top-bar" style="margin-bottom: 20px; flex-wrap: wrap;">
-                        <div>
-                            <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">
-                                <i class='bx bx-spreadsheet' style="color:var(--primary);"></i> Daily Sales & Expense Sheet
-                            </h2>
-                            <p style="color: #64748b; font-size: 0.85rem;">Manager View: Daily cash sales, operational store expenses, and net counter closing cash.</p>
-                        </div>
-                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                            <div class="pl-date-picker-box">
-                                <label style="font-size: 0.85rem; font-weight:700;">Date:</label>
-                                <input type="date" id="daily-sheet-date" onchange="renderDailySheet()">
-                                <button class="save-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="setDailySheetToday()">Today</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Daily KPIs -->
-                    <div class="pl-kpi-grid" style="margin-bottom: 25px;">
-                        <div class="pl-kpi-card" style="border-top: 4px solid #10b981;">
-                            <div class="kpi-header"><span class="kpi-title">Daily Cash Sales (+)</span><div class="kpi-icon" style="background: #dcfce7; color: #16a34a;"><i class='bx bx-dollar'></i></div></div>
-                            <div class="kpi-value" id="ds-total-sales" style="color: #16a34a;">Rs. 0</div>
-                            <div class="kpi-subtitle">Counter Cash Collections</div>
-                        </div>
-                        <div class="pl-kpi-card" style="border-top: 4px solid #ef4444;">
-                            <div class="kpi-header"><span class="kpi-title">Daily Store Expenses (-)</span><div class="kpi-icon" style="background: #fee2e2; color: #dc2626;"><i class='bx bx-receipt'></i></div></div>
-                            <div class="kpi-value" id="ds-total-expenses" style="color: #dc2626;">Rs. 0</div>
-                            <div class="kpi-subtitle">Utilities & Operational Costs</div>
-                        </div>
-                        <div class="pl-kpi-card" style="border-top: 4px solid var(--primary); background: #f8fafc;">
-                            <div class="kpi-header"><span class="kpi-title">Net Day Cash Retained</span><div class="kpi-icon" style="background: rgba(var(--primary-rgb),0.1); color: var(--primary);"><i class='bx bx-coin-stack'></i></div></div>
-                            <div class="kpi-value" id="ds-net-remaining" style="color: var(--primary);">Rs. 0</div>
-                            <div class="kpi-subtitle">Sales minus Expenses = Day Close</div>
-                        </div>
-                    </div>
-
-                    <!-- Tables: Sales vs Expenses for Selected Date -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
-                        <div class="stock-table-wrapper">
-                            <h3 style="margin-bottom: 12px; color: #15803d;"><i class='bx bx-check-circle'></i> Daily Cash Sales Invoices</h3>
-                            <table class="custom-table">
-                                <thead>
-                                    <tr>
-                                        <th>Invoice #</th>
-                                        <th>Customer</th>
-                                        <th style="text-align: right;">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ds-sales-tbody"></tbody>
-                            </table>
-                        </div>
-
-                        <div class="stock-table-wrapper">
-                            <h3 style="margin-bottom: 12px; color: #b91c1c;"><i class='bx bx-minus-circle'></i> Daily Store Expenses</h3>
-                            <table class="custom-table">
-                                <thead>
-                                    <tr>
-                                        <th>Expense Details</th>
-                                        <th>Category</th>
-                                        <th style="text-align: right;">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ds-expenses-tbody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
            <!-- 7-B. ALL REPORTS VIEW -->
             <div id="all-reports-view" class="view">
@@ -1973,27 +1870,25 @@
                             </div>
                         </div>
 
-                        <!-- Date-Wise Financial Statement Table -->
-                        <div class="pl-card-section" style="width: 100%;">
-                            <div class="pl-card-title"><i class='bx bx-calendar-check' style="color:var(--primary);"></i> Date-Wise Financial Audit Breakdown</div>
+                      <div class="pl-card-section" style="width: 100%;">
+                            <div class="pl-card-title"><i class='bx bx-list-check' style="color:var(--primary);"></i> Itemized Cost & Profit Details</div>
                             <div style="overflow-x: auto; width: 100%;">
                                 <table class="pl-table" style="width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
-                                            <th style="text-align: right;">Total Sales</th>
-                                            <th style="text-align: right; color:#10b981;">Payment Received</th>
-                                            <th style="text-align: right; color:#ea580c;">Receivable</th>
-                                            <th style="text-align: right; color:#ef4444;">Expenses</th>
-                                            <th style="text-align: right; color:#d97706;">Refunds</th>
-                                            <th style="text-align: right; font-weight:800; color:#059669;">Net Cash in Hand</th>
+                                            <th style="width: 28%; text-align: left;">Product Sold</th>
+                                            <th style="width: 6%; text-align: center;">Qty</th>
+                                            <th style="width: 13%; text-align: right;">Cost Price</th>
+                                            <th style="width: 13%; text-align: right;">Selling Price</th>
+                                            <th style="width: 13%; text-align: right;">Total Cost</th>
+                                            <th style="width: 13%; text-align: right;">Total Sale</th>
+                                            <th style="width: 14%; text-align: right;">Profit / Loss</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="all-rep-statement-tbody"></tbody>
+                                    <tbody id="pl-screen-itemized-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
-
                         <!-- 1. Sales Details Table -->
                         <div class="pl-card-section" style="width: 100%; margin-top: 20px;">
                             <div class="pl-card-title" style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">
@@ -2084,54 +1979,6 @@
                 </div>
             </div>
 
-            <!-- 9. EXCHANGE LOG -->
-            <div id="exchange-view" class="view">
-                <div class="content-wrapper">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-                        <div>
-                            <h2>Product Exchange Financial Report</h2>
-                            <p style="color: #64748b; font-size: 0.88rem;">Track exchanged items in (+Stock), items out (-Stock), and balance differences.</p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="outline-btn" onclick="openUniversalExchangeModal()"><i class='bx bx-transfer-alt'></i> Direct Exchange</button>
-                            <button class="save-btn" onclick="downloadExchangeReportPDF()"><i class='bx bxs-file-pdf'></i> Export Exchange PDF</button>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-grid" style="margin-bottom: 20px;">
-                        <div class="stat-card" style="border-left: 5px solid #8b5cf6;"><h3>Total Exchange Deals</h3><p id="total-exchange-deals">0</p></div>
-                        <div class="stat-card" style="border-left: 5px solid #10b981;"><h3>Stock Returned In (+)</h3><p id="total-exchange-in-qty" style="color:#10b981;">0 pcs</p></div>
-                        <div class="stat-card" style="border-left: 5px solid #ef4444;"><h3>Stock Issued Out (-)</h3><p id="total-exchange-out-qty" style="color:#ef4444;">0 pcs</p></div>
-                        <div class="stat-card" style="border-left: 5px solid #0066ff;"><h3>Net Cash Difference</h3><p id="total-exchange-diff-amt">Rs. 0</p></div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; display:flex; justify-content: flex-end;">
-                        <div class="search-box" style="max-width: 350px;">
-                            <i class='bx bx-search'></i>
-                            <input type="text" id="exchange-search-input" placeholder="Search Exchange ID, Invoice or Customer..." oninput="renderExchangeView()">
-                        </div>
-                    </div>
-
-                    <div class="stock-table-wrapper">
-                        <table class="custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Exchange ID</th>
-                                    <th>Inv Ref</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th style="color:#10b981;">Returned (+Stock)</th>
-                                    <th style="color:#ef4444;">Issued (-Stock)</th>
-                                    <th>Difference Amount</th>
-                                    <th>Payment Mode</th>
-                                </tr>
-                            </thead>
-                            <tbody id="exchange-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             <!-- 10. EXPENSE VIEW -->
             <div id="expense-view" class="view">
                 <div class="content-wrapper">
@@ -2214,18 +2061,20 @@
                             </div>
                         </div>
 
+                        <!-- Itemized Cost & Profit Details Table -->
                         <div class="pl-card-section" style="width: 100%;">
-                            <div class="pl-card-title"><i class='bx bx-list-check' style="color:var(--primary);"></i> Itemized Sales & Gross Margin</div>
+                            <div class="pl-card-title"><i class='bx bx-list-check' style="color:var(--primary);"></i> Itemized Cost & Profit Details</div>
                             <div style="overflow-x: auto; width: 100%;">
                                 <table class="pl-table" style="width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Product / Invoice</th>
-                                            <th>Date</th>
-                                            <th style="text-align: right;">Qty Sold</th>
-                                            <th style="text-align: right;">Total Cost</th>
-                                            <th style="text-align: right;">Sale Price</th>
-                                            <th style="text-align: right;">Margin Profit</th>
+                                            <th style="width: 26%; text-align: left;">Product Sold</th>
+                                            <th style="width: 7%; text-align: center;">Qty</th>
+                                            <th style="width: 13%; text-align: right;">Cost Price</th>
+                                            <th style="width: 13%; text-align: right;">Selling Price</th>
+                                            <th style="width: 13%; text-align: right;">Total Cost</th>
+                                            <th style="width: 14%; text-align: right;">Total Sale</th>
+                                            <th style="width: 14%; text-align: right;">Profit / Loss</th>
                                         </tr>
                                     </thead>
                                     <tbody id="pl-screen-itemized-tbody"></tbody>
@@ -2428,82 +2277,6 @@
                                         </tr>
                                     </thead>
                                     <tbody id="return-report-tbody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 15. EXCHANGE REPORT VIEW -->
-            <div id="exchange-report-view" class="view">
-                <div class="content-wrapper" style="width: 100%; max-width: 100%; padding: 22px 30px;">
-                    <div class="fullscreen-report-wrapper">
-                        <div class="pl-top-bar">
-                            <div>
-                                <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 2px;"><i class='bx bx-transfer-alt' style="color:var(--primary);"></i> Product Exchange Financial Analytics</h2>
-                                <p style="color: #64748b; font-size: 0.88rem;" id="exchange-report-period-text">Track item swaps, cash differences, and inventory movements.</p>
-                            </div>
-                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <div class="pl-pill-group">
-                                    <button class="pl-pill-btn" id="exc-rep-preset-today" onclick="setExchangeReportPreset('today')"><i class='bx bx-calendar-event'></i> Daily</button>
-                                    <button class="pl-pill-btn" id="exc-rep-preset-weekly" onclick="setExchangeReportPreset('weekly')"><i class='bx bx-calendar-week'></i> Weekly</button>
-                                    <button class="pl-pill-btn" id="exc-rep-preset-monthly" onclick="setExchangeReportPreset('monthly')"><i class='bx bx-calendar'></i> Monthly</button>
-                                    <button class="pl-pill-btn active" id="exc-rep-preset-all" onclick="setExchangeReportPreset('all')"><i class='bx bx-infinite'></i> All Time</button>
-                                </div>
-
-                                <div class="pl-date-picker-box">
-                                    <input type="date" id="exc-rep-date-from" title="From Date">
-                                    <span style="color:#94a3b8; font-weight:700;">→</span>
-                                    <input type="date" id="exc-rep-date-to" title="To Date">
-                                    <button class="save-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="applyExchangeCustomDateFilter()"><i class='bx bx-filter-alt'></i></button>
-                                    <button class="outline-btn" style="padding: 6px 10px; font-size: 0.8rem;" onclick="resetExchangeReportFilter()"><i class='bx bx-reset'></i></button>
-                                </div>
-
-                                <button class="save-btn" onclick="downloadExchangeReportDetailedPDF()"><i class='bx bxs-file-pdf'></i> Export Exchange PDF</button>
-                            </div>
-                        </div>
-
-                        <div class="pl-kpi-grid">
-                            <div class="pl-kpi-card" style="border-top: 4px solid #8b5cf6;">
-                                <div class="kpi-header"><span class="kpi-title">Total Exchanges</span><div class="kpi-icon" style="background: #f3e8ff; color: #8b5cf6;"><i class='bx bx-transfer'></i></div></div>
-                                <div class="kpi-value" id="kpi-exc-deals">0</div>
-                                <div class="kpi-subtitle">Exchanged transactions</div>
-                            </div>
-                            <div class="pl-kpi-card" style="border-top: 4px solid #10b981;">
-                                <div class="kpi-header"><span class="kpi-title">Stock In (+)</span><div class="kpi-icon" style="background: #dcfce7; color: #10b981;"><i class='bx bx-down-arrow-alt'></i></div></div>
-                                <div class="kpi-value" id="kpi-exc-in" style="color: #10b981;">0 pcs</div>
-                                <div class="kpi-subtitle">Customer returned stock</div>
-                            </div>
-                            <div class="pl-kpi-card" style="border-top: 4px solid #ef4444;">
-                                <div class="kpi-header"><span class="kpi-title">Stock Out (-)</span><div class="kpi-icon" style="background: #fee2e2; color: #ef4444;"><i class='bx bx-up-arrow-alt'></i></div></div>
-                                <div class="kpi-value" id="kpi-exc-out" style="color: #ef4444;">0 pcs</div>
-                                <div class="kpi-subtitle">New products issued</div>
-                            </div>
-                            <div class="pl-kpi-card" style="border-top: 4px solid var(--primary);">
-                                <div class="kpi-header"><span class="kpi-title">Net Difference</span><div class="kpi-icon" style="background: rgba(var(--primary-rgb),0.1); color: var(--primary);"><i class='bx bx-wallet'></i></div></div>
-                                <div class="kpi-value" id="kpi-exc-diff">Rs. 0</div>
-                                <div class="kpi-subtitle">Net cash variance collected</div>
-                            </div>
-                        </div>
-
-                        <div class="pl-card-section" style="width: 100%;">
-                            <div class="pl-card-title"><i class='bx bx-list-ol' style="color:var(--primary);"></i> Exchange Transactions Log</div>
-                            <div style="overflow-x: auto; width: 100%;">
-                                <table class="pl-table" style="width: 100%;">
-                                    <thead>
-                                        <tr>
-                                            <th>Exchange ID</th>
-                                            <th>Inv Ref</th>
-                                            <th>Date</th>
-                                            <th>Customer</th>
-                                            <th style="color:#10b981;">Returned (+Stock)</th>
-                                            <th style="color:#ef4444;">Issued (-Stock)</th>
-                                            <th style="text-align: right;">Difference Amount</th>
-                                            <th>Payment Mode</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="exchange-report-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -3130,48 +2903,6 @@
         </div>
     </div>
 
-    <!-- MODAL: EXCHANGE -->
-    <div id="exchange-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 550px;">
-            <span class="close-modal" onclick="closeExchangeModal()">&times;</span>
-            <h2 style="margin-bottom: 16px;"><i class='bx bx-transfer-alt' style="color:var(--primary);"></i> Product Exchange</h2>
-            <div class="form-group"><label>Invoice Ref</label><input type="text" id="exc-inv-ref" readonly style="background:#f1f5f9; font-weight:700;"></div>
-            
-            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:12px; margin-bottom:12px;">
-                <label style="font-weight:700; color:#ef4444;">1. Returned Item (+Stock)</label>
-                <select id="exc-old-product" onchange="calcExchangeDifference()"></select>
-                <div style="display:flex; gap:10px; margin-top:8px;">
-                    <input type="number" id="exc-old-qty" min="1" value="1" oninput="calcExchangeDifference()" style="flex:1;" placeholder="Qty">
-                    <input type="number" id="exc-old-val" readonly style="flex:1; background:#edf2f7; font-weight:700;" placeholder="Val">
-                </div>
-            </div>
-
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:12px; margin-bottom:12px;">
-                <label style="font-weight:700; color:#16a34a;">2. New Item Given (-Stock)</label>
-                <select id="exc-new-product" onchange="calcExchangeDifference()"></select>
-                <div style="display:flex; gap:10px; margin-top:8px;">
-                    <input type="number" id="exc-new-qty" min="1" value="1" oninput="calcExchangeDifference()" style="flex:1;" placeholder="Qty">
-                    <input type="number" id="exc-new-val" readonly style="flex:1; background:#edf2f7; font-weight:700;" placeholder="Val">
-                </div>
-            </div>
-
-            <div style="background:white; border:2px dashed var(--border-color); border-radius:12px; padding:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-                <strong>Balance Difference:</strong>
-                <span id="exc-diff-display" style="font-size:1.2rem; font-weight:800; color:var(--primary);">Rs. 0</span>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="exc-cust-name" placeholder="Customer Name" style="flex:1;" class="pos-mini-input">
-                <input type="text" id="exc-cust-phone" placeholder="Customer Mobile" style="flex:1;" class="pos-mini-input">
-            </div>
-            <div class="form-group" style="margin-top:8px;">
-                <label>Payment Mode (If difference paid)</label>
-                <select id="exc-payment-mode"><option value="Cash">Cash</option><option value="Meezan Bank">Meezan Bank</option><option value="EasyPaisa">EasyPaisa</option><option value="JazzCash">JazzCash</option></select>
-            </div>
-            <button class="save-btn" style="width: 100%; justify-content: center;" onclick="saveExchange()">Confirm Exchange</button>
-        </div>
-    </div>
-
     <!-- MODAL: ADD PAYMENT (CREDIT) -->
     <div id="add-payment-modal" class="modal-overlay">
         <div class="modal-content">
@@ -3306,11 +3037,8 @@
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-reports"> Reports (Analytics)</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-sales"> Sales & Ledger</label>
                 
-                <!-- Daily Sheet Checkbox Added Here -->
-                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-daily-sheet"> Daily Sheet</label>
                 
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-all-reports"> All Reports (Master Financial Audit)</label>
-                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-exchanges"> Exchange Log</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-expenses"> Expenses</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-settings"> Settings</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-users"> Users & Access</label>
@@ -3684,7 +3412,7 @@ const auth = firebase.auth();
             calcRemainingDues();
         };
 
-       window.renderDiagramTable = function() {
+      window.renderDiagramTable = function() {
             const tbody = document.getElementById('dia-table-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
@@ -3700,30 +3428,20 @@ const auth = firebase.auth();
 
                 tbody.innerHTML += `
                     <tr>
-                        <td><strong>${idx + 1}</strong></td>
-                        <td>
-                            <img src="${item.img}" style="width:42px; height:42px; border-radius:6px; object-fit:cover; border:1px solid #e2e8f0;">
-                        </td>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:center;"><img src="${item.img || DEFAULT_PROD_IMG}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;"></td>
                         <td><strong>${item.name}</strong></td>
-                        <td style="text-align:right;">Rs. ${item.cost.toLocaleString()}</td>
-                        <td style="text-align:right; font-weight:700; color:var(--primary);">Rs. ${item.sale.toLocaleString()}</td>
+                        <td style="text-align:right;">Rs. ${Number(item.cost || 0).toLocaleString()}</td>
+                        <td style="text-align:right; font-weight:700; color:var(--primary);">Rs. ${Number(item.sale || 0).toLocaleString()}</td>
                         <td style="text-align:center;"><strong>${item.qty} pcs</strong></td>
-                        <td style="text-align:right; font-weight:800; color:#0f172a;">Rs. ${item.total.toLocaleString()}</td>
+                        <td style="text-align:right; font-weight:800;">Rs. ${Number(item.total || 0).toLocaleString()}</td>
                         <td style="text-align:center;">
                             <div class="barcode-cell-wrap">
                                 <canvas id="${canvasId}"></canvas>
-                                <div style="display:flex; gap:4px; margin-top:4px;">
-                                    <button type="button" class="save-btn" style="padding:4px 9px; font-size:0.75rem; border-radius:6px; background:#0f172a; background-image:none;" onclick="printSinglePurchasedBarcode(${idx})" title="Direct Thermal Print">
-                                        <i class='bx bx-printer'></i> Print
-                                    </button>
-                                    <button type="button" class="outline-btn" style="padding:4px 8px; font-size:0.75rem; border-radius:6px;" onclick="downloadBarcodeStickerPNG('${item.name.replace(/'/g, "\\'")}', ${item.sale}, '${item.barcode}')" title="Download PNG Sticker">
-                                        <i class='bx bx-download'></i> PNG
-                                    </button>
-                                </div>
                             </div>
                         </td>
                         <td style="text-align:center;">
-                            <button type="button" class="btn-delete" style="padding:6px 8px;" onclick="removeDiagramRow(${idx})">
+                            <button type="button" class="btn-delete" style="padding:4px 8px;" onclick="removeDiagramRow(${idx})" title="Remove Item">
                                 <i class='bx bx-trash'></i>
                             </button>
                         </td>
@@ -3740,11 +3458,11 @@ const auth = firebase.auth();
                         JsBarcode(`#${canvasId}`, String(item.barcode), {
                             format: "CODE128",
                             width: 1.4,
-                            height: 40,
+                            height: 35,
                             displayValue: true,
-                            fontSize: 11,
+                            fontSize: 10,
                             font: "Plus Jakarta Sans",
-                            margin: 4
+                            margin: 2
                         });
                     } catch(e) {}
                 });
@@ -4319,7 +4037,7 @@ const auth = firebase.auth();
     }
 };
 
-        window.populateTransferStoreDropdowns = function() {
+       window.populateTransferStoreDropdowns = function() {
             const fromSelect = document.getElementById('transfer-from-store');
             const toSelect = document.getElementById('transfer-to-store');
             if (!fromSelect || !toSelect) return;
@@ -4328,7 +4046,6 @@ const auth = firebase.auth();
             const prevTo = toSelect.value || '';
 
             fromSelect.innerHTML = `<option value="main">Main Warehouse / Godown</option>`;
-            // Destination mein Main Warehouse / Godown add kar diya gaya hai
             toSelect.innerHTML = `
                 <option value="">-- Select Destination Store --</option>
                 <option value="main">Main Warehouse / Godown</option>
@@ -4342,168 +4059,308 @@ const auth = firebase.auth();
             fromSelect.value = prevFrom;
             if (prevTo) toSelect.value = prevTo;
 
-            window.populateBatchProductDropdown();
+            window.renderAllTransferProductsTable();
         };
 
-        window.populateBatchProductDropdown = function() {
-            const pSelect = document.getElementById('batch-move-prod-select');
-            const fromStore = document.getElementById('transfer-from-store')?.value || 'main';
-            if (!pSelect) return;
+       // -------------------------------------------------------------
+        // BULK CHECKBOX PRODUCT TO MOVE STORE SYSTEM
+        // -------------------------------------------------------------
+        window.onTransferSourceChange = function() {
+            window.renderAllTransferProductsTable();
+        };
 
-            pSelect.innerHTML = `<option value="">-- Choose Product --</option>`;
+        window.renderAllTransferProductsTable = function() {
+            const tbody = document.getElementById('transfer-products-selection-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const fromStore = document.getElementById('transfer-from-store')?.value || 'main';
+            const searchTerm = (document.getElementById('transfer-products-search')?.value || '').toLowerCase().trim();
+
+            const itemsWithStock = [];
 
             (window.menuItems || []).forEach(prod => {
                 let availStock = 0;
-
                 if (fromStore === 'main') {
-                    // Main Godown ka stock
                     availStock = Number(prod.stock || 0);
                 } else {
-                    // Dukan / Store ka kul stock (agar multiple entries hon to unka sum)
                     availStock = (window.branchStockList || [])
                         .filter(bs => bs.branchId === fromStore && bs.productId === prod.id)
                         .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
                 }
 
-                if (availStock > 0) {
-                    pSelect.innerHTML += `<option value="${prod.id}" data-stock="${availStock}" data-name="${prod.name}" data-price="${prod.price || 0}" data-barcode="${prod.barcode || ''}">${prod.name} (Available: ${availStock} units)</option>`;
+                const nameMatch = (prod.name || '').toLowerCase().includes(searchTerm);
+                const bcMatch = (prod.barcode || '').toLowerCase().includes(searchTerm);
+
+                if (availStock > 0 && (nameMatch || bcMatch)) {
+                    itemsWithStock.push({
+                        ...prod,
+                        availableStock: availStock
+                    });
                 }
             });
 
-            window.onBatchProdSelectChange();
-        };
-
-        window.onTransferSourceChange = function() {
-            window.clearTransferQueue();
-            window.populateBatchProductDropdown();
-        };
-
-        window.onBatchProdSelectChange = function() {
-            const select = document.getElementById('batch-move-prod-select');
-            const opt = select?.options[select.selectedIndex];
-            const availInput = document.getElementById('batch-move-avail');
-            if (opt && opt.value) {
-                availInput.value = `${opt.dataset.stock} units`;
-            } else {
-                availInput.value = '0 units';
-            }
-        };
-
-        window.addItemToTransferQueue = function() {
-            const pSelect = document.getElementById('batch-move-prod-select');
-            const opt = pSelect.options[pSelect.selectedIndex];
-            const qtyInput = document.getElementById('batch-move-qty');
-            const qty = parseInt(qtyInput.value) || 0;
-
-            const fromSelect = document.getElementById('transfer-from-store');
-            const toSelect = document.getElementById('transfer-to-store');
-            const fromStoreId = fromSelect.value;
-            const fromStoreName = fromSelect.options[fromSelect.selectedIndex].text;
-            const toStoreId = toSelect.value;
-            const toStoreName = toSelect.options[toSelect.selectedIndex]?.text;
-
-            if (!toStoreId) {
-                alert("Please select Destination Store (e.g. Gulshan, Malir, DHA)!");
-                return;
-            }
-            if (fromStoreId === toStoreId) {
-                alert("Source and Destination Store cannot be the same!");
-                return;
-            }
-            if (!opt || !opt.value) {
-                alert("Please select a product first!");
+            if (itemsWithStock.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-placeholder">Chune hue Source Store / Godown mein koi available stock nahi mila.</td></tr>`;
+                window.updateSelectedTransferSummary();
                 return;
             }
 
-            const availableStock = parseInt(opt.dataset.stock) || 0;
-            if (qty <= 0) {
-                alert("Transfer quantity must be at least 1!");
-                return;
-            }
-
-            const alreadyQueued = window.currentTransferQueue
-                .filter(i => i.productId === opt.value && i.fromStoreId === fromStoreId)
-                .reduce((sum, i) => sum + i.qty, 0);
-
-            if ((alreadyQueued + qty) > availableStock) {
-                alert(`Insufficient stock! Available: ${availableStock} units. Already queued: ${alreadyQueued} units.`);
-                return;
-            }
-
-            const existingIndex = window.currentTransferQueue.findIndex(i => 
-                i.productId === opt.value && 
-                i.toStoreId === toStoreId && 
-                i.fromStoreId === fromStoreId
-            );
-
-            if (existingIndex > -1) {
-                window.currentTransferQueue[existingIndex].qty += qty;
-                window.currentTransferQueue[existingIndex].totalVal = window.currentTransferQueue[existingIndex].qty * window.currentTransferQueue[existingIndex].price;
-            } else {
-                window.currentTransferQueue.push({
-                    productId: opt.value,
-                    productName: opt.dataset.name,
-                    barcode: opt.dataset.barcode || '',
-                    price: parseFloat(opt.dataset.price) || 0,
-                    qty: qty,
-                    fromStoreId: fromStoreId,
-                    fromStoreName: fromStoreName,
-                    toStoreId: toStoreId,
-                    toStoreName: toStoreName,
-                    totalVal: (parseFloat(opt.dataset.price) || 0) * qty
-                });
-            }
-
-            qtyInput.value = '1';
-            window.renderBatchTransferTable();
-        };
-
-        window.removeTransferQueueItem = function(index) {
-            window.currentTransferQueue.splice(index, 1);
-            window.renderBatchTransferTable();
-        };
-
-        window.clearTransferQueue = function() {
-            window.currentTransferQueue = [];
-            window.renderBatchTransferTable();
-        };
-
-        window.renderBatchTransferTable = function() {
-            const tbody = document.getElementById('batch-transfer-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            if (window.currentTransferQueue.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="empty-placeholder">No items added yet. Select a product and destination store above to add to the transfer queue.</td></tr>`;
-                document.getElementById('batch-items-count-disp').textContent = '0';
-                document.getElementById('batch-units-count-disp').textContent = '0 units';
-                return;
-            }
-
-            let totalUnits = 0;
-            window.currentTransferQueue.forEach((item, idx) => {
-                totalUnits += item.qty;
+            itemsWithStock.forEach((item, idx) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td><strong>${idx + 1}</strong></td>
-                        <td><strong>${item.productName}</strong></td>
-                        <td><code>${item.barcode || 'N/A'}</code></td>
-                        <td><span style="font-size:0.82rem; color:#0284c7; font-weight:700;"><i class='bx bx-building'></i> ${item.fromStoreName}</span></td>
-                        <td><span style="font-size:0.82rem; color:#10b981; font-weight:800; background:#dcfce7; padding:3px 8px; border-radius:6px;"><i class='bx bx-store'></i> ${item.toStoreName}</span></td>
-                        <td style="text-align:center;"><strong style="color:var(--primary); font-size:1.05rem;">${item.qty} pcs</strong></td>
-                        <td style="text-align:right;">Rs. ${item.price.toLocaleString()}</td>
-                        <td style="text-align:right; font-weight:800; color:#0f172a;">Rs. ${item.totalVal.toLocaleString()}</td>
                         <td style="text-align:center;">
-                            <button type="button" class="btn-delete" style="padding:4px 8px;" onclick="removeTransferQueueItem(${idx})">
-                                <i class='bx bx-trash'></i>
-                            </button>
+                            <input type="checkbox" class="transfer-item-checkbox" 
+                                data-id="${item.id}" 
+                                data-name="${item.name.replace(/"/g, '&quot;')}" 
+                                data-barcode="${item.barcode || ''}" 
+                                data-price="${item.price || 0}" 
+                                data-max="${item.availableStock}"
+                                onchange="window.onTransferItemCheckboxChange(this, '${item.id}')"
+                                style="width:18px; height:18px; cursor:pointer;">
+                        </td>
+                        <td><strong>${idx + 1}</strong></td>
+                        <td>
+                            <strong style="color:#0f172a; font-size:0.95rem;">${item.name}</strong>
+                        </td>
+                        <td><code>${item.barcode || 'N/A'}</code></td>
+                        <td style="text-align:center;">
+                            <span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; font-weight:800;">
+                                ${item.availableStock} pcs
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <input type="number" id="transfer-qty-${item.id}" 
+                                min="1" max="${item.availableStock}" value="1" 
+                                class="pos-mini-input" 
+                                style="text-align:center; font-weight:800; color:var(--primary); width:90px;" 
+                                oninput="window.updateSelectedTransferSummary()" disabled>
+                        </td>
+                        <td style="text-align:right; font-weight:700;">
+                            Rs. ${Number(item.price || 0).toLocaleString()}
                         </td>
                     </tr>
                 `;
             });
 
-            document.getElementById('batch-items-count-disp').textContent = window.currentTransferQueue.length;
-            document.getElementById('batch-units-count-disp').textContent = `${totalUnits} units`;
+            window.updateSelectedTransferSummary();
+        };
+
+        window.onTransferItemCheckboxChange = function(cb, prodId) {
+            const qtyInput = document.getElementById(`transfer-qty-${prodId}`);
+            if (qtyInput) {
+                qtyInput.disabled = !cb.checked;
+                if (cb.checked && (!qtyInput.value || parseInt(qtyInput.value) <= 0)) {
+                    qtyInput.value = '1';
+                }
+            }
+            window.updateSelectedTransferSummary();
+        };
+
+        window.toggleSelectAllTransferProducts = function(select) {
+            const checkboxes = document.querySelectorAll('.transfer-item-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = select;
+                const prodId = cb.dataset.id;
+                const qtyInput = document.getElementById(`transfer-qty-${prodId}`);
+                if (qtyInput) {
+                    qtyInput.disabled = !select;
+                    if (select && (!qtyInput.value || parseInt(qtyInput.value) <= 0)) {
+                        qtyInput.value = '1';
+                    }
+                }
+            });
+            window.updateSelectedTransferSummary();
+        };
+
+        window.updateSelectedTransferSummary = function() {
+            const checkboxes = document.querySelectorAll('.transfer-item-checkbox:checked');
+            let totalItems = checkboxes.length;
+            let totalUnits = 0;
+
+            checkboxes.forEach(cb => {
+                const prodId = cb.dataset.id;
+                const maxStock = parseInt(cb.dataset.max) || 0;
+                const qtyInput = document.getElementById(`transfer-qty-${prodId}`);
+                let qty = qtyInput ? (parseInt(qtyInput.value) || 0) : 0;
+
+                if (qty > maxStock) {
+                    qty = maxStock;
+                    qtyInput.value = maxStock;
+                }
+                if (qty < 1) {
+                    qty = 1;
+                    if (qtyInput) qtyInput.value = 1;
+                }
+
+                totalUnits += qty;
+            });
+
+            const countEl = document.getElementById('selected-transfer-items-count');
+            const unitsEl = document.getElementById('selected-transfer-units-count');
+            if (countEl) countEl.textContent = totalItems;
+            if (unitsEl) unitsEl.textContent = `${totalUnits} units`;
+        };
+
+        window.executeSelectedProductsTransfer = async function() {
+            const executeBtn = document.getElementById('execute-batch-transfer-btn');
+            const fromSelect = document.getElementById('transfer-from-store');
+            const toSelect = document.getElementById('transfer-to-store');
+
+            const fromStoreId = fromSelect ? fromSelect.value : 'main';
+            const fromStoreName = fromSelect ? fromSelect.options[fromSelect.selectedIndex].text : 'Main Godown';
+            const toStoreId = toSelect ? toSelect.value : '';
+            const toStoreName = toSelect && toSelect.selectedIndex >= 0 ? toSelect.options[toSelect.selectedIndex].text : '';
+
+            if (!toStoreId) {
+                alert("Baraye meherbani Destination Store (Kahan maal bhejna hai) chunein!");
+                return;
+            }
+            if (fromStoreId === toStoreId) {
+                alert("Source aur Destination Store aik hi nahi ho saktay!");
+                return;
+            }
+
+            const checkedBoxes = document.querySelectorAll('.transfer-item-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert("Baraye meherbani kam az kam 1 product ko checkbox laga kar select karein!");
+                return;
+            }
+
+            const transferQueue = [];
+            for (let cb of checkedBoxes) {
+                const prodId = cb.dataset.id;
+                const prodName = cb.dataset.name;
+                const barcode = cb.dataset.barcode;
+                const price = parseFloat(cb.dataset.price) || 0;
+                const maxStock = parseInt(cb.dataset.max) || 0;
+                const qtyInput = document.getElementById(`transfer-qty-${prodId}`);
+                const qty = parseInt(qtyInput ? qtyInput.value : 0) || 0;
+
+                if (qty <= 0) {
+                    alert(`Product "${prodName}" ki quantity kam az kam 1 honi chahiye!`);
+                    return;
+                }
+                if (qty > maxStock) {
+                    alert(`"${prodName}" ka stock kam hai! Available: ${maxStock} units.`);
+                    return;
+                }
+
+                transferQueue.push({
+                    productId: prodId,
+                    productName: prodName,
+                    barcode: barcode,
+                    price: price,
+                    qty: qty,
+                    fromStoreId: fromStoreId,
+                    fromStoreName: fromStoreName,
+                    toStoreId: toStoreId,
+                    toStoreName: toStoreName,
+                    totalVal: price * qty
+                });
+            }
+
+            const totalUnits = transferQueue.reduce((acc, it) => acc + it.qty, 0);
+            const challanNo = "CHL-" + new Date().toISOString().slice(2, 10).replace(/-/g, '') + "-" + Math.floor(100 + Math.random() * 900);
+            const now = new Date();
+            const dispatchDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            try {
+                executeBtn.disabled = true;
+                executeBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Stock Move Ho Raha Hai...";
+
+                for (let item of transferQueue) {
+                    const transferQty = item.qty;
+
+                    // 1. Source Store / Godown se Minus (- Qty)
+                    if (item.fromStoreId === 'main') {
+                        await productsDB.doc(item.productId).update({
+                            stock: firebase.firestore.FieldValue.increment(-transferQty)
+                        });
+                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
+                        if (localP) localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
+                    } else {
+                        const srcBStock = (window.branchStockList || []).find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
+                        if (srcBStock) {
+                            await branchStockDB.doc(srcBStock.id).update({
+                                qty: firebase.firestore.FieldValue.increment(-transferQty),
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            srcBStock.qty = Math.max(0, Number(srcBStock.qty || 0) - transferQty);
+                        }
+                    }
+
+                    // 2. Destination Store / Godown mein Add (+ Qty)
+                    if (item.toStoreId === 'main') {
+                        await productsDB.doc(item.productId).update({
+                            stock: firebase.firestore.FieldValue.increment(transferQty)
+                        });
+                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
+                        if (localP) localP.stock = Number(localP.stock || 0) + transferQty;
+                    } else {
+                        const destBStock = (window.branchStockList || []).find(bs => bs.branchId === item.toStoreId && bs.productId === item.productId);
+                        if (destBStock) {
+                            await branchStockDB.doc(destBStock.id).update({
+                                qty: firebase.firestore.FieldValue.increment(transferQty),
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            destBStock.qty = Number(destBStock.qty || 0) + transferQty;
+                        } else {
+                            const bObj = (window.branchesList || []).find(b => b.id === item.toStoreId);
+                            const newDocRef = await branchStockDB.add({
+                                branchId: item.toStoreId,
+                                branchName: bObj ? bObj.name : item.toStoreName,
+                                branchArea: bObj ? bObj.area : '',
+                                productId: item.productId,
+                                productName: item.productName,
+                                productPrice: item.price,
+                                productBarcode: item.barcode || '',
+                                qty: transferQty,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            window.branchStockList.push({
+                                id: newDocRef.id,
+                                branchId: item.toStoreId,
+                                branchName: bObj ? bObj.name : item.toStoreName,
+                                branchArea: bObj ? bObj.area : '',
+                                productId: item.productId,
+                                productName: item.productName,
+                                productPrice: item.price,
+                                productBarcode: item.barcode || '',
+                                qty: transferQty
+                            });
+                        }
+                    }
+                }
+
+                // 3. Challan Record Firestore mein Save
+                const transferRecord = {
+                    challanNo: challanNo,
+                    date: dispatchDate,
+                    totalUnits: totalUnits,
+                    items: transferQueue,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await transfersDB.add(transferRecord);
+
+                alert(`Kamyabi! Kul ${totalUnits} units (${transferQueue.length} products) ka Challan #${challanNo} generate hogaya aur stock transfer hogaya.`);
+
+                // PDF Gatepass trigger
+                window.printTransferGatePassPDF(transferRecord);
+
+                // Table refresh karein
+                window.renderAllTransferProductsTable();
+                if (typeof window.renderStockReport === 'function') window.renderStockReport();
+                if (typeof window.filterMenu === 'function') window.filterMenu();
+
+            } catch(e) {
+                console.error("Transfer Error:", e);
+                alert("Stock transfer error: " + e.message);
+            } finally {
+                executeBtn.disabled = false;
+                executeBtn.innerHTML = "<i class='bx bx-check-shield'></i> Move Selected Products to Store";
+            }
         };
 
 // EXECUTE BATCH TRANSFER (STORE -> GODOWN & GODOWN -> STORE 100% FIXED)
@@ -5351,16 +5208,6 @@ const auth = firebase.auth();
                 window.updateDashboardMetrics();
             });
 
-            exchangeDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
-                window.exchangeList = [];
-                snapshot.forEach(doc => {
-                    window.exchangeList.push({ id: doc.id, ...doc.data() });
-                });
-                window.renderExchangeView();
-                window.renderExchangeReport();
-                window.updateDashboardMetrics();
-            });
-
             expensesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 window.expensesList = [];
                 snapshot.forEach(doc => {
@@ -6086,7 +5933,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 if (item.storesStock > 0 && item.godownStock > 0) {
                     stockBreakdownText = `Dukan: ${item.storesStock} | Godown: ${item.godownStock}`;
                 } else if (item.storesStock > 0) {
-                    stockBreakdownText = `Dukanon Par: ${item.storesStock} pcs`;
+                    stockBreakdownText = `Shop: ${item.storesStock} pcs`;
                 } else {
                     stockBreakdownText = `Godown: ${item.godownStock} pcs`;
                 }
@@ -6155,7 +6002,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 const currentUser = JSON.parse(currentUserStr);
                 if (currentUser.role !== 'superadmin') {
                     const p = currentUser.permissions || {};
-                    const viewPermMap = {
+                  const viewPermMap = {
                         'dashboard': p.dashboard,
                         'pos': p.pos,
                         'add-purchase-product': p.purchaser,
@@ -6166,13 +6013,11 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                         'stock-report': p.reports,
                         'purchaser-report': p.reports,
                         'return-report': p.reports,
-                        'exchange-report': p.reports,
                         'expense-report': p.reports,
                         'cashbook-report': p.reports,
                         'sell': p.sales,
                         'cashbook': p.cashbook,
                         'return': p.returns,
-                        'exchange': p.exchanges,
                         'expense': p.expenses,
                         'settings': p.settings,
                         'users': p.users
@@ -6199,19 +6044,16 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 'stock-report': 'Stock Inventory Report',
                 'purchaser-report': 'Purchaser & Vendor Procurement Report',
                 'return-report': 'Product Returns Report',
-                'exchange-report': 'Product Exchange Report',
                 'expense-report': 'Store Expenses Report',
                 'cashbook-report': 'Cash Book Flow Financial Report',
                 'sell': 'Sales & Customer Ledger',
-// NEW TITLES:
-'daily-sheet': 'Daily Sales & Expense Sheet',
-'all-reports': 'All Reports & Financial Statement',
-'return': 'Return History',
-                'exchange': 'Product Exchange Report',
+                'all-reports': 'All Reports & Financial Statement',
+                'return': 'Return History',
                 'expense': 'Store Expenses',
                 'settings': 'System Settings',
                 'users': 'User Accounts & Access Control'
             };
+
             const hTitle = document.getElementById('header-title');
             if (hTitle) hTitle.textContent = titles[v] || 'Dashboard';
 
@@ -6227,7 +6069,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             if(v === 'product-barcodes') window.renderAllProductBarcodesView();
             if(v === 'branch-transfer') {
                 window.populateTransferStoreDropdowns();
-                window.renderBatchTransferTable();
+                window.renderAllTransferProductsTable();
                 window.renderTransferHistoryReports();
             }
             if(v === 'purchase-details') window.renderPurchaseDetailsView();
@@ -6235,14 +6077,13 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             if(v === 'stock-report') window.renderStockReport();
             if(v === 'purchaser-report') window.renderPurchaserReport();
             if(v === 'return-report') window.renderReturnReport();
-            if(v === 'exchange-report') window.renderExchangeReport();
             if(v === 'expense-report') window.renderExpenseReport();
             if(v === 'cashbook-report') window.renderCashBookReport();
             if(v === 'sell') window.renderSellView();
             if(v === 'cashbook') window.renderCashBookFlow();
             if(v === 'return') window.renderReturnView();
-            if(v === 'exchange') window.renderExchangeView();
             if(v === 'expense') window.renderExpenseView();
+            if(v === 'all-reports') window.renderAllReportsView();
             if(v === 'users') renderUsersManagementTable();
             
             document.querySelectorAll('.nav-list a').forEach(a => { 
@@ -6288,10 +6129,8 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             setDisplay('nav-purchaser', p.purchaser);
             setDisplay('nav-reports', p.reports);
             setDisplay('nav-sales', p.sales);
-setDisplay('nav-daily-sheet', p.dailySheet);
-setDisplay('nav-all-reports', p.allReports); 
-setDisplay('nav-returns', p.returns);
-            setDisplay('nav-exchanges', p.exchanges);
+            setDisplay('nav-all-reports', p.allReports); 
+            setDisplay('nav-returns', p.returns);
             setDisplay('nav-expenses', p.expenses);
             setDisplay('nav-settings', p.settings);
             setDisplay('nav-users', p.users);
@@ -6855,9 +6694,7 @@ window.openUserAccessModal = function(userId) {
     setCheck('perm-purchaser', p.purchaser);
     setCheck('perm-reports', p.reports);
     setCheck('perm-sales', p.sales);
-    setCheck('perm-daily-sheet', p.dailySheet);
     setCheck('perm-all-reports', p.allReports);
-    setCheck('perm-exchanges', p.exchanges);
     setCheck('perm-expenses', p.expenses);
     setCheck('perm-settings', p.settings);
     setCheck('perm-users', p.users);
@@ -6890,9 +6727,7 @@ window.saveUserPermissions = async function() {
         purchaser: document.getElementById('perm-purchaser').checked,
         reports: document.getElementById('perm-reports').checked,
         sales: document.getElementById('perm-sales').checked,
-        dailySheet: document.getElementById('perm-daily-sheet').checked,
         allReports: document.getElementById('perm-all-reports').checked,
-        exchanges: document.getElementById('perm-exchanges').checked,
         expenses: document.getElementById('perm-expenses').checked,
         settings: document.getElementById('perm-settings').checked,
         users: document.getElementById('perm-users').checked,
@@ -6909,7 +6744,7 @@ window.saveUserPermissions = async function() {
         // Firebase Firestore update
         await usersDB.doc(userId).update({
             status: status,
-            assignedBranch: assignedBranch, // Ab Malir ya Gulshan store ID save hogi
+            assignedBranch: assignedBranch,
             permissions: newPermissions,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -7395,12 +7230,11 @@ updateSalesChart();
                     dayLabels.push(`${daysOfWeek[d.getDay()]} (${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')})`);
                 }
 
-                // 2. Initialize data buckets for all 5 metrics
+              // 2. Initialize data buckets for 4 metrics
                 const salesData = [0, 0, 0, 0, 0, 0, 0];
                 const purchaseData = [0, 0, 0, 0, 0, 0, 0];
                 const expenseData = [0, 0, 0, 0, 0, 0, 0];
                 const returnData = [0, 0, 0, 0, 0, 0, 0];
-                const exchangeData = [0, 0, 0, 0, 0, 0, 0];
 
                 // 3. Aggregate Sales (Paid & Completed Sales)
                 (window.salesHistory || []).forEach(s => {
@@ -7438,14 +7272,6 @@ updateSalesChart();
                     }
                 });
 
-                // 7. Aggregate Exchanges (Exchanged Value / Differences)
-                (window.exchangeList || []).forEach(ex => {
-                    const exDate = (ex.date || '').substring(0, 10);
-                    const idx = dateKeys.indexOf(exDate);
-                    if (idx !== -1) {
-                        exchangeData[idx] += Math.abs(Number(ex.diffAmount || 0));
-                    }
-                });
 
                 // 8. Render Multi-Bar Chart
                 const ctx = canvas.getContext('2d');
@@ -7486,14 +7312,7 @@ updateSalesChart();
                                 borderWidth: 1,
                                 borderRadius: 5
                             },
-                            {
-                                label: 'Exchanges (Rs.)',
-                                data: exchangeData,
-                                backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                                borderColor: '#10b981',
-                                borderWidth: 1,
-                                borderRadius: 5
-                            }
+                         
                         ]
                     },
                     options: {
@@ -7541,45 +7360,43 @@ updateSalesChart();
             }
         });
 
-       window.handleTransferScannedBarcode = function(rawBarcode) {
+window.handleTransferScannedBarcode = function(rawBarcode) {
             if (!rawBarcode) return;
             const barcode = String(rawBarcode).trim().toLowerCase();
-            
-            // 1. Barcode input field mein number likhein
-            const barcodeInput = document.getElementById('transfer-barcode-scan');
-            if (barcodeInput) barcodeInput.value = rawBarcode;
 
-            // 2. Product ko barcode se dhoondein
-            const matchedProduct = window.menuItems.find(p => 
+            // Product ko barcode se dhoondein
+            const matchedProduct = (window.menuItems || []).find(p => 
                 p.barcode && String(p.barcode).trim().toLowerCase() === barcode
             );
 
             if (!matchedProduct) {
-                alert(`Is Barcode [${rawBarcode}] ka koi product inventory mein nahi mila!`);
+                Toast.fire({
+                    icon: 'error',
+                    title: `Barcode [${rawBarcode}] ka koi product inventory mein nahi mila!`
+                });
                 return;
             }
 
-            // 3. Dropdown mein check karein aur select karein
-            const pSelect = document.getElementById('batch-move-prod-select');
-            if (pSelect) {
-                pSelect.value = matchedProduct.id;
+            // Checkbox table mein us product ki checkbox dhoondein
+            const cb = document.querySelector(`.transfer-item-checkbox[data-id="${matchedProduct.id}"]`);
+            if (cb) {
+                cb.checked = true;
+                window.onTransferItemCheckboxChange(cb, matchedProduct.id);
 
-                // Agar product dropdown mein select nahi hua (yani us jagah stock 0 hai)
-                if (pSelect.value !== matchedProduct.id) {
-                    alert(`"${matchedProduct.name}" ka chune hue Godown mein stock 0 hai!`);
-                    return;
-                }
-
-                // Available stock text update karein
-                window.onBatchProdSelectChange();
-
-                // Quantity box par focus kar dein
-                const qtyInput = document.getElementById('batch-move-qty');
+                const qtyInput = document.getElementById(`transfer-qty-${matchedProduct.id}`);
                 if (qtyInput) {
-                    qtyInput.value = 1;
                     qtyInput.focus();
                     qtyInput.select();
                 }
+                Toast.fire({
+                    icon: 'success',
+                    title: `"${matchedProduct.name}" select ho gaya! Qty check karein.`
+                });
+            } else {
+                Toast.fire({
+                    icon: 'warning',
+                    title: `"${matchedProduct.name}" ka chune hue Godown mein stock 0 hai!`
+                });
             }
         };
 
@@ -7589,8 +7406,8 @@ updateSalesChart();
             window.startCameraScanner();
         };
 
-        // Move Stock mein Barcode Gun se scan karne par Enter handle karna
-        document.getElementById('transfer-barcode-scan')?.addEventListener('keydown', function(e) {
+        // Move Stock Search box par Enter dabane par barcode scan handle karna
+        document.getElementById('transfer-products-search')?.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const code = this.value.trim();
@@ -7809,7 +7626,6 @@ updateSalesChart();
                             <button class="btn-view" onclick="reprintSaleInvoice('${sale.id}')" title="Print Invoice"><i class='bx bx-printer'></i></button>
                             <button class="btn-edit" onclick="editSaleInvoice('${sale.id}')" title="Edit Bill"><i class='bx bx-edit'></i></button>
                             <button class="btn-return" onclick="openSaleReturn('${sale.id}')" title="Return Product"><i class='bx bx-undo'></i></button>
-                            <button class="btn-exchange" onclick="openSaleExchange('${sale.id}')" title="Exchange Product"><i class='bx bx-transfer'></i></button>
                             <button class="btn-delete" onclick="deleteSaleRecord('${sale.id}', true)" title="Delete Bill"><i class='bx bx-trash'></i></button>
                             ${payDueBtn}
                         </td>
@@ -8181,74 +7997,9 @@ updateSalesChart();
         };
 
 
-        // 1. Exchange Modal Kholna (Direct Exchange)
-        window.openUniversalExchangeModal = function() {
-            const invRefInput = document.getElementById('exc-inv-ref');
-            const oldSelect = document.getElementById('exc-old-product');
-            const newSelect = document.getElementById('exc-new-product');
-            const oldQtyInput = document.getElementById('exc-old-qty');
-            const newQtyInput = document.getElementById('exc-new-qty');
-            const custNameInput = document.getElementById('exc-cust-name');
-            const custPhoneInput = document.getElementById('exc-cust-phone');
+       
 
-            if (invRefInput) invRefInput.value = 'EXC-' + Math.floor(1000 + Math.random() * 9000);
-            if (oldQtyInput) oldQtyInput.value = '1';
-            if (newQtyInput) newQtyInput.value = '1';
-            if (custNameInput) custNameInput.value = '';
-            if (custPhoneInput) custPhoneInput.value = '';
-
-            // Dropdowns mein inventory ke items load karein
-            let optionsHtml = '<option value="">-- Chuniye Product --</option>';
-            (window.menuItems || []).forEach(p => {
-                optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-price="${p.price || 0}" data-stock="${p.stock || 0}">${p.name} (Rs. ${Number(p.price || 0).toLocaleString()} | Stock: ${p.stock || 0})</option>`;
-            });
-
-            if (oldSelect) oldSelect.innerHTML = optionsHtml;
-            if (newSelect) newSelect.innerHTML = optionsHtml;
-
-            window.calcExchangeDifference();
-            document.getElementById('exchange-modal')?.classList.add('visible');
-        };
-
-        // 2. Exchange Modal Band Karna
-        window.closeExchangeModal = function() {
-            document.getElementById('exchange-modal')?.classList.remove('visible');
-        };
-
-        // 3. Difference Amount Auto-Calculate Karna (Customer dega ya Store dega)
-        window.calcExchangeDifference = function() {
-            const oldSelect = document.getElementById('exc-old-product');
-            const newSelect = document.getElementById('exc-new-product');
-            const oldQty = parseInt(document.getElementById('exc-old-qty')?.value) || 0;
-            const newQty = parseInt(document.getElementById('exc-new-qty')?.value) || 0;
-
-            const oldOpt = oldSelect?.options[oldSelect.selectedIndex];
-            const newOpt = newSelect?.options[newSelect.selectedIndex];
-
-            const oldUnitPrice = parseFloat(oldOpt?.dataset?.price) || 0;
-            const newUnitPrice = parseFloat(newOpt?.dataset?.price) || 0;
-
-            const oldVal = oldUnitPrice * oldQty;
-            const newVal = newUnitPrice * newQty;
-            const diff = newVal - oldVal;
-
-            const oldValInput = document.getElementById('exc-old-val');
-            const newValInput = document.getElementById('exc-new-val');
-            const diffDisp = document.getElementById('exc-diff-display');
-
-            if (oldValInput) oldValInput.value = oldVal;
-            if (newValInput) newValInput.value = newVal;
-
-            if (diffDisp) {
-                if (diff > 0) {
-                    diffDisp.innerHTML = `<span style="color:#10b981;">Customer Dega: Rs. ${diff.toLocaleString()}</span>`;
-                } else if (diff < 0) {
-                    diffDisp.innerHTML = `<span style="color:#ef4444;">Wapas (Refund) Karein: Rs. ${Math.abs(diff).toLocaleString()}</span>`;
-                } else {
-                    diffDisp.innerHTML = `<span style="color:var(--primary);">Barabar (Rs. 0)</span>`;
-                }
-            }
-        };
+        
 
        // 1. Sales Ledger se Direct Return Button Dabana (Sirf is Invoice ke items aayenge)
         window.openSaleReturn = function(saleId) {
@@ -8437,6 +8188,10 @@ updateSalesChart();
             const returnDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const customerName = matchedSale ? (matchedSale.customerName || 'Walk-in') : 'Customer';
 
+            // Original product se cost price nikalna taake return ka asal profit/margin loss track ho sake
+            const originalProduct = (window.menuItems || []).find(p => p.id === productId);
+            const itemCostPrice = originalProduct ? Number(originalProduct.costPrice || 0) : 0;
+
             const returnRecord = {
                 returnId: returnId,
                 invoiceRef: rawRef || (matchedSale ? matchedSale.invoiceId : 'Direct'),
@@ -8444,6 +8199,7 @@ updateSalesChart();
                 customerName: customerName,
                 productId: productId,
                 productName: productName,
+                costPrice: itemCostPrice,
                 qty: qty,
                 refund: refundVal,
                 reason: reason,
@@ -8545,302 +8301,6 @@ updateSalesChart();
             if (totalRefundEl) totalRefundEl.textContent = `Rs. ${totalRefund.toLocaleString()}`;
         };
 
-        // 4. Exchange Deal Confirm Karna (Stock Auto-Adjust)
-        window.saveExchange = async function() {
-            const invRef = document.getElementById('exc-inv-ref')?.value || 'EXC-DIRECT';
-            const oldSelect = document.getElementById('exc-old-product');
-            const newSelect = document.getElementById('exc-new-product');
-            const oldQty = parseInt(document.getElementById('exc-old-qty')?.value) || 1;
-            const newQty = parseInt(document.getElementById('exc-new-qty')?.value) || 1;
-
-            const custName = document.getElementById('exc-cust-name')?.value.trim() || 'Walk-in Customer';
-            const custPhone = document.getElementById('exc-cust-phone')?.value.trim() || '';
-            const payMode = document.getElementById('exc-payment-mode')?.value || 'Cash';
-
-            const oldOpt = oldSelect?.options[oldSelect.selectedIndex];
-            const newOpt = newSelect?.options[newSelect.selectedIndex];
-
-            const oldId = oldOpt?.value;
-            const oldName = oldOpt?.dataset?.name;
-            const oldPrice = parseFloat(oldOpt?.dataset?.price) || 0;
-
-            const newId = newOpt?.value;
-            const newName = newOpt?.dataset?.name;
-            const newPrice = parseFloat(newOpt?.dataset?.price) || 0;
-            const availableStock = parseInt(newOpt?.dataset?.stock) || 0;
-
-            if (!oldId || !newId) {
-                alert("Baraye meherbani dono products (Wapas lene wala aur Naya dene wala) select karein!");
-                return;
-            }
-
-            // Naye product ka stock check karein
-            if (newQty > availableStock) {
-                alert(`Naye product "${newName}" ka stock kam hai! Dastyab stock: ${availableStock} units.`);
-                return;
-            }
-
-            const oldVal = oldPrice * oldQty;
-            const newVal = newPrice * newQty;
-            const diffAmount = newVal - oldVal;
-
-            const excId = "EXC-" + Math.floor(100000 + Math.random() * 900000);
-            const now = new Date();
-            const excDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            const exchangeRecord = {
-                exchangeId: excId,
-                invoiceRef: invRef,
-                date: excDate,
-                customerName: custName,
-                customerPhone: custPhone,
-                oldProductId: oldId,
-                oldProductName: oldName,
-                oldQty: oldQty,
-                oldVal: oldVal,
-                newProductId: newId,
-                newProductName: newName,
-                newQty: newQty,
-                newVal: newVal,
-                diffAmount: diffAmount,
-                paymentMode: payMode,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            try {
-                // Record save karein
-                await exchangeDB.add(exchangeRecord);
-
-                // 1. Purana Product wapas aaya (+Stock)
-                await productsDB.doc(oldId).update({
-                    stock: firebase.firestore.FieldValue.increment(oldQty),
-                    sold: firebase.firestore.FieldValue.increment(-oldQty)
-                });
-
-                // 2. Naya Product dukan se gaya (-Stock)
-                await productsDB.doc(newId).update({
-                    stock: firebase.firestore.FieldValue.increment(-newQty),
-                    sold: firebase.firestore.FieldValue.increment(newQty)
-                });
-
-                alert(`Exchange deal (${excId}) kamyabi say save hogayi!\nStock automatic adjust hogaya hai.`);
-                window.closeExchangeModal();
-            } catch (err) {
-                alert("Exchange save karne mein masla aaya: " + err.message);
-            }
-        };
-
-        // 5. Exchange Management View (Screen 9) Render Karna
-        window.renderExchangeView = function() {
-            const tbody = document.getElementById('exchange-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const searchTerm = (document.getElementById('exchange-search-input')?.value || '').toLowerCase().trim();
-
-            let totalDeals = 0;
-            let totalInQty = 0;
-            let totalOutQty = 0;
-            let totalDiff = 0;
-
-            const filtered = (window.exchangeList || []).filter(e => {
-                const idMatch = String(e.exchangeId || '').toLowerCase().includes(searchTerm);
-                const invMatch = String(e.invoiceRef || '').toLowerCase().includes(searchTerm);
-                const custMatch = String(e.customerName || '').toLowerCase().includes(searchTerm);
-                return idMatch || invMatch || custMatch;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-placeholder">Koi exchange record nahi mila.</td></tr>`;
-            } else {
-                filtered.forEach(e => {
-                    const inQty = Number(e.oldQty || 0);
-                    const outQty = Number(e.newQty || 0);
-                    const diff = Number(e.diffAmount || 0);
-
-                    totalDeals++;
-                    totalInQty += inQty;
-                    totalOutQty += outQty;
-                    totalDiff += diff;
-
-                    let diffHtml = '';
-                    if (diff > 0) {
-                        diffHtml = `<strong style="color:#10b981;">+ Rs. ${diff.toLocaleString()}</strong>`;
-                    } else if (diff < 0) {
-                        diffHtml = `<strong style="color:#ef4444;">- Rs. ${Math.abs(diff).toLocaleString()}</strong>`;
-                    } else {
-                        diffHtml = `<span style="color:#64748b; font-weight:700;">Rs. 0</span>`;
-                    }
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong style="color:var(--primary); font-size:0.95rem;">${e.exchangeId || '-'}</strong></td>
-                            <td><code>${e.invoiceRef || '-'}</code></td>
-                            <td><small style="color:#64748b;">${e.date || '-'}</small></td>
-                            <td><strong>${e.customerName || 'Walk-in'}</strong><br><small style="color:#0284c7;">${e.customerPhone || ''}</small></td>
-                            <td>
-                                <strong style="color:#10b981;">+${inQty} pcs</strong> ${e.oldProductName}<br>
-                                <small style="color:#64748b;">Qeemat: Rs. ${Number(e.oldVal || 0).toLocaleString()}</small>
-                            </td>
-                            <td>
-                                <strong style="color:#ef4444;">-${outQty} pcs</strong> ${e.newProductName}<br>
-                                <small style="color:#64748b;">Qeemat: Rs. ${Number(e.newVal || 0).toLocaleString()}</small>
-                            </td>
-                            <td>${diffHtml}</td>
-                            <td><small style="font-weight:700; color:#334155;">${e.paymentMode || 'Cash'}</small></td>
-                        </tr>
-                    `;
-                });
-            }
-
-            // Top Dashboard Cards Update Karein
-            const dealsEl = document.getElementById('total-exchange-deals');
-            const inEl = document.getElementById('total-exchange-in-qty');
-            const outEl = document.getElementById('total-exchange-out-qty');
-            const diffEl = document.getElementById('total-exchange-diff-amt');
-
-            if (dealsEl) dealsEl.textContent = totalDeals;
-            if (inEl) inEl.textContent = `${totalInQty} pcs`;
-            if (outEl) outEl.textContent = `${totalOutQty} pcs`;
-            if (diffEl) diffEl.textContent = `Rs. ${totalDiff.toLocaleString()}`;
-        };
-
-        // 6. Reports Menu -> Product Exchange Analytics (Screen 15)
-        window.currentExcPreset = 'all';
-
-        window.setExchangeReportPreset = function(type) {
-            window.currentExcPreset = type;
-            document.querySelectorAll('.pl-pill-group button').forEach(b => {
-                if (b.id.startsWith('exc-rep-preset-')) b.classList.remove('active');
-            });
-            document.getElementById(`exc-rep-preset-${type}`)?.classList.add('active');
-
-            const fromInput = document.getElementById('exc-rep-date-from');
-            const toInput = document.getElementById('exc-rep-date-to');
-            if (fromInput) fromInput.value = '';
-            if (toInput) toInput.value = '';
-
-            window.renderExchangeReport();
-        };
-
-        window.applyExchangeCustomDateFilter = function() {
-            window.currentExcPreset = 'custom';
-            document.querySelectorAll('.pl-pill-group button').forEach(b => {
-                if (b.id.startsWith('exc-rep-preset-')) b.classList.remove('active');
-            });
-            window.renderExchangeReport();
-        };
-
-        window.resetExchangeReportFilter = function() {
-            window.setExchangeReportPreset('all');
-        };
-
-        window.renderExchangeReport = function() {
-            const tbody = document.getElementById('exchange-report-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const todayStr = new Date().toISOString().slice(0, 10);
-            const fromDate = document.getElementById('exc-rep-date-from')?.value;
-            const toDate = document.getElementById('exc-rep-date-to')?.value;
-
-            const filtered = (window.exchangeList || []).filter(e => {
-                const itemDate = (e.date || '').substring(0, 10);
-                if (window.currentExcPreset === 'today') return itemDate === todayStr;
-                if (window.currentExcPreset === 'custom' && fromDate && toDate) {
-                    return itemDate >= fromDate && itemDate <= toDate;
-                }
-                return true;
-            });
-
-            let kpiDeals = 0;
-            let kpiIn = 0;
-            let kpiOut = 0;
-            let kpiDiff = 0;
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-placeholder">Chuni hui muddat ka koi exchange record nahi mila.</td></tr>`;
-            } else {
-                filtered.forEach(e => {
-                    const inQty = Number(e.oldQty || 0);
-                    const outQty = Number(e.newQty || 0);
-                    const diff = Number(e.diffAmount || 0);
-
-                    kpiDeals++;
-                    kpiIn += inQty;
-                    kpiOut += outQty;
-                    kpiDiff += diff;
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong style="color:var(--primary);">${e.exchangeId}</strong></td>
-                            <td><code>${e.invoiceRef}</code></td>
-                            <td><small>${e.date}</small></td>
-                            <td><strong>${e.customerName}</strong></td>
-                            <td><strong style="color:#10b981;">+${inQty} pcs</strong> (${e.oldProductName})</td>
-                            <td><strong style="color:#ef4444;">-${outQty} pcs</strong> (${e.newProductName})</td>
-                            <td style="text-align:right; font-weight:800; color:${diff >= 0 ? '#10b981' : '#ef4444'};">
-                                ${diff >= 0 ? '+' : ''}Rs. ${diff.toLocaleString()}
-                            </td>
-                            <td>${e.paymentMode}</td>
-                        </tr>
-                    `;
-                });
-            }
-
-            // Report KPIs
-            const dEl = document.getElementById('kpi-exc-deals');
-            const iEl = document.getElementById('kpi-exc-in');
-            const oEl = document.getElementById('kpi-exc-out');
-            const dfEl = document.getElementById('kpi-exc-diff');
-
-            if (dEl) dEl.textContent = kpiDeals;
-            if (iEl) iEl.textContent = `${kpiIn} pcs`;
-            if (oEl) oEl.textContent = `${kpiOut} pcs`;
-            if (dfEl) dfEl.textContent = `Rs. ${kpiDiff.toLocaleString()}`;
-        };
-
-        // 7. Exchange PDF Export Function
-        window.downloadExchangeReportPDF = function() {
-            window.downloadExchangeReportDetailedPDF();
-        };
-
-        window.downloadExchangeReportDetailedPDF = function() {
-            const rows = (window.exchangeList || []).map((e, idx) => [
-                String(idx + 1),
-                e.exchangeId || '-',
-                e.invoiceRef || '-',
-                e.date || '-',
-                `${e.customerName || 'Walk-in'} (${e.customerPhone || ''})`,
-                `+${e.oldQty} ${e.oldProductName}`,
-                `-${e.newQty} ${e.newProductName}`,
-                `Rs. ${Number(e.diffAmount || 0).toLocaleString()}`
-            ]);
-
-            const totalDiff = (window.exchangeList || []).reduce((sum, e) => sum + Number(e.diffAmount || 0), 0);
-
-            window.generateProfessionalPDF({
-                reportTitle: 'PRODUCT EXCHANGE AUDIT STATEMENT',
-                periodText: 'Complete Exchanged Goods and Cash Variance',
-                fileName: 'Product_Exchange_Report',
-                orientation: 'landscape',
-                kpis: [
-                    { label: 'Total Deals', value: String(window.exchangeList.length), color: '#000000' },
-                    { label: 'Net Cash Variance', value: `Rs. ${totalDiff.toLocaleString()}`, color: '#000000' }
-                ],
-                headers: [
-                    { title: 'Sr #', align: 'center' },
-                    { title: 'Exchange ID', align: 'left' },
-                    { title: 'Inv Ref', align: 'left' },
-                    { title: 'Date', align: 'left' },
-                    { title: 'Customer', align: 'left' },
-                    { title: 'Returned (+Stock)', align: 'left' },
-                    { title: 'Issued (-Stock)', align: 'left' },
-                    { title: 'Net Difference', align: 'right' }
-                ],
-                rows: rows
-            });
-        };
 
         // 4. Store Expenses Screen (Screen 10) ka Table Render Karna
         window.renderExpenseView = function() {
@@ -9386,12 +8846,15 @@ updateSalesChart();
 // =========================================================================
         // 1. PROFIT & LOSS FINANCIAL ANALYTICS (SCREEN 11)
         // =========================================================================
+        // =========================================================================
+        // 1. PROFIT & LOSS FINANCIAL ANALYTICS (SCREEN 11)
+        // =========================================================================
         window.currentPLPreset = 'all';
 
         window.setPLPreset = function(type) {
             window.currentPLPreset = type;
             document.querySelectorAll('.pl-pill-group button').forEach(b => {
-                if (b.id.startsWith('pl-preset-')) b.classList.remove('active');
+                if (b.id && b.id.startsWith('pl-preset-')) b.classList.remove('active');
             });
             document.getElementById(`pl-preset-${type}`)?.classList.add('active');
 
@@ -9406,7 +8869,7 @@ updateSalesChart();
         window.applyPLCustomFilter = function() {
             window.currentPLPreset = 'custom';
             document.querySelectorAll('.pl-pill-group button').forEach(b => {
-                if (b.id.startsWith('pl-preset-')) b.classList.remove('active');
+                if (b.id && b.id.startsWith('pl-preset-')) b.classList.remove('active');
             });
             window.renderProfitLossReport();
         };
@@ -9416,7 +8879,9 @@ updateSalesChart();
         };
 
         window.renderProfitLossReport = function() {
-            const tbody = document.getElementById('pl-screen-itemized-tbody');
+            // Profit & Loss Screen ka tbody dhoondein (screen 11)
+            const plView = document.getElementById('profit-loss-view');
+            const tbody = plView ? plView.querySelector('#pl-screen-itemized-tbody') : document.getElementById('pl-screen-itemized-tbody');
             const returnsContainer = document.getElementById('pl-screen-returns-container');
             const expContainer = document.getElementById('pl-screen-expenses-container');
             const periodText = document.getElementById('pl-screen-period-text');
@@ -9491,43 +8956,89 @@ updateSalesChart();
                 return true;
             });
 
-            // Calculations
-            let totalRevenue = 0;
-            let totalCogs = 0;
-            let totalRefundDeduction = filteredReturns.reduce((sum, r) => sum + Number(r.refund || 0), 0);
+            let grossRevenue = 0;
+            let grossCogs = 0;
+            let totalRefund = filteredReturns.reduce((sum, r) => sum + Number(r.refund || 0), 0);
+            let totalReturnCogs = 0;
             let totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-            if (filteredSales.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-placeholder">Selected period ke liye koi sales data mojood nahi hai.</td></tr>`;
-            } else {
-                filteredSales.forEach(s => {
-                    (s.items || []).forEach(it => {
-                        const originalProd = window.menuItems.find(m => m.id === it.id);
-                        const costPrice = it.costPrice !== undefined ? Number(it.costPrice) : (originalProd ? Number(originalProd.costPrice || 0) : 0);
-                        const salePrice = Number(it.price || 0);
-                        const qty = Number(it.qty || 1);
+            // Returns ki Restocked Cost calculate karein
+            filteredReturns.forEach(r => {
+                const origProd = (window.menuItems || []).find(m => m.id === r.productId || m.name === r.productName);
+                const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
+                totalReturnCogs += (unitCost * Number(r.qty || 1));
+            });
 
-                        const lineCost = costPrice * qty;
-                        const lineSale = salePrice * qty;
-                        const margin = lineSale - lineCost;
+            // Render Itemized Rows
+            let rowsHtml = '';
+            let totalSoldItemsCount = 0;
 
-                        totalRevenue += lineSale;
-                        totalCogs += lineCost;
+            filteredSales.forEach(s => {
+                let itemsList = s.items;
+                if (!itemsList || !Array.isArray(itemsList) || itemsList.length === 0) {
+                    itemsList = [{
+                        name: s.productName || s.name || 'General Product',
+                        qty: Number(s.qty || 1),
+                        costPrice: Number(s.costPrice || 0),
+                        price: Number(s.price || s.total || 0)
+                    }];
+                }
 
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><strong>${it.name}</strong> <small style="color:#64748b;">(#${s.invoiceId})</small></td>
-                                <td><small style="color:#64748b;">${(s.date || '').substring(0, 10)}</small></td>
-                                <td style="text-align:right; font-weight:700;">${qty} pcs</td>
-                                <td style="text-align:right;">Rs. ${lineCost.toLocaleString()}</td>
-                                <td style="text-align:right; font-weight:700;">Rs. ${lineSale.toLocaleString()}</td>
-                                <td style="text-align:right; font-weight:800; color:${margin >= 0 ? '#16a34a' : '#ef4444'};">
-                                    Rs. ${margin.toLocaleString()}
-                                </td>
-                            </tr>
-                        `;
-                    });
+                itemsList.forEach(it => {
+                    const originalProd = (window.menuItems || []).find(m => m.id === it.id || (m.name && it.name && m.name.toLowerCase() === it.name.toLowerCase()));
+                    const costPrice = Number(it.costPrice !== undefined ? it.costPrice : (originalProd ? originalProd.costPrice : 0)) || 0;
+                    const salePrice = Number(it.price !== undefined ? it.price : (it.originalPrice || 0)) || 0;
+                    const qty = Number(it.qty || 1);
+
+                    const lineCost = costPrice * qty;
+                    const lineSale = salePrice * qty;
+                    const lineProfit = lineSale - lineCost;
+
+                    grossRevenue += lineSale;
+                    grossCogs += lineCost;
+                    totalSoldItemsCount += qty;
+
+                    const invNum = s.invoiceId ? `(inv #${s.invoiceId})` : '';
+
+                    rowsHtml += `
+                        <tr>
+                            <td style="text-align: left; padding: 12px 14px;">
+                                <strong style="color: #0f172a; font-size: 0.95rem;">${it.name || 'Product'}</strong> 
+                                <span style="color: #64748b; font-size: 0.8rem; margin-left: 4px;">${invNum}</span>
+                            </td>
+                            <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 12px 14px;">
+                                ${qty}
+                            </td>
+                            <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">
+                                Rs. ${costPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">
+                                Rs. ${salePrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 700;">
+                                Rs. ${lineCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: right; font-weight: 800; color: #0f172a; padding: 12px 14px;">
+                                Rs. ${lineSale.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td style="text-align: right; font-weight: 900; color: ${lineProfit >= 0 ? '#16a34a' : '#ef4444'}; padding: 12px 14px;">
+                                Rs. ${lineProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                        </tr>
+                    `;
                 });
+            });
+
+            if (!rowsHtml) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-placeholder" style="text-align:center; padding: 25px;">Selected period ke liye koi sales data mojood nahi hai.</td></tr>`;
+            } else {
+                tbody.innerHTML = rowsHtml;
+            }
+
+            // Also sync to All Reports screen table agar mojood ho
+            const allRepItemized = document.querySelector('#all-reports-view #pl-screen-itemized-tbody');
+            if (allRepItemized && allRepItemized !== tbody) {
+                allRepItemized.innerHTML = rowsHtml || `<tr><td colspan="7" class="empty-placeholder" style="text-align:center; padding: 25px;">Selected period ke liye koi sales data mojood nahi hai.</td></tr>`;
             }
 
             // Returns Container
@@ -9564,8 +9075,11 @@ updateSalesChart();
                 }
             }
 
-            const grossProfit = totalRevenue - totalCogs;
-            const netProfit = grossProfit - totalExpenses - totalRefundDeduction;
+            // Formulas
+            const netRevenue = Math.max(0, grossRevenue - totalRefund);
+            const netCogs = Math.max(0, grossCogs - totalReturnCogs);
+            const grossProfit = netRevenue - netCogs;
+            const netProfit = grossProfit - totalExpenses;
 
             // KPI Elements update
             const revEl = document.getElementById('kpi-revenue');
@@ -9577,12 +9091,11 @@ updateSalesChart();
             const netCard = document.getElementById('kpi-net-card');
             const netSub = document.getElementById('kpi-net-sub');
 
-            if (revEl) revEl.textContent = `Rs. ${totalRevenue.toLocaleString()}`;
-            if (cogsEl) cogsEl.textContent = `Rs. ${totalCogs.toLocaleString()}`;
+            if (revEl) revEl.textContent = `Rs. ${netRevenue.toLocaleString()}`;
+            if (cogsEl) cogsEl.textContent = `Rs. ${netCogs.toLocaleString()}`;
             if (grossEl) grossEl.textContent = `Rs. ${grossProfit.toLocaleString()}`;
             if (expEl) expEl.textContent = `Rs. ${totalExpenses.toLocaleString()}`;
-            if (retLossEl) retLossEl.textContent = `Rs. ${totalRefundDeduction.toLocaleString()}`;
-
+            if (retLossEl) retLossEl.textContent = `Rs. ${totalRefund.toLocaleString()}`;
             if (netEl) {
                 netEl.textContent = `Rs. ${netProfit.toLocaleString()}`;
                 netEl.style.color = netProfit >= 0 ? '#16a34a' : '#ef4444';
@@ -9602,58 +9115,271 @@ updateSalesChart();
                 periodText.textContent = `Duration: ${window.currentPLPreset.toUpperCase()} | Total Sales: ${filteredSales.length} Invoices`;
             }
         };
+    window.downloadCleanProfitLossPDF = function() {
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fromDate = document.getElementById('pl-date-from')?.value;
+        const toDate = document.getElementById('pl-date-to')?.value;
 
-     window.downloadCleanProfitLossPDF = function() {
-            const rev = document.getElementById('kpi-revenue')?.textContent || 'Rs. 0';
-            const cogs = document.getElementById('kpi-cogs')?.textContent || 'Rs. 0';
-            const gross = document.getElementById('kpi-gross')?.textContent || 'Rs. 0';
-            const exp = document.getElementById('kpi-expenses')?.textContent || 'Rs. 0';
-            const retLoss = document.getElementById('kpi-return-loss')?.textContent || 'Rs. 0';
-            const net = document.getElementById('kpi-net')?.textContent || 'Rs. 0';
+        // Date Filter Helper
+        function isWithinPeriod(dateStr) {
+            if (!dateStr) return false;
+            const d = dateStr.substring(0, 10);
+            if (window.currentPLPreset === 'today') return d === todayStr;
+            if (window.currentPLPreset === 'weekly') {
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(now.getDate() - 7);
+                return new Date(d) >= oneWeekAgo;
+            }
+            if (window.currentPLPreset === 'monthly') {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setDate(now.getDate() - 30);
+                return new Date(d) >= oneMonthAgo;
+            }
+            if (window.currentPLPreset === 'custom' && fromDate && toDate) {
+                return d >= fromDate && d <= toDate;
+            }
+            return true;
+        }
 
-            const rows = [];
-            (window.salesHistory || []).forEach(s => {
-                (s.items || []).forEach(it => {
-                    const cp = Number(it.costPrice || 0);
-                    const sp = Number(it.price || 0);
-                    const qty = Number(it.qty || 1);
-                    const margin = (sp - cp) * qty;
-                    rows.push([
-                        `<b>${it.name}</b> <small style="color:#64748b;">(#${s.invoiceId})</small>`,
-                        (s.date || '').substring(0, 10),
-                        `<b>${qty} pcs</b>`,
-                        `Rs. ${(cp * qty).toLocaleString()}`,
-                        `Rs. ${(sp * qty).toLocaleString()}`,
-                        `<b style="color:${margin >= 0 ? '#16a34a' : '#dc2626'};">Rs. ${margin.toLocaleString()}</b>`
-                    ]);
-                });
-            });
-
-            window.generateProfessionalPDF({
-                reportTitle: 'PROFIT & LOSS FINANCIAL STATEMENT',
-                periodText: 'Comprehensive Net Margins & Profitability Audit',
-                fileName: 'Profit_Loss_Statement',
-                orientation: 'landscape',
-                kpis: [
-                    { label: 'Gross Revenue', value: rev, color: '#0066ff' },
-                    { label: 'COGS (Cost)', value: cogs, color: '#ea580c' },
-                    { label: 'Gross Margin', value: gross, color: '#8b5cf6' },
-                    { label: 'Total Expenses', value: exp, color: '#ef4444' },
-                    { label: 'Return Loss', value: retLoss, color: '#dc2626' },
-                    { label: 'Net Profit / Loss', value: net, color: '#10b981' }
-                ],
-                headers: [
-                    { title: 'Product & Invoice #', align: 'left' },
-                    { title: 'Date', align: 'left' },
-                    { title: 'Qty Sold', align: 'center' },
-                    { title: 'Procurement Cost', align: 'right' },
-                    { title: 'Sale Amount', align: 'right' },
-                    { title: 'Gross Profit Margin', align: 'right' }
-                ],
-                rows: rows
-            });
+        const formatDateSlash = (dStr) => {
+            if (!dStr) return '';
+            const parts = dStr.substring(0, 10).split('-');
+            return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dStr;
         };
 
+        // Filtered Data Lists
+        const filteredSales = (window.salesHistory || []).filter(s => isWithinPeriod(s.date));
+        const filteredExpenses = (window.expensesList || []).filter(e => isWithinPeriod(e.date));
+        const filteredReturns = (window.returnsList || []).filter(r => isWithinPeriod(r.date));
+
+        // Period Text Format: DD/MM/YYYY to DD/MM/YYYY
+        let periodDisplay = '';
+        if (window.currentPLPreset === 'today') {
+            periodDisplay = `${formatDateSlash(todayStr)} to ${formatDateSlash(todayStr)}`;
+        } else if (window.currentPLPreset === 'custom' && fromDate && toDate) {
+            periodDisplay = `${formatDateSlash(fromDate)} to ${formatDateSlash(toDate)}`;
+        } else {
+            const allDates = [
+                ...filteredSales.map(s => (s.date || '').substring(0, 10)),
+                ...filteredExpenses.map(e => (e.date || '').substring(0, 10)),
+                ...filteredReturns.map(r => (r.date || '').substring(0, 10))
+            ].filter(Boolean).sort();
+
+            if (allDates.length > 0) {
+                periodDisplay = `${formatDateSlash(allDates[0])} to ${formatDateSlash(allDates[allDates.length - 1])}`;
+            } else {
+                periodDisplay = `${formatDateSlash(todayStr)} to ${formatDateSlash(todayStr)}`;
+            }
+        }
+
+       // 1. Sales & COGS Details Table Rows (With Cost Price & Selling Price)
+        let grossSales = 0;
+        let grossCogs = 0;
+        let salesRowsHtml = '';
+
+        filteredSales.forEach(s => {
+            (s.items || []).forEach(it => {
+                const originalProd = (window.menuItems || []).find(m => m.id === it.id);
+                const cost = it.costPrice !== undefined ? Number(it.costPrice) : (originalProd ? Number(originalProd.costPrice || 0) : 0);
+                const sale = Number(it.price || 0);
+                const qty = Number(it.qty || 1);
+
+                const lineCost = cost * qty;
+                const lineSale = sale * qty;
+                const lineProfit = lineSale - lineCost;
+
+                grossSales += lineSale;
+                grossCogs += lineCost;
+
+                salesRowsHtml += `
+                    <tr style="page-break-inside: avoid;">
+                        <td>${it.name} (inv #${s.invoiceId})</td>
+                        <td style="text-align: center;">${qty}</td>
+                        <td style="text-align: right;">Rs.${cost.toFixed(2)}</td>
+                        <td style="text-align: right;">Rs.${sale.toFixed(2)}</td>
+                        <td style="text-align: right;">Rs.${lineCost.toFixed(2)}</td>
+                        <td style="text-align: right;">Rs.${lineSale.toFixed(2)}</td>
+                        <td style="text-align: right; font-weight: 600;">Rs.${lineProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        });
+
+        // 2. Returns Details Table Rows (Itemized COGS Returns Details)
+        let totalRefunds = 0;
+        let totalReturnCogs = 0;
+        let totalReturnMarginLoss = 0;
+        let returnsRowsHtml = '';
+
+        if (filteredReturns.length === 0) {
+            returnsRowsHtml = `<tr><td colspan="5" style="padding: 12px; color: #475569;">No returns in this period.</td></tr>`;
+        } else {
+            filteredReturns.forEach(r => {
+                const refundAmt = Number(r.refund || 0);
+                const qty = Number(r.qty || 1);
+                const origProd = (window.menuItems || []).find(m => m.id === r.productId || m.name === r.productName);
+                const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
+                const lineCost = unitCost * qty;
+                const lineMarginLoss = Math.max(0, refundAmt - lineCost);
+
+                totalRefunds += refundAmt;
+                totalReturnCogs += lineCost;
+                totalReturnMarginLoss += lineMarginLoss;
+
+                returnsRowsHtml += `
+                    <tr style="page-break-inside: avoid;">
+                        <td>${r.productName} (inv #${r.invoiceRef || '-'})</td>
+                        <td style="text-align: center;">${qty}</td>
+                        <td style="text-align: right;">Rs.${lineCost.toFixed(2)}</td>
+                        <td style="text-align: right;">Rs.${refundAmt.toFixed(2)}</td>
+                        <td style="text-align: right; color: #dc2626; font-weight: 600;">Rs.${lineMarginLoss.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 3. Operating Expenses Details Table Rows
+        let totalExpenses = 0;
+        let expensesRowsHtml = '';
+
+        if (filteredExpenses.length === 0) {
+            expensesRowsHtml = `<tr><td colspan="4" style="padding: 12px; color: #475569;">No expenses recorded in this period.</td></tr>`;
+        } else {
+            filteredExpenses.forEach(exp => {
+                const amt = Number(exp.amount || 0);
+                totalExpenses += amt;
+                expensesRowsHtml += `
+                    <tr style="page-break-inside: avoid;">
+                        <td>${formatDateSlash(exp.date)}</td>
+                        <td>${exp.category || 'General'}</td>
+                        <td>${exp.title || '-'}</td>
+                        <td style="text-align: right; font-weight: 600;">Rs.${amt.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Top Summary Calculations (Asal Accounting Logic)
+        const netRevenue = Math.max(0, grossSales - totalRefunds);
+        const netCogs = Math.max(0, grossCogs - totalReturnCogs);
+        const grossProfit = netRevenue - netCogs;
+        const netProfitLoss = grossProfit - totalExpenses;
+
+
+        // Exactly Matching A4 Layout
+        const pdfHtml = `
+            <div style="width: 100%; max-width: 195mm; margin: 0 auto; padding: 20px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; background: #ffffff; box-sizing: border-box; font-size: 11px;">
+                <style>
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 25px; table-layout: fixed; }
+                    th, td { border: 1px solid #e5e7eb; padding: 7px 10px; font-size: 10px; vertical-align: middle; word-wrap: break-word; }
+                    th { background-color: #f9fafb; font-weight: 700; color: #111827; }
+                    h2.sec-heading { font-size: 14px; font-weight: 800; color: #111827; margin: 24px 0 10px 0; }
+                </style>
+
+                <!-- Document Heading -->
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h1 style="font-size: 26px; font-weight: 800; margin: 0 0 6px 0; color: #000000; letter-spacing: -0.5px;">Profit &amp; Loss Statement</h1>
+                    <div style="font-size: 12px; font-weight: 600; color: #374151;">Period: ${periodDisplay}</div>
+                </div>
+
+                <!-- Summary Section -->
+                <table style="width: 100%; margin-bottom: 28px; border: 1px solid #e5e7eb;">
+                    <tbody>
+                        <tr>
+                            <td style="width: 65%; font-weight: 700; font-size: 11px;">Revenue (Sales - Returns)</td>
+                            <td style="width: 35%; text-align: right; font-weight: 700; font-size: 11.5px;">Rs.${netRevenue.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700; font-size: 11px;">Cost of Goods Sold (COGS - Returns)</td>
+                            <td style="text-align: right; font-weight: 700; font-size: 11.5px;">(Rs. ${netCogs.toFixed(2)})</td>
+                        </tr>
+                        <tr style="background: #fafafa;">
+                            <td style="font-weight: 800; font-size: 11.5px;">Gross Profit</td>
+                            <td style="text-align: right; font-weight: 800; font-size: 12px;">Rs.${grossProfit.toFixed(2)}</td>
+                        </tr>
+    
+                        <tr>
+                            <td style="font-weight: 700; font-size: 11px;">Operating Expenses</td>
+                            <td style="text-align: right; font-weight: 700; font-size: 11.5px;">(Rs. ${totalExpenses.toFixed(2)})</td>
+                        </tr>
+                        <tr style="background: #f3f4f6;">
+                            <td style="font-weight: 900; font-size: 12px;">Net Profit / Loss</td>
+                            <td style="text-align: right; font-weight: 900; font-size: 13px; color: ${netProfitLoss >= 0 ? '#111827' : '#dc2626'};">
+                                Rs.${netProfitLoss.toFixed(2)}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+               <!-- Section 1: Itemized Cost & Profit Details (7 Columns) -->
+                <h2 class="sec-heading">Itemized Cost &amp; Profit Details</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 28%; text-align: left;">Product Sold</th>
+                            <th style="width: 6%; text-align: center;">Qty</th>
+                            <th style="width: 13%; text-align: right;">Cost Price</th>
+                            <th style="width: 13%; text-align: right;">Selling Price</th>
+                            <th style="width: 13%; text-align: right;">Total Cost</th>
+                            <th style="width: 13%; text-align: right;">Total Sale</th>
+                            <th style="width: 14%; text-align: right;">Profit / Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${salesRowsHtml || '<tr><td colspan="7" style="padding:10px; color:#64748b;">No sales in this period.</td></tr>'}
+                    </tbody>
+                </table>
+
+                <!-- Section 2: Itemized COGS Returns Details -->
+                <h2 class="sec-heading">Itemized COGS Returns Details</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 44%; text-align: left;">Product Returned</th>
+                            <th style="width: 8%; text-align: center;">Qty</th>
+                            <th style="width: 16%; text-align: right;">Total Cost</th>
+                            <th style="width: 16%; text-align: right;">Refund Amount</th>
+                            <th style="width: 16%; text-align: right;">Margin Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${returnsRowsHtml}
+                    </tbody>
+                </table>
+
+                <!-- Section 3: Operating Expenses Details -->
+                <h2 class="sec-heading">Operating Expenses Details</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 16%; text-align: left;">Date</th>
+                            <th style="width: 24%; text-align: left;">Category</th>
+                            <th style="width: 40%; text-align: left;">Description</th>
+                            <th style="width: 20%; text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${expensesRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const element = document.createElement('div');
+        element.innerHTML = pdfHtml;
+
+        const opt = {
+            margin: [8, 8, 8, 8],
+            filename: `Profit_and_Loss_Statement_${new Date().toISOString().slice(0, 10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2.2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save();
+    };
         // =========================================================================
         // 2. STOCK & INVENTORY VALUATION REPORT (AREA / BRANCH WISE SEPARATION)
         // =========================================================================
@@ -10174,138 +9900,6 @@ updateSalesChart();
             window.renderExchangeReport();
         };
 
-        window.applyExchangeCustomDateFilter = function() {
-            window.currentExcPreset = 'custom';
-            document.querySelectorAll('.pl-pill-group button').forEach(b => {
-                if (b.id.startsWith('exc-rep-preset-')) b.classList.remove('active');
-            });
-            window.renderExchangeReport();
-        };
-
-        window.resetExchangeReportFilter = function() {
-            window.setExchangeReportPreset('all');
-        };
-
-        window.renderExchangeReport = function() {
-            const tbody = document.getElementById('exchange-report-tbody');
-            const periodText = document.getElementById('exchange-report-period-text');
-
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const now = new Date();
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            const fromDate = document.getElementById('exc-rep-date-from')?.value;
-            const toDate = document.getElementById('exc-rep-date-to')?.value;
-
-            const filtered = (window.exchangeList || []).filter(e => {
-                const itemDate = (e.date || '').substring(0, 10);
-                if (window.currentExcPreset === 'today') return itemDate === todayStr;
-                if (window.currentExcPreset === 'weekly') {
-                    const oneWeekAgo = new Date();
-                    oneWeekAgo.setDate(now.getDate() - 7);
-                    return new Date(itemDate) >= oneWeekAgo;
-                }
-                if (window.currentExcPreset === 'monthly') {
-                    const oneMonthAgo = new Date();
-                    oneMonthAgo.setDate(now.getDate() - 30);
-                    return new Date(itemDate) >= oneMonthAgo;
-                }
-                if (window.currentExcPreset === 'custom' && fromDate && toDate) {
-                    return itemDate >= fromDate && itemDate <= toDate;
-                }
-                return true;
-            });
-
-            let kpiDeals = filtered.length;
-            let kpiIn = 0;
-            let kpiOut = 0;
-            let kpiDiff = 0;
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-placeholder">Selected muddat ka koi exchange record nahi mila.</td></tr>`;
-            } else {
-                filtered.forEach(e => {
-                    const inQty = Number(e.oldQty || 0);
-                    const outQty = Number(e.newQty || 0);
-                    const diff = Number(e.diffAmount || 0);
-
-                    kpiIn += inQty;
-                    kpiOut += outQty;
-                    kpiDiff += diff;
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong style="color:var(--primary);">${e.exchangeId || '-'}</strong></td>
-                            <td><code>${e.invoiceRef || '-'}</code></td>
-                            <td><small style="color:#64748b;">${e.date || '-'}</small></td>
-                            <td><strong>${e.customerName || 'Walk-in'}</strong></td>
-                            <td><strong style="color:#10b981;">+${inQty} pcs</strong> (${e.oldProductName || 'Product'})</td>
-                            <td><strong style="color:#ef4444;">-${outQty} pcs</strong> (${e.newProductName || 'Product'})</td>
-                            <td style="text-align:right; font-weight:800; color:${diff >= 0 ? '#10b981' : '#ef4444'};">
-                                ${diff >= 0 ? '+' : ''}Rs. ${diff.toLocaleString()}
-                            </td>
-                            <td><small style="font-weight:700; color:#334155;">${e.paymentMode || 'Cash'}</small></td>
-                        </tr>
-                    `;
-                });
-            }
-
-            // Report KPIs
-            const dEl = document.getElementById('kpi-exc-deals');
-            const iEl = document.getElementById('kpi-exc-in');
-            const oEl = document.getElementById('kpi-exc-out');
-            const dfEl = document.getElementById('kpi-exc-diff');
-
-            if (dEl) dEl.textContent = kpiDeals;
-            if (iEl) iEl.textContent = `${kpiIn} pcs`;
-            if (oEl) oEl.textContent = `${kpiOut} pcs`;
-            if (dfEl) dfEl.textContent = `Rs. ${kpiDiff.toLocaleString()}`;
-
-            if (periodText) {
-                periodText.textContent = `Duration: ${window.currentExcPreset.toUpperCase()} | Total Exchange Transactions: ${kpiDeals}`;
-            }
-        };
-
-        window.downloadExchangeReportDetailedPDF = function() {
-            const rows = (window.exchangeList || []).map((e, idx) => [
-                String(idx + 1),
-                e.exchangeId || '-',
-                e.invoiceRef || '-',
-                e.date || '-',
-                `${e.customerName || 'Walk-in'} (${e.customerPhone || ''})`,
-                `+${e.oldQty || 1} ${e.oldProductName || ''}`,
-                `-${e.newQty || 1} ${e.newProductName || ''}`,
-                `Rs. ${Number(e.diffAmount || 0).toLocaleString()}`,
-                e.paymentMode || 'Cash'
-            ]);
-
-            const totalDiff = (window.exchangeList || []).reduce((sum, e) => sum + Number(e.diffAmount || 0), 0);
-
-            window.generateProfessionalPDF({
-                reportTitle: 'PRODUCT EXCHANGE FINANCIAL AUDIT',
-                periodText: 'Detailed Item Swaps, Inventory Movement & Net Cash Balance Report',
-                fileName: 'Exchange_Financial_Report',
-                orientation: 'landscape',
-                kpis: [
-                    { label: 'Total Deals', value: String(window.exchangeList.length), color: '#000000' },
-                    { label: 'Net Cash Variance', value: `Rs. ${totalDiff.toLocaleString()}`, color: '#000000' }
-                ],
-                headers: [
-                    { title: 'Sr #', align: 'center' },
-                    { title: 'Exchange ID', align: 'left' },
-                    { title: 'Inv Ref', align: 'left' },
-                    { title: 'Date', align: 'left' },
-                    { title: 'Customer', align: 'left' },
-                    { title: 'Returned (+Stock)', align: 'left' },
-                    { title: 'Issued (-Stock)', align: 'left' },
-                    { title: 'Net Difference', align: 'right' },
-                    { title: 'Mode', align: 'left' }
-                ],
-                rows: rows
-            });
-        };
-
 
         // =========================================================================
         // 3. COMPREHENSIVE CASH BOOK REPORT (SCREEN 17)
@@ -10649,92 +10243,6 @@ updateSalesChart();
             html2pdf().set(opt).from(element).save();
         };
         
-window.setDailySheetToday = function() {
-    const today = new Date();
-    const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const dateInput = document.getElementById('daily-sheet-date');
-    if (dateInput) dateInput.value = ymd;
-    window.renderDailySheet();
-};
-
-window.renderDailySheet = function() {
-    let dateInput = document.getElementById('daily-sheet-date');
-    if (!dateInput) return;
-
-    if (!dateInput.value) {
-        const today = new Date();
-        dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    }
-
-    const selectedDate = dateInput.value;
-
-    // Filter cash sales for selected date
-    const todaySales = (window.salesHistory || []).filter(sale => {
-        const sDate = (sale.date || '').substring(0, 10);
-        const isPaid = (sale.paymentStatus === 'Paid');
-        const isCash = (sale.paymentMode || '').toLowerCase().startsWith('cash');
-        return sDate === selectedDate && isPaid && isCash;
-    });
-
-    // Filter store expenses for selected date
-    const todayExpenses = (window.expensesList || []).filter(exp => {
-        return (exp.date || '').substring(0, 10) === selectedDate;
-    });
-
-    const totalSale = todaySales.reduce((sum, s) => sum + Number(s.total || 0), 0);
-    const totalExp = todayExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-    const bachaCash = totalSale - totalExp;
-
-    // Update screen cards
-    const sEl = document.getElementById('ds-total-sales');
-    const eEl = document.getElementById('ds-total-expenses');
-    const bEl = document.getElementById('ds-net-remaining');
-
-    if (sEl) sEl.textContent = `Rs. ${totalSale.toLocaleString()}`;
-    if (eEl) eEl.textContent = `Rs. ${totalExp.toLocaleString()}`;
-    if (bEl) {
-        bEl.textContent = `Rs. ${bachaCash.toLocaleString()}`;
-        bEl.style.color = bachaCash >= 0 ? 'var(--primary)' : '#ef4444';
-    }
-
-    // Sales Table
-    const salesTbody = document.getElementById('ds-sales-tbody');
-    if (salesTbody) {
-        salesTbody.innerHTML = '';
-        if (todaySales.length === 0) {
-            salesTbody.innerHTML = `<tr><td colspan="3" class="empty-placeholder">No cash sales recorded for this date.</td></tr>`;
-        } else {
-            todaySales.forEach(s => {
-                salesTbody.innerHTML += `
-                    <tr>
-                        <td><strong>#${s.invoiceId}</strong></td>
-                        <td>${s.customerName || 'Walk-in Customer'}</td>
-                        <td style="text-align:right; font-weight:800; color:#16a34a;">+ Rs. ${Number(s.total || 0).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-        }
-    }
-
-    // Expenses Table
-    const expTbody = document.getElementById('ds-expenses-tbody');
-    if (expTbody) {
-        expTbody.innerHTML = '';
-        if (todayExpenses.length === 0) {
-            expTbody.innerHTML = `<tr><td colspan="3" class="empty-placeholder">No expenses logged for this date.</td></tr>`;
-        } else {
-            todayExpenses.forEach(e => {
-                expTbody.innerHTML += `
-                    <tr>
-                        <td><strong>${e.title}</strong></td>
-                        <td><span class="status-badge" style="background:#f1f5f9; color:#475569;">${e.category || 'General'}</span></td>
-                        <td style="text-align:right; font-weight:800; color:#dc2626;">- Rs. ${Number(e.amount || 0).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-        }
-    }
-};
 
 // =========================================================
 // MASTER ALL REPORTS ENGINE (KPIs, FILTERS & PDF EXPORT)
@@ -11299,13 +10807,8 @@ window.downloadAllReportsPDF = function() {
     html2pdf().set(opt).from(element).save();
 };
 
-// Render initial views
-// Render initial views
-if (typeof window.renderDailySheet === 'function') window.renderDailySheet();
 
-// =========================================================================
-// LOCAL DRIVE DIRECTORY PICKER & FULL DATA BACKUP ENGINE
-// =========================================================================
+
 let chosenDirectoryHandle = null;
 
 // 1. Computer ki Drive se Folder Select Karna
