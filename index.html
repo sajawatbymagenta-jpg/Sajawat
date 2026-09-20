@@ -549,8 +549,13 @@
         .invoice-footer { text-align: center; font-size: 0.8rem; color: #64748b; margin-top: 10px; }
         .invoice-actions { display: flex; gap: 10px; margin-top: 15px; }
 
-       @media print {
-            /* 1. Page margins ko zero karein taake extra page break na bane */
+      /* Normal screen par barcode print area hamesha mukammal hidden rahega */
+        #barcode-print-area {
+            display: none !important;
+        }
+
+        @media print {
+            /* 1. Page margins zero karein */
             @page {
                 size: auto;
                 margin: 0mm;
@@ -565,7 +570,7 @@
                 background: #ffffff !important;
             }
 
-            /* 2. Background ki sari cheezon ko mukammal khatam (display: none) karein */
+            /* 2. Web UI elements ko print mein hide karein */
             .wrapper, 
             #login-page, 
             #mobile-backdrop,
@@ -593,14 +598,12 @@
                 left: auto !important;
                 top: auto !important;
                 width: 100% !important;
-                max-width: 78mm !important; /* 80mm thermal receipt standard printable width */
+                max-width: 78mm !important;
                 margin: 0 auto !important;
                 padding: 3mm 2mm !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
-                
-                /* Yeh slip ko 2 tukron / 2 sheets mein tootne nahi dega */
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
                 page-break-after: avoid !important;
@@ -627,211 +630,96 @@
                 margin: 8px 0 !important;
             }
 
-            /* 4. Invoice print hote waqt barcode area ko band rakhein */
+            /* 4. Invoice print ke waqt barcode area hide rahe */
             #invoice-modal.visible ~ #barcode-print-area,
             #barcode-print-area:empty {
                 display: none !important;
             }
 
-       /* 5. XP-80 Single Continuous Roll Print Support (Connected Directly with Settings) */
-        #barcode-print-area:not(:empty) {
-            position: relative !important;
-            width: 100% !important;
-            max-width: 78mm !important;
-            margin: 0 auto !important;
-            padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
-            background: #ffffff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            page-break-inside: auto !important;
-            break-inside: auto !important;
-        }
+            /* 5. XP-80 Single Continuous Roll Print Support (Clean Spacing & Large Bold Text) */
+            #barcode-print-area:not(:empty) {
+                display: flex !important;
+                position: relative !important;
+                width: 100% !important;
+                max-width: 78mm !important;
+                margin: 0 auto !important;
+                padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
+                background: #ffffff !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
 
-        .barcode-sticker-print-box {
-            width: var(--bc-width, 50mm) !important;
-            height: var(--bc-height, 24mm) !important;
-            min-height: var(--bc-height, 24mm) !important;
-            margin: 0 auto 2.5mm auto !important;
-            padding: 1mm !important;
-            text-align: center;
-            border: 1px dashed #000000 !important;
-            border-radius: 4px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: center !important;
-            box-sizing: border-box !important;
-            background: #ffffff !important;
-            overflow: hidden !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            page-break-after: auto !important;
-            break-after: auto !important;
-        }
-
-        .bcp-company {
-            font-size: var(--bc-font-title, 7px) !important;
-            font-weight: 800 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            line-height: 1.1 !important;
-            margin: 0 0 1px 0 !important;
-            padding: 0 !important;
-            color: #000000 !important;
-        }
-
-        .bcp-title {
-            font-size: var(--bc-font-name, 8px) !important;
-            font-weight: 800 !important;
-            line-height: 1.1 !important;
-            max-width: 95% !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            margin: 0 0 1px 0 !important;
-            padding: 0 !important;
-            color: #000000 !important;
-        }
-
-        .bcp-svg {
-            width: 90% !important;
-            height: var(--bc-barcode-h, 11mm) !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            display: block !important;
-        }
-
-        .bcp-price {
-            font-size: var(--bc-font-price, 9px) !important;
-            font-weight: 900 !important;
-            letter-spacing: 0.2px;
-            line-height: 1.1 !important;
-            margin: 1px 0 0 0 !important;
-            padding: 0 !important;
-            color: #000000 !important;
-        }
+            .barcode-sticker-print-box {
+                width: var(--bc-width, 50mm) !important;
+                min-height: var(--bc-height, 24mm) !important;
+                height: auto !important;
+                margin: 0 auto 2.5mm auto !important;
+                padding: 1.5mm 1mm !important;
+                text-align: center;
+                border: 1px dashed #000000 !important;
+                border-radius: 4px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                box-sizing: border-box !important;
+                background: #ffffff !important;
+                overflow: hidden !important;
+                font-family: var(--bc-font-family, 'Plus Jakarta Sans', Arial, sans-serif) !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
 
             .bcp-company {
-                font-size: 7px !important;
-                font-weight: 800 !important;
+                font-size: var(--bc-font-comp, 8px) !important;
+                font-weight: var(--bc-font-weight, 800) !important;
                 text-transform: uppercase;
-                letter-spacing: 0.2px;
-                line-height: 1 !important;
+                letter-spacing: 0.3px;
+                line-height: 1.1 !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 color: #000000 !important;
+                max-width: 96%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .bcp-title {
-                font-size: 8px !important;
-                font-weight: 800 !important;
-                line-height: 1 !important;
-                max-width: 48mm !important;
+                font-size: var(--bc-font-name, 9px) !important;
+                font-weight: var(--bc-font-weight, 800) !important;
+                line-height: 1.1 !important;
+                max-width: 96% !important;
                 white-space: nowrap !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
-                margin: 0 !important;
+                margin: 1px 0 !important;
                 padding: 0 !important;
                 color: #000000 !important;
+                text-transform: uppercase;
             }
 
             .bcp-svg {
-                width: 46mm !important;
-                height: 10.5mm !important;    /* Barcode line height thodi ooper uthayi */
-                margin: 0 !important;
+                width: 92% !important;
+                height: var(--bc-barcode-h, 11mm) !important;
+                margin: 1px auto !important;
                 padding: 0 !important;
                 display: block !important;
             }
 
             .bcp-price {
-                font-size: 9px !important;
+                font-size: var(--bc-font-price, 10px) !important;
                 font-weight: 900 !important;
-                letter-spacing: 0.2px;
-                line-height: 1 !important;
-                margin: 0 !important;
-                padding-top: 0.2mm !important;
+                letter-spacing: 0.3px;
+                line-height: 1.1 !important;
+                margin: 1px 0 0 0 !important;
+                padding: 1px 0 0 0 !important;
                 color: #000000 !important;
-            }/* 5. XP-80 Single Continuous Roll Print Support (Clean Spacing & Large Bold Text) */
-        #barcode-print-area:not(:empty) {
-            position: relative !important;
-            width: 100% !important;
-            max-width: 78mm !important;
-            margin: 0 auto !important;
-            padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
-            background: #ffffff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            page-break-inside: auto !important;
-            break-inside: auto !important;
-        }
-
-        .barcode-sticker-print-box {
-            width: var(--bc-width, 50mm) !important;
-            min-height: var(--bc-height, 25mm) !important;
-            height: auto !important;
-            margin: 0 auto 3mm auto !important;
-            padding: 1.5mm 1mm !important;
-            text-align: center;
-            border: 1px dashed #000000 !important;
-            border-radius: 4px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            box-sizing: border-box !important;
-            background: #ffffff !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        .bcp-company {
-            font-size: 9px !important;
-            font-weight: 800 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.2 !important;
-            margin: 0 0 1px 0 !important;
-            padding: 0 !important;
-            color: #000000 !important;
-        }
-
-        .bcp-title {
-            font-size: 11px !important;
-            font-weight: 900 !important;
-            line-height: 1.2 !important;
-            max-width: 95% !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            margin: 1px 0 2px 0 !important;
-            padding: 0 !important;
-            color: #000000 !important;
-            text-transform: uppercase;
-        }
-
-        .bcp-svg {
-            width: 92% !important;
-            height: auto !important;
-            max-height: 12mm !important;
-            margin: 1px auto !important;
-            padding: 0 !important;
-            display: block !important;
-        }
-
-        .bcp-price {
-            font-size: 12px !important;
-            font-weight: 900 !important;
-            letter-spacing: 0.3px;
-            line-height: 1.2 !important;
-            margin-top: 3px !important;
-            padding: 2px 0 0 0 !important;
-            color: #000000 !important;
-            border-top: 1px dashed #000000 !important;
-            width: 92% !important;
-        }
+                border-top: 1px dashed #000000 !important;
+                width: 92% !important;
+            }
         }
         /* =========================================================================
            COMPLETE AUTO-ADJUSTING MOBILE RESPONSIVE SYSTEM (ZERO HORIZONTAL SCROLL)
@@ -3660,16 +3548,14 @@ const auth = firebase.auth();
             window.triggerBarcodeDirectPrint(printList);
         };
 
-        // 3. Robust Thermal Barcode Print Engine (Crash-Proof & SweetAlert Safe)
+        // 3. Robust Thermal Barcode Print Engine (Crash-Proof, Screen Clean & Auto-Reset)
         window.triggerBarcodeDirectPrint = function(itemsList) {
-            
-            // Agar container na mile to code khud ba khud bana le (Auto-Create)
-    let printArea = document.getElementById('barcode-print-area');
-    if (!printArea) {
-        printArea = document.createElement('div');
-        printArea.id = 'barcode-print-area';
-        document.body.appendChild(printArea);
-    }
+            let printArea = document.getElementById('barcode-print-area');
+            if (!printArea) {
+                printArea = document.createElement('div');
+                printArea.id = 'barcode-print-area';
+                document.body.appendChild(printArea);
+            }
 
             if (!itemsList || itemsList.length === 0) {
                 Toast.fire({ icon: 'warning', title: 'Print karne ke liye koi product nahi hai!' });
@@ -3729,6 +3615,12 @@ const auth = firebase.auth();
                         } catch(e) {}
                     }
                 });
+
+                // Print khatam ya cancel hone ke baad screen se printArea saaf karna
+                window.onafterprint = function() {
+                    const pa = document.getElementById('barcode-print-area');
+                    if (pa) pa.innerHTML = '';
+                };
 
                 // SweetAlert popup band hone ke baad print chalana
                 setTimeout(() => {
