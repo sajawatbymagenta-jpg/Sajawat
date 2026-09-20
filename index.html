@@ -7272,46 +7272,60 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
                 }
             });
 
-            // Cart Items row click handler
+           // =========================================================
+            // CART ITEMS: PLUS (+), MINUS (-), DELETE (100% FIXED)
+            // =========================================================
             document.getElementById('cart-items')?.addEventListener('click', (e) => {
                 const row = e.target.closest('.cart-item'); 
-                if(!row) return;
+                if (!row) return;
+                
                 const id = row.dataset.id;
                 const cartItem = cart.find(i => i.id === id);
-                const menuItem = window.menuItems.find(i => i.id === id);
-                
+                if (!cartItem) return;
+
                 const selectedBranch = document.getElementById('pos-selected-branch')?.value;
-if (!selectedBranch) {
-    Toast.fire({
-        icon: 'error',
-        title: "Main Godown se sale nahi ho sakti. Pehle Shop chunein!"
-    });
-    return;
-}
+                const menuItem = (window.menuItems || []).find(i => i.id === id);
 
-const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === matchedItem.id);
-const availableStock = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+                // 1. DELETE BUTTON (Kachray ka dabba)
+                if (e.target.closest('.remove-item')) {
+                    cart = cart.filter(i => i.id !== id);
+                    window.renderCart();
+                    return;
+                }
 
-if (availableStock <= 0) {
-    Toast.fire({
-        icon: 'error',
-        title: `"${matchedItem.name}" is Shop par dastyab nahi hai!`
-    });
-    return;
-}
+                // 2. MINUS BUTTON (-)
+                if (e.target.closest('.qty-minus')) {
+                    if (cartItem.qty > 1) {
+                        cartItem.qty--;
+                    } else {
+                        cart = cart.filter(i => i.id !== id);
+                    }
+                    window.renderCart();
+                    return;
+                }
 
-                if(e.target.closest('.qty-plus')) { 
-                    if(cartItem && maxAvailable > cartItem.qty) { cartItem.qty++; } 
-                    else alert(`Stock limit (${maxAvailable} units) reached!`); 
+                // 3. PLUS BUTTON (+)
+                if (e.target.closest('.qty-plus')) {
+                    let availableStock = 0;
+
+                    if (selectedBranch && selectedBranch !== 'all') {
+                        const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === id);
+                        availableStock = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+                    } else {
+                        availableStock = menuItem ? Number(menuItem.stock || 0) : 0;
+                    }
+
+                    if (cartItem.qty < availableStock) {
+                        cartItem.qty++;
+                        window.renderCart();
+                    } else {
+                        Toast.fire({
+                            icon: 'warning',
+                            title: `Stock limit reached! Is Shop par sirf ${availableStock} units mojood hain.`
+                        });
+                    }
+                    return;
                 }
-                if(e.target.closest('.qty-minus')) { 
-                    if(cartItem.qty > 1) { cartItem.qty--; } 
-                    else { cart = cart.filter(i => i.id !== id); } 
-                }
-                if(e.target.closest('.remove-item')) { 
-                    cart = cart.filter(i => i.id !== id); 
-                }
-                window.renderCart(); 
             });
 
             // Settings Save Button ka Listener
