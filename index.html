@@ -11492,134 +11492,246 @@ updateNetworkStatus();
 // =========================================================================
         // BARCODE PRINT VIEW & ALIGNMENT SETTINGS CONTROLLER
         // =========================================================================
-        const DEFAULT_BC_SETTINGS = {
-            width: 50,      // mm
-            height: 24,     // mm
-            leftOffset: 0,  // mm
-            topOffset: 0,   // mm
-            barcodeH: 11,   // mm
-            fontSize: 8     // px
-        };
+       // =========================================================================
+// ADVANCED BARCODE PRINT VIEW, DRAGGING & ALIGNMENT CONTROLLER
+// =========================================================================
+const DEFAULT_BC_SETTINGS = {
+    width: 50,          // mm
+    height: 24,         // mm
+    leftOffset: 0,      // mm
+    topOffset: 0,       // mm
+    barcodeH: 11,       // mm
+    fontComp: 8,        // px
+    fontName: 9,        // px
+    fontPrice: 10,      // px
+    fontWeight: '800',  // bold / extra bold
+    fontFamily: "'Plus Jakarta Sans', sans-serif"
+};
 
-        // 1. Current Settings Load Karna
-        window.getStoredBarcodeSettings = function() {
-            try {
-                const data = localStorage.getItem('pos_barcode_custom_config');
-                return data ? { ...DEFAULT_BC_SETTINGS, ...JSON.parse(data) } : { ...DEFAULT_BC_SETTINGS };
-            } catch(e) {
-                return { ...DEFAULT_BC_SETTINGS };
-            }
-        };
+// 1. Stored Settings Fetch Karna
+window.getStoredBarcodeSettings = function() {
+    try {
+        const data = localStorage.getItem('pos_barcode_custom_config');
+        return data ? { ...DEFAULT_BC_SETTINGS, ...JSON.parse(data) } : { ...DEFAULT_BC_SETTINGS };
+    } catch(e) {
+        return { ...DEFAULT_BC_SETTINGS };
+    }
+};
 
-        // 2. CSS Variables Apply Karna (Taake Print aur Screen dono par chale)
-        window.applyBarcodePrintVariables = function(cfg) {
-            const root = document.documentElement;
-            root.style.setProperty('--bc-width', `${cfg.width}mm`);
-            root.style.setProperty('--bc-height', `${cfg.height}mm`);
-            root.style.setProperty('--bc-left-offset', `${cfg.leftOffset}mm`);
-            root.style.setProperty('--bc-top-offset', `${cfg.topOffset}mm`);
-            root.style.setProperty('--bc-barcode-h', `${cfg.barcodeH}mm`);
-            root.style.setProperty('--bc-font-name', `${cfg.fontSize}px`);
-            root.style.setProperty('--bc-font-title', `${Math.max(6, cfg.fontSize - 1)}px`);
-            root.style.setProperty('--bc-font-price', `${cfg.fontSize + 1}px`);
-        };
+// 2. CSS Variables Apply Karna
+window.applyBarcodePrintVariables = function(cfg) {
+    const root = document.documentElement;
+    root.style.setProperty('--bc-width', `${cfg.width}mm`);
+    root.style.setProperty('--bc-height', `${cfg.height}mm`);
+    root.style.setProperty('--bc-left-offset', `${cfg.leftOffset}mm`);
+    root.style.setProperty('--bc-top-offset', `${cfg.topOffset}mm`);
+    root.style.setProperty('--bc-barcode-h', `${cfg.barcodeH}mm`);
+    root.style.setProperty('--bc-font-comp', `${cfg.fontComp}px`);
+    root.style.setProperty('--bc-font-name', `${cfg.fontName}px`);
+    root.style.setProperty('--bc-font-price', `${cfg.fontPrice}px`);
+    root.style.setProperty('--bc-font-weight', cfg.fontWeight || '800');
+    root.style.setProperty('--bc-font-family', cfg.fontFamily || "'Plus Jakarta Sans', sans-serif");
+};
 
-        // 3. Modal Kholna aur Sliders mein saved values bharna
-        window.openBarcodeSettingsModal = function() {
-            const cfg = window.getStoredBarcodeSettings();
+// 3. Modal Kholna & Values Load Karna
+window.openBarcodeSettingsModal = function() {
+    const cfg = window.getStoredBarcodeSettings();
 
-            document.getElementById('cfg-bc-w').value = cfg.width;
-            document.getElementById('cfg-bc-h').value = cfg.height;
-            document.getElementById('cfg-bc-left').value = cfg.leftOffset;
-            document.getElementById('cfg-bc-top').value = cfg.topOffset;
-            document.getElementById('cfg-bc-bar-h').value = cfg.barcodeH;
-            document.getElementById('cfg-bc-font').value = cfg.fontSize;
+    document.getElementById('cfg-bc-w').value = cfg.width;
+    document.getElementById('cfg-bc-h').value = cfg.height;
+    document.getElementById('cfg-bc-left').value = cfg.leftOffset;
+    document.getElementById('cfg-bc-top').value = cfg.topOffset;
+    document.getElementById('cfg-bc-bar-h').value = cfg.barcodeH;
+    document.getElementById('cfg-bc-font-comp').value = cfg.fontComp || 8;
+    document.getElementById('cfg-bc-font-name').value = cfg.fontName || 9;
+    document.getElementById('cfg-bc-font-price').value = cfg.fontPrice || 10;
+    
+    if (document.getElementById('cfg-bc-bold')) document.getElementById('cfg-bc-bold').value = cfg.fontWeight || '800';
+    if (document.getElementById('cfg-bc-font-family')) document.getElementById('cfg-bc-font-family').value = cfg.fontFamily || "'Plus Jakarta Sans', sans-serif";
 
-            document.getElementById('barcode-settings-modal')?.classList.add('visible');
-            window.updateLiveStickerPreview();
-        };
+    document.getElementById('barcode-settings-modal')?.classList.add('visible');
+    window.updateLiveStickerPreview();
+    window.initInteractiveStickerMouseEvents();
+};
 
-        window.closeBarcodeSettingsModal = function() {
-            document.getElementById('barcode-settings-modal')?.classList.remove('visible');
-        };
+window.closeBarcodeSettingsModal = function() {
+    document.getElementById('barcode-settings-modal')?.classList.remove('visible');
+};
 
-        // 4. Mouse Sliders Hilane par Live Sticker Update Karna
-        window.updateLiveStickerPreview = function() {
-            const w = parseFloat(document.getElementById('cfg-bc-w').value) || 50;
-            const h = parseFloat(document.getElementById('cfg-bc-h').value) || 24;
-            const left = parseFloat(document.getElementById('cfg-bc-left').value) || 0;
-            const top = parseFloat(document.getElementById('cfg-bc-top').value) || 0;
-            const barH = parseFloat(document.getElementById('cfg-bc-bar-h').value) || 11;
-            const fSize = parseFloat(document.getElementById('cfg-bc-font').value) || 8;
+window.onSettingsSliderChange = function() {
+    window.updateLiveStickerPreview();
+};
 
-            // Labels update
-            document.getElementById('lbl-bc-w').textContent = `${w} mm`;
-            document.getElementById('lbl-bc-h').textContent = `${h} mm`;
-            document.getElementById('lbl-bc-left').textContent = `${left} mm`;
-            document.getElementById('lbl-bc-top').textContent = `${top} mm`;
-            document.getElementById('lbl-bc-bar-h').textContent = `${barH} mm`;
-            document.getElementById('lbl-bc-font').textContent = `${fSize} px`;
+// 4. Live Preview Update Function
+window.updateLiveStickerPreview = function() {
+    const w = parseFloat(document.getElementById('cfg-bc-w')?.value) || 50;
+    const h = parseFloat(document.getElementById('cfg-bc-h')?.value) || 24;
+    const left = parseFloat(document.getElementById('cfg-bc-left')?.value) || 0;
+    const top = parseFloat(document.getElementById('cfg-bc-top')?.value) || 0;
+    const barH = parseFloat(document.getElementById('cfg-bc-bar-h')?.value) || 11;
+    const fontComp = parseFloat(document.getElementById('cfg-bc-font-comp')?.value) || 8;
+    const fontName = parseFloat(document.getElementById('cfg-bc-font-name')?.value) || 9;
+    const fontPrice = parseFloat(document.getElementById('cfg-bc-font-price')?.value) || 10;
+    const fontWeight = document.getElementById('cfg-bc-bold')?.value || '800';
+    const fontFamily = document.getElementById('cfg-bc-font-family')?.value || "'Plus Jakarta Sans', sans-serif";
 
-            // Live Sample Container Style
-            const sticker = document.getElementById('live-sticker-sample');
-            if (sticker) {
-                sticker.style.width = `${w * 3.78}px`;   // mm to screen px conversion
-                sticker.style.height = `${h * 3.78}px`;
-                sticker.style.transform = `translate(${left * 2}px, ${top * 2}px)`;
+    // Update Slider Labels
+    if(document.getElementById('lbl-bc-w')) document.getElementById('lbl-bc-w').textContent = `${w} mm`;
+    if(document.getElementById('lbl-bc-h')) document.getElementById('lbl-bc-h').textContent = `${h} mm`;
+    if(document.getElementById('lbl-bc-left')) document.getElementById('lbl-bc-left').textContent = `${left} mm`;
+    if(document.getElementById('lbl-bc-top')) document.getElementById('lbl-bc-top').textContent = `${top} mm`;
+    if(document.getElementById('lbl-bc-bar-h')) document.getElementById('lbl-bc-bar-h').textContent = `${barH} mm`;
+    if(document.getElementById('lbl-bc-font-comp')) document.getElementById('lbl-bc-font-comp').textContent = `${fontComp} px`;
+    if(document.getElementById('lbl-bc-font-name')) document.getElementById('lbl-bc-font-name').textContent = `${fontName} px`;
+    if(document.getElementById('lbl-bc-font-price')) document.getElementById('lbl-bc-font-price').textContent = `${fontPrice} px`;
 
-                document.getElementById('sample-comp-name').style.fontSize = `${Math.max(7, fSize * 0.9)}px`;
-                document.getElementById('sample-prod-name').style.fontSize = `${fSize}px`;
-                document.getElementById('sample-price-tag').style.fontSize = `${fSize * 1.1}px`;
+    // Live Sample Box Style Update (1mm approx 3.78px on screen)
+    const sticker = document.getElementById('live-sticker-sample');
+    if (sticker) {
+        sticker.style.width = `${w * 3.78}px`;
+        sticker.style.height = `${h * 3.78}px`;
+        sticker.style.transform = `translate(${left * 2}px, ${top * 2}px)`;
+        sticker.style.fontFamily = fontFamily;
 
-                // Render Barcode in Sample
-                try {
-                    JsBarcode("#sample-barcode-svg", "890336968190", {
-                        format: "CODE128",
-                        width: 1.2,
-                        height: barH * 2.2,
-                        displayValue: true,
-                        fontSize: fSize * 0.95,
-                        margin: 0
-                    });
-                } catch(e) {}
-            }
-        };
+        const compEl = document.getElementById('sample-comp-name');
+        const prodEl = document.getElementById('sample-prod-name');
+        const priceEl = document.getElementById('sample-price-tag');
 
-        // 5. Setting ko Save Karna (Aik Baar Hamesha ke Liye)
-        window.saveBarcodePrintSettings = function() {
-            const cfg = {
-                width: parseFloat(document.getElementById('cfg-bc-w').value) || 50,
-                height: parseFloat(document.getElementById('cfg-bc-h').value) || 24,
-                leftOffset: parseFloat(document.getElementById('cfg-bc-left').value) || 0,
-                topOffset: parseFloat(document.getElementById('cfg-bc-top').value) || 0,
-                barcodeH: parseFloat(document.getElementById('cfg-bc-bar-h').value) || 11,
-                fontSize: parseFloat(document.getElementById('cfg-bc-font').value) || 8
-            };
+        if (compEl) {
+            compEl.style.fontSize = `${fontComp}px`;
+            compEl.style.fontWeight = fontWeight;
+        }
+        if (prodEl) {
+            prodEl.style.fontSize = `${fontName}px`;
+            prodEl.style.fontWeight = fontWeight;
+        }
+        if (priceEl) {
+            priceEl.style.fontSize = `${fontPrice}px`;
+            priceEl.style.fontWeight = fontWeight;
+        }
 
-            localStorage.setItem('pos_barcode_custom_config', JSON.stringify(cfg));
-            window.applyBarcodePrintVariables(cfg);
-            window.closeBarcodeSettingsModal();
-
-            Toast.fire({
-                icon: 'success',
-                title: 'Barcode Print Settings kamyabi say save ho gayin!'
+        try {
+            JsBarcode("#sample-barcode-svg", "890336968190", {
+                format: "CODE128",
+                width: 1.25,
+                height: barH * 2.2,
+                displayValue: true,
+                fontSize: fontName * 0.95,
+                font: fontFamily,
+                margin: 0
             });
-        };
+        } catch(e) {}
+    }
+};
 
-        // 6. Reset Defaults
-        window.resetBarcodeSettingsToDefault = function() {
-            if (confirm("Kya aap waqai settings ko original defaults (50mm x 24mm) par wapas lana chahte hain?")) {
-                localStorage.removeItem('pos_barcode_custom_config');
-                window.applyBarcodePrintVariables(DEFAULT_BC_SETTINGS);
-                window.openBarcodeSettingsModal();
-            }
-        };
+// 5. Mouse Dragging & Corner Resize Handlers
+let isMouseDraggingSticker = false;
+let isMouseResizingSticker = false;
+let startMouseX = 0;
+let startMouseY = 0;
+let initialLeftShift = 0;
+let initialTopShift = 0;
+let initialWidthMm = 50;
+let initialHeightMm = 24;
 
-        // Page load hote hi saved settings foran activate ho jayein
-        document.addEventListener('DOMContentLoaded', () => {
-            const saved = window.getStoredBarcodeSettings();
-            window.applyBarcodePrintVariables(saved);
-        });
+window.initInteractiveStickerMouseEvents = function() {
+    const sticker = document.getElementById('live-sticker-sample');
+    const resizeHandle = document.getElementById('sticker-resize-handle');
+    if (!sticker) return;
+
+    // Drag to Move (Left/Right/Up/Down)
+    sticker.onmousedown = function(e) {
+        if (e.target === resizeHandle) return; // Resize ko alag handle karein
+        isMouseDraggingSticker = true;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        initialLeftShift = parseFloat(document.getElementById('cfg-bc-left').value) || 0;
+        initialTopShift = parseFloat(document.getElementById('cfg-bc-top').value) || 0;
+        e.preventDefault();
+    };
+
+    // Drag to Resize (Width/Height)
+    if (resizeHandle) {
+        resizeHandle.onmousedown = function(e) {
+            isMouseResizingSticker = true;
+            startMouseX = e.clientX;
+            startMouseY = e.clientY;
+            initialWidthMm = parseFloat(document.getElementById('cfg-bc-w').value) || 50;
+            initialHeightMm = parseFloat(document.getElementById('cfg-bc-h').value) || 24;
+            e.stopPropagation();
+            e.preventDefault();
+        };
+    }
+
+    window.onmousemove = function(e) {
+        if (isMouseDraggingSticker) {
+            const deltaX = (e.clientX - startMouseX) / 2;
+            const deltaY = (e.clientY - startMouseY) / 2;
+
+            let newLeft = Math.min(30, Math.max(-20, initialLeftShift + (deltaX * 0.5)));
+            let newTop = Math.min(30, Math.max(-20, initialTopShift + (deltaY * 0.5)));
+
+            document.getElementById('cfg-bc-left').value = newLeft.toFixed(1);
+            document.getElementById('cfg-bc-top').value = newTop.toFixed(1);
+            window.updateLiveStickerPreview();
+        } else if (isMouseResizingSticker) {
+            const deltaX = (e.clientX - startMouseX) / 3.78;
+            const deltaY = (e.clientY - startMouseY) / 3.78;
+
+            let newW = Math.min(100, Math.max(30, initialWidthMm + deltaX));
+            let newH = Math.min(60, Math.max(15, initialHeightMm + deltaY));
+
+            document.getElementById('cfg-bc-w').value = Math.round(newW);
+            document.getElementById('cfg-bc-h').value = Math.round(newH);
+            window.updateLiveStickerPreview();
+        }
+    };
+
+    window.onmouseup = function() {
+        isMouseDraggingSticker = false;
+        isMouseResizingSticker = false;
+    };
+};
+
+// 6. Save Settings (Permanent Save)
+window.saveBarcodePrintSettings = function() {
+    const cfg = {
+        width: parseFloat(document.getElementById('cfg-bc-w')?.value) || 50,
+        height: parseFloat(document.getElementById('cfg-bc-h')?.value) || 24,
+        leftOffset: parseFloat(document.getElementById('cfg-bc-left')?.value) || 0,
+        topOffset: parseFloat(document.getElementById('cfg-bc-top')?.value) || 0,
+        barcodeH: parseFloat(document.getElementById('cfg-bc-bar-h')?.value) || 11,
+        fontComp: parseFloat(document.getElementById('cfg-bc-font-comp')?.value) || 8,
+        fontName: parseFloat(document.getElementById('cfg-bc-font-name')?.value) || 9,
+        fontPrice: parseFloat(document.getElementById('cfg-bc-font-price')?.value) || 10,
+        fontWeight: document.getElementById('cfg-bc-bold')?.value || '800',
+        fontFamily: document.getElementById('cfg-bc-font-family')?.value || "'Plus Jakarta Sans', sans-serif"
+    };
+
+    localStorage.setItem('pos_barcode_custom_config', JSON.stringify(cfg));
+    window.applyBarcodePrintVariables(cfg);
+    window.closeBarcodeSettingsModal();
+
+    Toast.fire({
+        icon: 'success',
+        title: 'Barcode Print View & Layout Settings kamyabi say save ho gayin!'
+    });
+};
+
+// 7. Reset Defaults
+window.resetBarcodeSettingsToDefault = function() {
+    if (confirm("Kya aap waqai settings ko original defaults (50mm x 24mm) par reset karna chahte hain?")) {
+        localStorage.removeItem('pos_barcode_custom_config');
+        window.applyBarcodePrintVariables(DEFAULT_BC_SETTINGS);
+        window.openBarcodeSettingsModal();
+    }
+};
+
+// Page load par execute karein
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = window.getStoredBarcodeSettings();
+    window.applyBarcodePrintVariables(saved);
+});
 
 // =========================================================================
 // SUPER MASTER LICENSE & CLOUD KILL-SWITCH ENGINE
@@ -12053,141 +12165,164 @@ window.openDeveloperOverrideModal = async function() {
 
    </script>
 
-<!-- MODAL: BARCODE PRINT VIEW & ALIGNMENT SETTINGS -->
-    <div id="barcode-settings-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 680px;">
-            <span class="close-modal" onclick="closeBarcodeSettingsModal()">&times;</span>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
-                <i class='bx bx-slider-alt' style="font-size: 1.5rem; color: var(--primary);"></i>
-                <h2 style="font-size: 1.25rem;">Barcode Print View & Size Setting</h2>
-            </div>
-            <p style="color:#64748b; font-size:0.83rem; margin-bottom: 15px;">
-                Mouse se sliders hilakar size chota/bada karein aur left/right align karein. Live preview sath sath update hoga.
-            </p>
+<!-- MODAL: ADVANCED BARCODE PRINT VIEW & INTERACTIVE SETTINGS -->
+<div id="barcode-settings-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 820px; width: 95%;">
+        <span class="close-modal" onclick="closeBarcodeSettingsModal()">&times;</span>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+            <i class='bx bx-slider-alt' style="font-size: 1.6rem; color: var(--primary);"></i>
+            <h2 style="font-size: 1.3rem;">Barcode Print View & Layout Customizer</h2>
+        </div>
+        <p style="color:#64748b; font-size:0.84rem; margin-bottom: 14px;">
+            Mouse se sticker ko <b>Drag</b> karke position set karein ya neele corner se <b>Resize</b> karein. Font size aur styles tabdeel karein.
+        </p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
-                <!-- Left: Mouse Controls / Sliders -->
-                <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:14px;">
-                    <!-- 1. Width -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Chorai (Width):</span>
-                            <span id="lbl-bc-w" style="color:var(--primary);">50 mm</span>
-                        </div>
-                        <input type="range" id="cfg-bc-w" min="30" max="100" step="1" value="50" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+        <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: start;">
+            <!-- Left: Controls & Adjustments -->
+            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:14px; padding:14px; max-height: 480px; overflow-y:auto;">
+                
+                <h4 style="font-size:0.88rem; color:#0f172a; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
+                    <i class='bx bx-move'></i> Dimensions & Alignment
+                </h4>
+
+                <!-- 1. Width -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Chorai (Width):</span>
+                        <span id="lbl-bc-w" style="color:var(--primary);">50 mm</span>
                     </div>
+                    <input type="range" id="cfg-bc-w" min="30" max="100" step="1" value="50" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
 
-                    <!-- 2. Height -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Lambai (Height):</span>
-                            <span id="lbl-bc-h" style="color:var(--primary);">24 mm</span>
-                        </div>
-                        <input type="range" id="cfg-bc-h" min="15" max="60" step="1" value="24" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+                <!-- 2. Height -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Lambai (Height):</span>
+                        <span id="lbl-bc-h" style="color:var(--primary);">24 mm</span>
                     </div>
+                    <input type="range" id="cfg-bc-h" min="15" max="60" step="1" value="24" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
 
-                    <!-- 3. Left / Right Alignment -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Left / Right Shift:</span>
-                            <span id="lbl-bc-left" style="color:var(--primary);">0 mm</span>
-                        </div>
-                        <input type="range" id="cfg-bc-left" min="-10" max="25" step="0.5" value="0" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+                <!-- 3. Left / Right Alignment -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Left / Right Shift:</span>
+                        <span id="lbl-bc-left" style="color:var(--primary);">0 mm</span>
                     </div>
+                    <input type="range" id="cfg-bc-left" min="-20" max="30" step="0.5" value="0" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
 
-                    <!-- 4. Up / Down Alignment -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Up / Down Shift:</span>
-                            <span id="lbl-bc-top" style="color:var(--primary);">0 mm</span>
-                        </div>
-                        <input type="range" id="cfg-bc-top" min="-10" max="25" step="0.5" value="0" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+                <!-- 4. Up / Down Alignment -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Up / Down Shift:</span>
+                        <span id="lbl-bc-top" style="color:var(--primary);">0 mm</span>
                     </div>
+                    <input type="range" id="cfg-bc-top" min="-20" max="30" step="0.5" value="0" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
 
-                    <!-- 5. Barcode Line Height -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Barcode Lines Size:</span>
-                            <span id="lbl-bc-bar-h" style="color:var(--primary);">11 mm</span>
-                        </div>
-                        <input type="range" id="cfg-bc-bar-h" min="6" max="25" step="0.5" value="11" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+                <!-- 5. Barcode Line Height -->
+                <div style="margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Barcode Lines Height:</span>
+                        <span id="lbl-bc-bar-h" style="color:var(--primary);">11 mm</span>
                     </div>
+                    <input type="range" id="cfg-bc-bar-h" min="6" max="25" step="0.5" value="11" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
 
-                    <!-- 6. Font Zoom -->
-                    <div style="margin-bottom: 4px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
-                            <span>Text / Font Size:</span>
-                            <span id="lbl-bc-font" style="color:var(--primary);">8 px</span>
-                        </div>
-                        <input type="range" id="cfg-bc-font" min="6" max="14" step="0.5" value="8" style="width:100%; cursor:pointer;" oninput="updateLiveStickerPreview()">
+                <h4 style="font-size:0.88rem; color:#0f172a; margin-top:14px; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
+                    <i class='bx bx-font'></i> Text, Font Sizes & Styles
+                </h4>
+
+                <!-- Font Family & Bold Controls -->
+                <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:8px; margin-bottom:10px;">
+                    <div>
+                        <label style="font-size:0.78rem; font-weight:700; color:#475569;">Font Family:</label>
+                        <select id="cfg-bc-font-family" class="pos-mini-input" style="padding:6px; font-size:0.82rem;" onchange="onSettingsSliderChange()">
+                            <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
+                            <option value="Arial, sans-serif">Arial Standard</option>
+                            <option value="'Courier New', monospace">Courier (Monospace)</option>
+                            <option value="'Times New Roman', serif">Times Serif</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.78rem; font-weight:700; color:#475569;">Font Weight:</label>
+                        <select id="cfg-bc-bold" class="pos-mini-input" style="padding:6px; font-size:0.82rem;" onchange="onSettingsSliderChange()">
+                            <option value="900">Extra Bold</option>
+                            <option value="700">Bold</option>
+                            <option value="500">Normal</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- Right: Real-time Live Sticker Preview -->
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <span style="font-size:0.8rem; font-weight:800; color:#64748b; margin-bottom:8px; text-transform:uppercase;">
-                        Live Sticker Preview
+                <!-- Company Name Font Size -->
+                <div style="margin-bottom: 8px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Company Name Size:</span>
+                        <span id="lbl-bc-font-comp" style="color:var(--primary);">8 px</span>
+                    </div>
+                    <input type="range" id="cfg-bc-font-comp" min="6" max="16" step="0.5" value="8" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
+
+                <!-- Product Name Font Size -->
+                <div style="margin-bottom: 8px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Product Name Size:</span>
+                        <span id="lbl-bc-font-name" style="color:var(--primary);">9 px</span>
+                    </div>
+                    <input type="range" id="cfg-bc-font-name" min="7" max="18" step="0.5" value="9" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
+
+                <!-- Price Font Size -->
+                <div style="margin-bottom: 6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+                        <span>Price Font Size:</span>
+                        <span id="lbl-bc-font-price" style="color:var(--primary);">10 px</span>
+                    </div>
+                    <input type="range" id="cfg-bc-font-price" min="7" max="20" step="0.5" value="10" style="width:100%; cursor:pointer;" oninput="onSettingsSliderChange()">
+                </div>
+
+            </div>
+
+            <!-- Right: Interactive Live Drag & Resize Preview Stage -->
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:0.8rem; font-weight:800; color:#64748b; text-transform:uppercase;">
+                        Live Interactive Sticker Preview
                     </span>
-                    
-                    <div id="preview-paper-stage" style="width: 100%; min-height: 220px; background: #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 15px; overflow: auto;">
-                        <div id="live-sticker-sample" style="background: white; border: 1.5px dashed #0284c7; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; transition: all 0.1s ease;">
-                            <div id="sample-comp-name" style="font-weight: 800; text-transform: uppercase;">KORVEXA SOFTWARE</div>
-                            <div id="sample-prod-name" style="font-weight: 800;">SAMPLE COTTON SHIRT</div>
-                            <svg id="sample-barcode-svg"></svg>
-                            <div id="sample-price-tag" style="font-weight: 900;">PRICE: Rs. 1,600</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 10px; font-size: 0.76rem; color: #64748b; text-align: center;">
-                        <i class='bx bx-info-circle'></i> Settings save hone ke baad har print automatic isi format par aayega.
+                    <small style="color:#0284c7; font-weight:700; font-size:0.75rem;">
+                        <i class='bx bx-mouse'></i> Drag to move / resize
+                    </small>
+                </div>
+                
+                <div id="preview-paper-stage">
+                    <div id="live-sticker-sample" title="Mouse se pakar kar Drag ya Resize karein">
+                        <div id="sample-comp-name" style="text-transform: uppercase;">KORVEXA SOFTWARE</div>
+                        <div id="sample-prod-name">SAMPLE COTTON SHIRT</div>
+                        <svg id="sample-barcode-svg" style="width:90%; height:auto; margin:1px 0;"></svg>
+                        <div id="sample-price-tag" style="border-top:1px dashed #cbd5e1; width:92%; padding-top:1px;">PRICE: Rs. 1,600</div>
+                        <div class="sticker-resize-handle" id="sticker-resize-handle" title="Drag to Resize"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Modal Action Buttons -->
-            <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 14px;">
-                <button type="button" class="outline-btn" onclick="resetBarcodeSettingsToDefault()" style="color:#ef4444; border-color:#ef4444;">
-                    <i class='bx bx-reset'></i> Reset Defaults
-                </button>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="outline-btn" onclick="closeBarcodeSettingsModal()">Cancel</button>
-                    <button type="button" class="save-btn" onclick="saveBarcodePrintSettings()">
-                        <i class='bx bx-save'></i> Save Setting (Aik Bar)
-                    </button>
+                <div style="margin-top: 10px; font-size: 0.77rem; color: #64748b; text-align: center; line-height: 1.4;">
+                    <i class='bx bx-info-circle'></i> <b>Save Setting</b> par click karne ke baad har print automatic isi format par aayega.
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Hidden Print Container for Barcode Labels -->
-    <div id="barcode-print-area" style="display:none;"></div>
-
-<!-- =========================================================================
-     1. FULL-SCREEN CLOUD LOCKDOWN CURTAIN (JAB SOFTWARE EXPIRE YA BAND HO)
-     ========================================================================= -->
-<div id="software-lockdown-screen" style="display:none; position:fixed; inset:0; z-index:99999999; background:#070b14; color:#ffffff; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; font-family:'Plus Jakarta Sans', sans-serif;">
-    <div style="background:rgba(239, 68, 68, 0.12); border:2px solid #ef4444; width:95px; height:95px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px; box-shadow:0 0 45px rgba(239,68,68,0.45); animation:pulseGlowLock 2s infinite alternate;">
-        <i class='bx bx-cloud-off' style="font-size:52px; color:#ef4444;"></i>
-    </div>
-    
-    <h1 style="font-size:28px; font-weight:900; color:#ffffff; margin-bottom:12px; letter-spacing:0.5px;">
-        
-    </h1>
-    <p style="font-size:16px; color:#94a3b8; max-width:540px; margin-bottom:24px; line-height:1.6;">
-        Software license has expired or temporarily deactivated by cloud security.<br>
-        Kindly contact the software developer to renew subscription & resume service.
-    </p>
-
-    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px 24px; border-radius:12px; margin-bottom:28px;">
-        <span style="font-size:13px; color:#64748b; font-weight:700;">DEVELOPER SUPPORT: </span>
-        <strong style="color:#00a3ff; font-size:15px; margin-left:6px;" id="lockdown-support-phone">0300-1234567</strong>
-    </div>
-
-    <!-- Hidden Developer Override Button (Locked screen se wapas kholne ke liye) -->
-    <div style="position:absolute; bottom:20px; right:25px;">
-        <button type="button" onclick="openDeveloperOverrideModal()" style="background:transparent; border:none; color:#334155; font-size:12px; cursor:pointer; font-weight:700;">
-            <i class='bx bx-lock-alt'></i> Developer Override
-        </button>
+        <!-- Modal Action Buttons -->
+        <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+            <button type="button" class="outline-btn" onclick="resetBarcodeSettingsToDefault()" style="color:#ef4444; border-color:#ef4444;">
+                <i class='bx bx-reset'></i> Reset Defaults
+            </button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="outline-btn" onclick="closeBarcodeSettingsModal()">Cancel</button>
+                <button type="button" class="save-btn" onclick="saveBarcodePrintSettings()">
+                    <i class='bx bx-save'></i> Save Setting (Aik Bar)
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -12197,7 +12332,147 @@ window.openDeveloperOverrideModal = async function() {
     100% { transform: scale(1.08); box-shadow: 0 0 45px rgba(239,68,68,0.7); }
 }
 
+/* =========================================================================
+   ADVANCED BARCODE PRINT & INTERACTIVE PREVIEW STYLING
+   ========================================================================= */
+:root {
+    --bc-width: 50mm;
+    --bc-height: 24mm;
+    --bc-left-offset: 0mm;
+    --bc-top-offset: 0mm;
+    --bc-barcode-h: 11mm;
+    --bc-font-comp: 8px;
+    --bc-font-name: 9px;
+    --bc-font-price: 10px;
+    --bc-font-weight: 800;
+    --bc-font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+}
 
+#preview-paper-stage {
+    width: 100%;
+    min-height: 270px;
+    background: #e2e8f0;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: auto;
+    position: relative;
+    border: 2px dashed #94a3b8;
+    user-select: none;
+}
+
+#live-sticker-sample {
+    background: #ffffff;
+    border: 1.5px dashed #0284c7;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    box-sizing: border-box;
+    cursor: grab;
+    position: relative;
+    padding: 3px;
+    overflow: hidden;
+}
+
+#live-sticker-sample:active {
+    cursor: grabbing;
+}
+
+/* Corner Resize Handle */
+.sticker-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background: #0284c7;
+    cursor: se-resize;
+    border-top-left-radius: 4px;
+}
+
+@media print {
+    #barcode-print-area:not(:empty) {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 78mm !important;
+        margin: 0 auto !important;
+        padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
+        background: #ffffff !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+
+    .barcode-sticker-print-box {
+        width: var(--bc-width, 50mm) !important;
+        height: var(--bc-height, 24mm) !important;
+        min-height: var(--bc-height, 24mm) !important;
+        margin: 0 auto 2.5mm auto !important;
+        padding: 1.5mm 1mm !important;
+        text-align: center;
+        border: 1px dashed #000000 !important;
+        border-radius: 4px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        box-sizing: border-box !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+        font-family: var(--bc-font-family) !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .bcp-company {
+        font-size: var(--bc-font-comp, 8px) !important;
+        font-weight: var(--bc-font-weight, 800) !important;
+        text-transform: uppercase;
+        line-height: 1.1 !important;
+        margin: 0 !important;
+        color: #000000 !important;
+        max-width: 96%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .bcp-title {
+        font-size: var(--bc-font-name, 9px) !important;
+        font-weight: var(--bc-font-weight, 800) !important;
+        line-height: 1.1 !important;
+        max-width: 96% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin: 0 !important;
+        color: #000000 !important;
+    }
+
+    .bcp-svg {
+        width: 92% !important;
+        height: var(--bc-barcode-h, 11mm) !important;
+        margin: 0 auto !important;
+        display: block !important;
+    }
+
+    .bcp-price {
+        font-size: var(--bc-font-price, 10px) !important;
+        font-weight: 900 !important;
+        line-height: 1.1 !important;
+        margin: 0 !important;
+        color: #000000 !important;
+        border-top: 1px dashed #000000;
+        width: 92%;
+        padding-top: 1px;
+    }
+}
 
 </style>
 
