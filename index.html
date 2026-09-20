@@ -3643,79 +3643,98 @@ const auth = firebase.auth();
             }]);
         };
 
-        // 2. Purchaser Table ke Tamam Products ka Print (Har Product ki Qty ke mutabiq Stickers)
+      // 2. Purchaser Table ke Tamam Products ka Print (Fixed)
         window.printAllDiagramBarcodes = function() {
-            if (window.diagramPurchaseItems.length === 0) {
+            if (!window.diagramPurchaseItems || window.diagramPurchaseItems.length === 0) {
                 alert("Table mein koi product mojood nahi hai!");
                 return;
             }
 
-            // Har product ki khareedi hui quantity ke mutabiq list banegi
-            window.triggerBarcodeDirectPrint(window.diagramPurchaseItems.map(item => ({
+            const printList = window.diagramPurchaseItems.map(item => ({
                 name: item.name,
-                price: item.sale,
+                price: item.sale || item.price,
                 barcode: item.barcode,
                 qty: parseInt(item.qty) || 1
-            })));
+            }));
+
+            window.triggerBarcodeDirectPrint(printList);
         };
 
-       // 3. XP-80 Continuous Thermal Roll Printer Generator (Spaced & High Clarity)
+        // 3. Robust Thermal Barcode Print Engine (Crash-Proof & SweetAlert Safe)
         window.triggerBarcodeDirectPrint = function(itemsList) {
-            const printArea = document.getElementById('barcode-print-area');
-            if (!printArea) return;
+            
+            // Agar container na mile to code khud ba khud bana le (Auto-Create)
+    let printArea = document.getElementById('barcode-print-area');
+    if (!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'barcode-print-area';
+        document.body.appendChild(printArea);
+    }
+
+            if (!itemsList || itemsList.length === 0) {
+                Toast.fire({ icon: 'warning', title: 'Print karne ke liye koi product nahi hai!' });
+                return;
+            }
+
+            // Print ke raste se tamam popups band karein
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
 
             const companyName = localStorage.getItem('pos_biz_name') || 'KORVEXA SOFTWARE';
             printArea.innerHTML = '';
 
             const generatedStickers = [];
 
-            // Tamam items aur unki quantity ke mutabiq stickers render karein
             itemsList.forEach((item, itemIdx) => {
                 const count = Math.max(1, parseInt(item.qty) || 1);
+                const safeBarcode = String(item.barcode || ('890' + Math.floor(10000000 + Math.random() * 90000000))).trim();
+                const safePrice = Number(item.price || 0);
+                const safeName = item.name || 'Product';
 
                 for (let q = 0; q < count; q++) {
-                    const svgId = `print-bc-svg-${itemIdx}-${q}`;
+                    const svgId = `bcp-svg-gen-${itemIdx}-${q}-${Date.now()}`;
                     const stickerBox = document.createElement('div');
                     stickerBox.className = 'barcode-sticker-print-box';
                     stickerBox.innerHTML = `
                         <div class="bcp-company">${companyName}</div>
-                        <div class="bcp-title">${item.name}</div>
+                        <div class="bcp-title">${safeName}</div>
                         <svg id="${svgId}" class="bcp-svg"></svg>
-                        <div class="bcp-price">PRICE: Rs. ${Number(item.price || 0).toLocaleString()}</div>
+                        <div class="bcp-price">PRICE: Rs. ${safePrice.toLocaleString()}</div>
                     `;
                     printArea.appendChild(stickerBox);
 
                     generatedStickers.push({
                         svgSelector: `#${svgId}`,
-                        barcodeValue: String(item.barcode)
+                        barcodeValue: safeBarcode
                     });
                 }
             });
 
-            // Clean, Spaced Barcode Rendering (Digits aur Price alag alag rahengi)
+            // Barcode draw hone ke baad print dialogue kholna
             setTimeout(() => {
                 generatedStickers.forEach(stk => {
                     try {
                         JsBarcode(stk.svgSelector, stk.barcodeValue, {
                             format: "CODE128",
                             width: 1.35,
-                            height: 22,         // Barcode lines ki height
-                            displayValue: true, // Numbers barcode ke neeche aayenge
-                            fontSize: 9.5,      // Barcode number saaf aur bold
+                            height: 24,
+                            displayValue: true,
+                            fontSize: 9.5,
                             font: "Arial",
-                            textMargin: 2,      // Lines aur number ke darmiyan space
+                            textMargin: 2,
                             margin: 0
                         });
-                    } catch (e) {
-                        console.error("Barcode generation error:", e);
+                    } catch (err) {
+                        try {
+                            JsBarcode(stk.svgSelector, stk.barcodeValue, { format: "pharmacode", width: 1.5, height: 24, margin: 0 });
+                        } catch(e) {}
                     }
                 });
 
-                // Direct Print Dialog Trigger
+                // SweetAlert popup band hone ke baad print chalana
                 setTimeout(() => {
                     window.print();
-                }, 120);
-            }, 60);
+                }, 300);
+            }, 150);
         };
 
        // Clean Standard Barcode Sticker (Only Product Name, Barcode & Price)
@@ -6080,18 +6099,17 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             }
         };
 
-       // 2. Tamam Dastyab Products ke Barcodes Ek Sath Print Karna (Godown + Tamam Stores)
+       // 2. Tamam Dastyab Products ke Barcodes Ek Sath Print Karna (Fixed with Delay)
         window.printAllInventoryBarcodes = async function() {
             const searchTerm = (document.getElementById('barcode-search-input')?.value || '').toLowerCase().trim();
 
-            const itemsToPrint = window.menuItems.filter(item => {
+            const itemsToPrint = (window.menuItems || []).filter(item => {
                 const godownStock = Number(item.stock || 0);
                 const storesStock = (window.branchStockList || [])
                     .filter(bs => bs.productId === item.id)
                     .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
                 
                 const totalStock = godownStock + storesStock;
-
                 const hasStock = totalStock > 0;
                 const nameMatch = item.name && item.name.toLowerCase().includes(searchTerm);
                 const codeMatch = item.barcode && String(item.barcode).toLowerCase().includes(searchTerm);
@@ -6099,19 +6117,19 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             });
 
             if (itemsToPrint.length === 0) {
-                Toast.fire({ icon: 'warning', title: 'Print karne ke liye koi product mojood nahi hai!' });
+                Toast.fire({ icon: 'warning', title: 'Print karne ke liye koi stock dastyab nahi hai!' });
                 return;
             }
 
             const result = await Swal.fire({
-                title: `<div style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.25rem; font-weight:800; color:#0f172a;">
-                    <i class='bx bx-printer' style="color:#0f172a;"></i> Print All Barcodes
+                title: `<div style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.2rem; font-weight:800; color:#0f172a;">
+                    <i class='bx bx-printer'></i> Print All Barcodes
                 </div>`,
                 html: `
                     <p style="font-size:0.95rem; color:#475569; margin-top:8px;">
-                        Kya aap screen par mojood tamam <strong style="color:var(--primary); font-size:1.1rem;">${itemsToPrint.length}</strong> products ke stickers print karna chahte hain?
+                        Kya aap screen par mojood tamam <strong style="color:#0066ff; font-size:1.1rem;">${itemsToPrint.length}</strong> products ke stickers print karna chahte hain?
                     </p>
-                    <small style="color:#64748b;">(Har product ka 1 sticker thermal roll par print hoga)</small>
+                    <small style="color:#64748b;">(Har product ka 1 sticker print hoga)</small>
                 `,
                 icon: 'question',
                 showCancelButton: true,
@@ -6130,9 +6148,11 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 qty: 1
             }));
 
-            window.triggerBarcodeDirectPrint(printList);
+            // SweetAlert ko band hone ka 150ms waqt de kar print trigger karein
+            setTimeout(() => {
+                window.triggerBarcodeDirectPrint(printList);
+            }, 150);
         };
-
        // 3. Main Grid Render Function with Combined Total Stock (Godown + All Stores)
         window.renderAllProductBarcodesView = function() {
             const container = document.getElementById('all-barcode-cards-container');
@@ -9412,10 +9432,10 @@ window.renderProfitLossReport = function() {
         }
     }
 
-   // Return Loss ko Gross Profit me se minus karke asal Gross Profit nikala (2700 - 300 = 2400)
-    const grossProfit = (netRevenue - netCogs) - totalReturnProfitSum;
-    // Gross Profit me se Operating Expenses minus karke Net Profit nikala (2400 - 140 = 2260)
+    const grossProfit = netRevenue - netCogs;
+
     const netProfit = grossProfit - totalExpenses;
+
 
     // Update KPI Elements
     if (document.getElementById('kpi-revenue')) document.getElementById('kpi-revenue').textContent = `Rs. ${netRevenue.toLocaleString()}`;
@@ -9576,8 +9596,8 @@ window.downloadCleanProfitLossPDF = function() {
         });
     }
 
-   // PDF me bhi Gross Profit aur Net Profit ka sahi calculation
-    const grossProfit = (netRevenue - netCogs) - totalReturnMarginLoss;
+  // PDF me sahi Gross Profit aur Net Profit calculation
+    const grossProfit = netRevenue - netCogs;
     const netProfitLoss = grossProfit - totalExpenses;
 
     let periodDisplay = '';
