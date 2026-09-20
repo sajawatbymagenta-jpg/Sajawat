@@ -3398,6 +3398,14 @@ const auth = firebase.auth();
 
         window.clearDiagramTable = function() {
             window.diagramPurchaseItems = [];
+            window.editingPurchaseDocId = null;
+            window.editingOriginalPurchaseItems = [];
+            
+            const saveBtn = document.getElementById('save-purchases-btn');
+            if (saveBtn) {
+                saveBtn.innerHTML = "<i class='bx bx-check-double'></i> Save Purchase & Stock Inventory";
+                saveBtn.style.background = "";
+            }
             renderDiagramTable();
         };
 
@@ -3646,7 +3654,20 @@ const auth = firebase.auth();
             }
         };
 
-        // SUBMIT COMPLETE DIAGRAM PURCHASE
+        window.clearDiagramTable = function() {
+            window.diagramPurchaseItems = [];
+            window.editingPurchaseDocId = null;
+            window.editingOriginalPurchaseItems = [];
+            
+            const saveBtn = document.getElementById('save-purchases-btn');
+            if (saveBtn) {
+                saveBtn.innerHTML = "<i class='bx bx-check-double'></i> Save Purchase & Stock Inventory";
+                saveBtn.style.background = "";
+            }
+            renderDiagramTable();
+        };
+
+        // SUBMIT OR UPDATE COMPLETE DIAGRAM PURCHASE
         window.submitCompleteDiagramPurchase = async function() {
             const saveBtn = document.getElementById('save-purchases-btn');
             const purchaserName = document.getElementById('dia-purchaser-name').value.trim();
@@ -3680,90 +3701,189 @@ const auth = firebase.auth();
             if (remainingDue > 0 && paidAmount > 0) paymentStatus = 'Partial';
             else if (paidAmount === 0 && totalBill > 0) paymentStatus = 'Unpaid';
 
-            const serialNo = "PUR-" + new Date().toISOString().slice(2,10).replace(/-/g, '') + "-" + Math.floor(1000 + Math.random() * 9000);
-            const now = new Date();
-            const purchaseDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-          // MAAL SEEDHA MAIN GODOWN MEIN SHIFT HOGA
-            const purchaseRecord = {
-                serialNo: serialNo,
-                poNumber: serialNo,
-                date: purchaseDate,
-                vendorName: purchaserName,
-                vendorPhone: purchaserPhone,
-                paymentMode: paymentMode,
-                destination: 'Main Warehouse / Godown', // Wazeh destination save hogi
-                destinationId: 'main',
-                items: window.diagramPurchaseItems,
-                totalBill: totalBill,
-                paidAmount: paidAmount,
-                remainingDue: remainingDue,
-                status: paymentStatus,
-                qty: totalQty,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
             try {
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Godown Mein Maal Save Ho Raha Hai...";
 
-                await purchasesDB.add(purchaseRecord);
+                // =========================================================================
+                // CASE A: AGAR PURANI PURCHASE EDIT HO RAHI HAI
+                // =========================================================================
+                if (window.editingPurchaseDocId) {
+                    saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Purchase & Stock Update Ho Raha Hai...";
 
-                for (let prod of window.diagramPurchaseItems) {
-                    const existingProduct = window.menuItems.find(p => 
-                        (p.barcode && String(p.barcode).trim().toLowerCase() === String(prod.barcode).trim().toLowerCase()) || 
-                        (p.name && p.name.trim().toLowerCase() === prod.name.trim().toLowerCase())
-                    );
-
-                    if (existingProduct) {
-                        // Purane product ka stock Main Godown mein barhana
-                        await productsDB.doc(existingProduct.id).update({
-                            stock: firebase.firestore.FieldValue.increment(prod.qty),
-                            costPrice: prod.cost,
-                            price: prod.sale,
-                            barcode: prod.barcode,
-                            img: prod.img || existingProduct.img
-                        });
-                        // In-memory Godown stock foran barhana
-                        existingProduct.stock = Number(existingProduct.stock || 0) + prod.qty;
-                        existingProduct.costPrice = prod.cost;
-                        existingProduct.price = prod.sale;
-                    } else {
-                        // Naye product ko Main Godown mein create karna
-                        const newDocRef = await productsDB.add({
-                            name: prod.name,
-                            barcode: prod.barcode,
-                            category: 'General',
-                            costPrice: prod.cost,
-                            price: prod.sale,
-                            stock: prod.qty,
-                            sold: 0,
-                            img: prod.img,
-                            location: 'Main Warehouse / Godown',
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        window.menuItems.push({
-                            id: newDocRef.id,
-                            name: prod.name,
-                            barcode: prod.barcode,
-                            category: 'General',
-                            costPrice: prod.cost,
-                            price: prod.sale,
-                            stock: prod.qty,
-                            sold: 0,
-                            img: prod.img,
-                            location: 'Main Warehouse / Godown'
-                        });
+                    // 1. Purane products ka stock Godown se pehle minus (revert) karein
+                    for (let oldItem of window.editingOriginalPurchaseItems) {
+                        const matchedOld = window.menuItems.find(p => 
+                            (oldItem.barcode && p.barcode && String(p.barcode).trim().toLowerCase() === String(oldItem.barcode).trim().toLowerCase()) || 
+                            (p.name && p.name.trim().toLowerCase() === oldItem.name.trim().toLowerCase())
+                        );
+                        if (matchedOld) {
+                            await productsDB.doc(matchedOld.id).update({
+                                stock: firebase.firestore.FieldValue.increment(-Number(oldItem.qty || 0))
+                            });
+                            matchedOld.stock = Math.max(0, Number(matchedOld.stock || 0) - Number(oldItem.qty || 0));
+                        }
                     }
+
+                    // 2. Naye edited products ka stock aur details Godown me apply karein
+                    for (let prod of window.diagramPurchaseItems) {
+                        const matchedProduct = window.menuItems.find(p => 
+                            (prod.barcode && p.barcode && String(p.barcode).trim().toLowerCase() === String(prod.barcode).trim().toLowerCase()) || 
+                            (p.name && p.name.trim().toLowerCase() === prod.name.trim().toLowerCase())
+                        );
+
+                        if (matchedProduct) {
+                            await productsDB.doc(matchedProduct.id).update({
+                                stock: firebase.firestore.FieldValue.increment(Number(prod.qty || 0)),
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                barcode: prod.barcode,
+                                img: prod.img || matchedProduct.img
+                            });
+                            matchedProduct.stock = Number(matchedProduct.stock || 0) + Number(prod.qty || 0);
+                            matchedProduct.costPrice = prod.cost;
+                            matchedProduct.price = prod.sale;
+                            matchedProduct.img = prod.img || matchedProduct.img;
+                        } else {
+                            const newDocRef = await productsDB.add({
+                                name: prod.name,
+                                barcode: prod.barcode,
+                                category: 'General',
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                stock: prod.qty,
+                                sold: 0,
+                                img: prod.img,
+                                location: 'Main Warehouse / Godown',
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            window.menuItems.push({
+                                id: newDocRef.id,
+                                name: prod.name,
+                                barcode: prod.barcode,
+                                category: 'General',
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                stock: prod.qty,
+                                sold: 0,
+                                img: prod.img,
+                                location: 'Main Warehouse / Godown'
+                            });
+                        }
+                    }
+
+                    // 3. Purchase Document Firestore me update karein
+                    await purchasesDB.doc(window.editingPurchaseDocId).update({
+                        vendorName: purchaserName,
+                        vendorPhone: purchaserPhone,
+                        paymentMode: `${paymentMode} (Updated)`,
+                        paidAmount: paidAmount,
+                        totalBill: totalBill,
+                        remainingDue: remainingDue,
+                        status: paymentStatus,
+                        qty: totalQty,
+                        items: window.diagramPurchaseItems,
+                        lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Purchase Order aur Stock kamyabi say update hogaya!'
+                    });
+
+                    // Edit state reset karein
+                    window.editingPurchaseDocId = null;
+                    window.editingOriginalPurchaseItems = [];
+
+                } else {
+                    // =========================================================================
+                    // CASE B: AGAR NAYI PURCHASE SAVE HO RAHI HAI
+                    // =========================================================================
+                    saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Godown Mein Maal Save Ho Raha Hai...";
+
+                    const serialNo = "PUR-" + new Date().toISOString().slice(2,10).replace(/-/g, '') + "-" + Math.floor(1000 + Math.random() * 9000);
+                    const now = new Date();
+                    const purchaseDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                    const purchaseRecord = {
+                        serialNo: serialNo,
+                        poNumber: serialNo,
+                        date: purchaseDate,
+                        vendorName: purchaserName,
+                        vendorPhone: purchaserPhone,
+                        paymentMode: paymentMode,
+                        destination: 'Main Warehouse / Godown',
+                        destinationId: 'main',
+                        items: window.diagramPurchaseItems,
+                        totalBill: totalBill,
+                        paidAmount: paidAmount,
+                        remainingDue: remainingDue,
+                        status: paymentStatus,
+                        qty: totalQty,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    await purchasesDB.add(purchaseRecord);
+
+                    for (let prod of window.diagramPurchaseItems) {
+                        const existingProduct = window.menuItems.find(p => 
+                            (p.barcode && String(p.barcode).trim().toLowerCase() === String(prod.barcode).trim().toLowerCase()) || 
+                            (p.name && p.name.trim().toLowerCase() === prod.name.trim().toLowerCase())
+                        );
+
+                        if (existingProduct) {
+                            await productsDB.doc(existingProduct.id).update({
+                                stock: firebase.firestore.FieldValue.increment(prod.qty),
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                barcode: prod.barcode,
+                                img: prod.img || existingProduct.img
+                            });
+                            existingProduct.stock = Number(existingProduct.stock || 0) + prod.qty;
+                            existingProduct.costPrice = prod.cost;
+                            existingProduct.price = prod.sale;
+                        } else {
+                            const newDocRef = await productsDB.add({
+                                name: prod.name,
+                                barcode: prod.barcode,
+                                category: 'General',
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                stock: prod.qty,
+                                sold: 0,
+                                img: prod.img,
+                                location: 'Main Warehouse / Godown',
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            window.menuItems.push({
+                                id: newDocRef.id,
+                                name: prod.name,
+                                barcode: prod.barcode,
+                                category: 'General',
+                                costPrice: prod.cost,
+                                price: prod.sale,
+                                stock: prod.qty,
+                                sold: 0,
+                                img: prod.img,
+                                location: 'Main Warehouse / Godown'
+                            });
+                        }
+                    }
+
+                    Toast.fire({
+                        icon: 'success',
+                        title: `Purchase Order [${serialNo}] kamyabi say save hogaya!`
+                    });
                 }
 
-                alert(`Purchase Order [${serialNo}] kamyabi say save hogaya!\n\nTamam ${totalQty} units barah-e-raast MAIN WAREHOUSE / GODOWN mein shift ho gaye hain.`);
-                
+                // فارم صاف کر کے واپس ڈیٹیل پیج پر جائیں
                 window.diagramPurchaseItems = [];
                 document.getElementById('dia-purchaser-name').value = '';
                 document.getElementById('dia-purchaser-phone').value = '';
                 document.getElementById('dia-purchaser-paid').value = '';
                 renderDiagramTable();
+
+                saveBtn.innerHTML = "<i class='bx bx-check-double'></i> Save Purchase & Stock Inventory";
+                saveBtn.style.background = "";
 
                 switchView('purchase-details');
 
@@ -3772,7 +3892,6 @@ const auth = firebase.auth();
                 alert("Error saving purchase: " + e.message);
             } finally {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = "<i class='bx bx-check-double'></i> Save Purchase & Stock Inventory";
             }
         };
 
@@ -4955,24 +5074,18 @@ const auth = firebase.auth();
         // =========================================================
         window.currentEditingPurchase = null;
 
-      window.openEditPurchaseModal = function(purchaseId) {
+      window.editingPurchaseDocId = null;
+        window.editingOriginalPurchaseItems = [];
+
+        window.openEditPurchaseModal = function(purchaseId) {
             const purchase = window.purchasesList.find(p => p.id === purchaseId);
             if (!purchase) {
-                alert("Record not found!");
+                alert("Purchase record nahi mila!");
                 return;
             }
 
-            window.currentEditingPurchase = JSON.parse(JSON.stringify(purchase));
-
-            document.getElementById('edit-pur-doc-id').value = purchase.id;
-            document.getElementById('edit-pur-serial-display').textContent = purchase.serialNo || purchase.poNumber || '-';
-            document.getElementById('edit-pur-name').value = purchase.vendorName || '';
-            document.getElementById('edit-pur-phone').value = purchase.vendorPhone || '';
-            document.getElementById('edit-pur-paymode').value = purchase.paymentMode ? purchase.paymentMode.replace(' (Updated)', '') : 'Cash';
-            document.getElementById('edit-pur-paid').value = purchase.paidAmount !== undefined ? purchase.paidAmount : purchase.totalBill;
-
-            const tbody = document.getElementById('edit-pur-items-tbody');
-            tbody.innerHTML = '';
+            // Edit Mode Active karein
+            window.editingPurchaseDocId = purchase.id;
 
             let items = purchase.items || [];
             if (items.length === 0 && purchase.productName) {
@@ -4982,40 +5095,36 @@ const auth = firebase.auth();
                     sale: Number(purchase.price || 0),
                     qty: Number(purchase.qty || 1),
                     total: Number(purchase.totalBill || 0),
-                    barcode: purchase.barcode || ''
+                    barcode: purchase.barcode || '',
+                    img: purchase.img || DEFAULT_PROD_IMG
                 }];
-                window.currentEditingPurchase.items = JSON.parse(JSON.stringify(items));
             }
 
-            items.forEach((item, index) => {
-                const cost = Number(item.cost || item.costPrice || 0);
-                const sale = Number(item.sale || item.price || 0);
-                const qty = Number(item.qty || 1);
-                const total = cost * qty;
+            // Purane items ko memory me save karein taake stock diff nikal sake
+            window.editingOriginalPurchaseItems = JSON.parse(JSON.stringify(items));
+            window.diagramPurchaseItems = JSON.parse(JSON.stringify(items));
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>
-                            <input type="text" id="edit-item-name-${index}" class="pos-mini-input" value="${item.name}">
-                        </td>
-                        <td>
-                            <input type="number" id="edit-item-cost-${index}" class="pos-mini-input" value="${cost}" min="0" oninput="calcEditPurchaseTotals()">
-                        </td>
-                        <td>
-                            <input type="number" id="edit-item-sale-${index}" class="pos-mini-input" value="${sale}" min="0">
-                        </td>
-                        <td>
-                            <input type="number" id="edit-item-qty-${index}" class="pos-mini-input" value="${qty}" min="1" oninput="calcEditPurchaseTotals()">
-                        </td>
-                        <td style="text-align:right; font-weight:700;" id="edit-item-total-${index}">
-                            Rs. ${total.toLocaleString()}
-                        </td>
-                    </tr>
-                `;
+            // Purchaser & Vendor details ko Main Form me load karein
+            document.getElementById('dia-purchaser-name').value = purchase.vendorName || '';
+            document.getElementById('dia-purchaser-phone').value = purchase.vendorPhone || '';
+            document.getElementById('dia-purchaser-paymode').value = (purchase.paymentMode || 'Cash').replace(' (Updated)', '');
+            document.getElementById('dia-purchaser-paid').value = purchase.paidAmount !== undefined ? purchase.paidAmount : purchase.totalBill;
+
+            // Save button ka text tabdeel karein
+            const saveBtn = document.getElementById('save-purchases-btn');
+            if (saveBtn) {
+                saveBtn.innerHTML = "<i class='bx bx-check-double'></i> Update Purchase & Sync Stock";
+                saveBtn.style.background = "#059669";
+            }
+
+            // Purchase & Product wale page par direct shift karein
+            window.switchView('add-purchase-product');
+            window.renderDiagramTable();
+
+            Toast.fire({
+                icon: 'info',
+                title: `Purchase #${purchase.serialNo || purchase.poNumber || ''} edit karne ke liye load ho chuki hai!`
             });
-
-            calcEditPurchaseTotals();
-            document.getElementById('edit-purchase-modal').classList.add('visible');
         };
 
         window.closeEditPurchaseModal = function() {
