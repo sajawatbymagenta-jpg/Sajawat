@@ -3391,6 +3391,146 @@ const auth = firebase.auth();
             renderDiagramTable();
         };
 
+// =========================================================
+        // EDIT SINGLE ITEM INSIDE DIAGRAM PURCHASE TABLE
+        // =========================================================
+        let currentEditItemImageBase64 = DEFAULT_PROD_IMG;
+
+        // 1. Modal Kholna aur Item ka Data Bharna
+        window.openEditDiagramItemModal = function(index) {
+            const item = window.diagramPurchaseItems[index];
+            if (!item) return;
+
+            document.getElementById('edit-dia-item-index').value = index;
+            document.getElementById('edit-dia-name').value = item.name || '';
+            document.getElementById('edit-dia-cost').value = item.cost || item.costPrice || 0;
+            document.getElementById('edit-dia-sale').value = item.sale || item.price || 0;
+            document.getElementById('edit-dia-qty').value = item.qty || 1;
+            document.getElementById('edit-dia-barcode').value = item.barcode || '';
+            
+            currentEditItemImageBase64 = item.img || DEFAULT_PROD_IMG;
+            document.getElementById('edit-dia-img-preview').src = currentEditItemImageBase64;
+            document.getElementById('edit-dia-img-input').value = '';
+
+            document.getElementById('edit-dia-product-modal')?.classList.add('visible');
+        };
+
+        // 2. Modal Band Karna
+        window.closeEditDiagramItemModal = function() {
+            document.getElementById('edit-dia-product-modal')?.classList.remove('visible');
+        };
+
+        // 3. Edit Modal ke andar nayi tasweer Upload & Compress karna
+        window.previewEditDiaUploadImage = function(input) {
+            const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEp_vNRS4hr1Te4E_l9gPA9xf75Qh2giIHv-BmFiBRl1bRNPwLBRL17kiJSwm_7PH1Ng/exec";
+
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const previewImg = document.getElementById('edit-dia-img-preview');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = async function() {
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 400;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+                        } else {
+                            if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                        previewImg.src = compressedBase64;
+                        previewImg.style.opacity = "0.4";
+
+                        if (window.Toast) {
+                            Toast.fire({ icon: 'info', title: 'Nayi tasweer upload ho rahi hai...' });
+                        }
+
+                        try {
+                            const payload = JSON.stringify({
+                                base64: compressedBase64,
+                                fileName: "prod_edit_" + Date.now() + ".jpg"
+                            });
+
+                            const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: payload
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (result.status === "success") {
+                                currentEditItemImageBase64 = result.url;
+                                previewImg.src = result.url;
+                                previewImg.style.opacity = "1";
+                                if (window.Toast) Toast.fire({ icon: 'success', title: 'Tasweer kamyabi say update hogayi!' });
+                            } else {
+                                throw new Error(result.message || "Upload fail");
+                            }
+                        } catch (err) {
+                            console.error("Drive upload error:", err);
+                            currentEditItemImageBase64 = compressedBase64;
+                            previewImg.style.opacity = "1";
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // 4. Update Button dabane par Table ke item ko update karna
+        window.saveEditedDiagramItem = function() {
+            const index = parseInt(document.getElementById('edit-dia-item-index').value);
+            if (isNaN(index) || !window.diagramPurchaseItems[index]) return;
+
+            const name = document.getElementById('edit-dia-name').value.trim();
+            const cost = parseFloat(document.getElementById('edit-dia-cost').value);
+            const sale = parseFloat(document.getElementById('edit-dia-sale').value);
+            const qty = parseInt(document.getElementById('edit-dia-qty').value);
+            const barcode = document.getElementById('edit-dia-barcode').value.trim();
+
+            if (!name) { alert("Product ka naam lazmi likhein!"); return; }
+            if (isNaN(cost) || cost < 0) { alert("Durust Cost Price darj karein!"); return; }
+            if (isNaN(sale) || sale < 0) { alert("Durust Sale Price darj karein!"); return; }
+            if (isNaN(qty) || qty <= 0) { alert("Quantity kam az kam 1 honi chahiye!"); return; }
+
+            // Item ki nayi values update karein
+            window.diagramPurchaseItems[index] = {
+                ...window.diagramPurchaseItems[index],
+                name: name,
+                cost: cost,
+                costPrice: cost,
+                sale: sale,
+                price: sale,
+                qty: qty,
+                total: cost * qty,
+                barcode: barcode || window.diagramPurchaseItems[index].barcode,
+                img: currentEditItemImageBase64
+            };
+
+            // Table refresh karein aur modal band karein
+            window.renderDiagramTable();
+            window.closeEditDiagramItemModal();
+
+            if (window.Toast) {
+                Toast.fire({
+                    icon: 'success',
+                    title: `"${name}" table mein update hogayi!`
+                });
+            }
+        };
+
+
         window.removeDiagramRow = function(index) {
             window.diagramPurchaseItems.splice(index, 1);
             renderDiagramTable();
@@ -3423,7 +3563,7 @@ const auth = firebase.auth();
             calcRemainingDues();
         };
 
-      window.renderDiagramTable = function() {
+    window.renderDiagramTable = function() {
             const tbody = document.getElementById('dia-table-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
@@ -3452,9 +3592,14 @@ const auth = firebase.auth();
                             </div>
                         </td>
                         <td style="text-align:center;">
-                            <button type="button" class="btn-delete" style="padding:4px 8px;" onclick="removeDiagramRow(${idx})" title="Remove Item">
-                                <i class='bx bx-trash'></i>
-                            </button>
+                            <div style="display:flex; gap:4px; justify-content:center;">
+                                <button type="button" class="btn-edit" style="padding:4px 8px; background:#3b82f6;" onclick="openEditDiagramItemModal(${idx})" title="Edit Product Details & Image">
+                                    <i class='bx bx-edit'></i>
+                                </button>
+                                <button type="button" class="btn-delete" style="padding:4px 8px;" onclick="removeDiagramRow(${idx})" title="Remove Item">
+                                    <i class='bx bx-trash'></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -12111,6 +12256,54 @@ window.openDeveloperOverrideModal = async function() {
         </button>
     </div>
 </div>
+
+<!-- MODAL: EDIT SINGLE PRODUCT IN PURCHASE DIAGRAM TABLE -->
+    <div id="edit-dia-product-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 540px;">
+            <span class="close-modal" onclick="closeEditDiagramItemModal()">&times;</span>
+            <h2 style="margin-bottom: 6px;"><i class='bx bx-edit' style="color:var(--primary);"></i> Edit Product in Table</h2>
+            <p style="color:#64748b; font-size:0.85rem; margin-bottom: 16px;">Product ki detail, keemat ya tasweer tabdeel karein.</p>
+            
+            <input type="hidden" id="edit-dia-item-index">
+
+            <!-- Image Upload & Preview -->
+            <div class="form-group" style="margin-bottom:12px;">
+                <label><i class='bx bx-image-add' style="color:var(--primary);"></i> Product Picture</label>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input type="file" id="edit-dia-img-input" accept="image/*" onchange="previewEditDiaUploadImage(this)" style="padding:7px; font-size:0.85rem;">
+                    <img id="edit-dia-img-preview" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80" style="width:50px; height:50px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Product Name *</label>
+                <input type="text" id="edit-dia-name" placeholder="Product name">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Cost Price (Kharid) *</label>
+                    <input type="number" id="edit-dia-cost" min="0">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Sale Price (Farokht) *</label>
+                    <input type="number" id="edit-dia-sale" min="0">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Quantity (Tadaad) *</label>
+                    <input type="number" id="edit-dia-qty" min="1">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Bar Code</label>
+                    <input type="text" id="edit-dia-barcode">
+                </div>
+            </div>
+
+            <button type="button" class="save-btn" id="save-edit-dia-item-btn" style="width: 100%; justify-content: center; margin-top:10px;" onclick="saveEditedDiagramItem()">
+                <i class='bx bx-check-circle'></i> Update Product in Table
+            </button>
+        </div>
+    </div>
 
 </body>
 </html>
