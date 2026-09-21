@@ -1737,13 +1737,14 @@
                             </div>
 
                             <!-- Dhoondein aur is tarah likhein -->
+<!-- NAYA SAHI CODE (Total Refunds) -->
 <div class="pl-kpi-card" style="border-top: 4px solid #f59e0b;">
     <div class="kpi-header">
-        <span class="kpi-title">Total Return Profit</span>
+        <span class="kpi-title">Total Refunds</span>
         <div class="kpi-icon" style="background: #fef3c7; color: #d97706;"><i class='bx bx-undo'></i></div>
     </div>
-    <div class="kpi-value" id="pl-kpi-return-profit-total" style="color: #d97706;">Rs. 0</div>
-    <div class="kpi-subtitle">Total Return Profit Loss</div>
+    <div class="kpi-value" id="ar-kpi-refund" style="color: #d97706;">Rs. 0</div>
+    <div class="kpi-subtitle">Customer Refunds Issued</div>
 </div>
                             <!-- 5. Total Receivable -->
                             <div class="pl-kpi-card" style="border-top: 4px solid #ea580c;">
@@ -7328,7 +7329,7 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
                 }
             });
 
-            // Settings Save Button ka Listener
+        
 document.getElementById('save-settings-btn')?.addEventListener('click', () => {
     const bName = document.getElementById('restaurant-name')?.value;
     const bPhone = document.getElementById('restaurant-number')?.value;
@@ -9075,220 +9076,72 @@ window.renderProfitLossReport = function() {
     const fromDate = document.getElementById('pl-date-from')?.value;
     const toDate = document.getElementById('pl-date-to')?.value;
 
-    // Filter Sales By Date
-    const filteredSales = (window.salesHistory || []).filter(s => {
-        const sDate = (s.date || '').substring(0, 10);
-        if (window.currentPLPreset === 'today') return sDate === todayStr;
+    function isWithinPeriod(dateStr) {
+        if (!dateStr) return false;
+        const d = dateStr.substring(0, 10);
+        if (window.currentPLPreset === 'today') return d === todayStr;
         if (window.currentPLPreset === 'weekly') {
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(now.getDate() - 7);
-            return new Date(sDate) >= oneWeekAgo;
+            return new Date(d) >= oneWeekAgo;
         }
         if (window.currentPLPreset === 'monthly') {
             const oneMonthAgo = new Date();
             oneMonthAgo.setDate(now.getDate() - 30);
-            return new Date(sDate) >= oneMonthAgo;
+            return new Date(d) >= oneMonthAgo;
         }
         if (window.currentPLPreset === 'custom' && fromDate && toDate) {
-            return sDate >= fromDate && sDate <= toDate;
+            return d >= fromDate && d <= toDate;
         }
         return true;
-    });
+    }
 
-    // Filter Expenses By Date
-    const filteredExpenses = (window.expensesList || []).filter(e => {
-        const eDate = (e.date || '').substring(0, 10);
-        if (window.currentPLPreset === 'today') return eDate === todayStr;
-        if (window.currentPLPreset === 'weekly') {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(now.getDate() - 7);
-            return new Date(eDate) >= oneWeekAgo;
-        }
-        if (window.currentPLPreset === 'monthly') {
-            const oneMonthAgo = new Date();
-            oneMonthAgo.setDate(now.getDate() - 30);
-            return new Date(eDate) >= oneMonthAgo;
-        }
-        if (window.currentPLPreset === 'custom' && fromDate && toDate) {
-            return eDate >= fromDate && eDate <= toDate;
-        }
-        return true;
-    });
+    const filteredSales = (window.salesHistory || []).filter(s => isWithinPeriod(s.date));
+    const filteredExpenses = (window.expensesList || []).filter(e => isWithinPeriod(e.date));
+    const filteredReturns = (window.returnsList || []).filter(r => isWithinPeriod(r.date));
 
-    // Filter Returns By Date
-    const filteredReturns = (window.returnsList || []).filter(r => {
-        const rDate = (r.date || '').substring(0, 10);
-        if (window.currentPLPreset === 'today') return rDate === todayStr;
-        if (window.currentPLPreset === 'weekly') {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(now.getDate() - 7);
-            return new Date(rDate) >= oneWeekAgo;
-        }
-        if (window.currentPLPreset === 'monthly') {
-            const oneMonthAgo = new Date();
-            oneMonthAgo.setDate(now.getDate() - 30);
-            return new Date(rDate) >= oneMonthAgo;
-        }
-        if (window.currentPLPreset === 'custom' && fromDate && toDate) {
-            return rDate >= fromDate && rDate <= toDate;
-        }
-        return true;
-    });
-
-    // 1. Returns Tracking Map (Invoice aur Product ID/Name ke hisaab se track karna)
-    const returnQtyMap = {};
-    let totalRefund = 0;
-    let totalReturnCogs = 0;
-    let totalReturnProfitSum = 0;
+    // 1. Returns Tracking & Calculation
+    let totalReturnMarginLoss = 0;
+    let retTableRows = '';
 
     filteredReturns.forEach(r => {
-        const origProd = (window.menuItems || []).find(m => m.id === r.productId || (m.name && r.productName && m.name.toLowerCase() === r.productName.toLowerCase()));
+        const origProd = (window.menuItems || []).find(m => m.id === r.productId || m.name === r.productName);
         const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
         const qty = Number(r.qty || 1);
-        const totalItemCost = unitCost * qty;
-        const totalItemSold = Number(r.refund || 0);
-        const itemProfit = totalItemSold - totalItemCost;
+        const totalCost = unitCost * qty;
+        const totalSold = Number(r.refund || 0);
+        const marginLoss = Math.max(0, totalSold - totalCost);
 
-        totalRefund += totalItemSold;
-        totalReturnCogs += totalItemCost;
-        totalReturnProfitSum += itemProfit;
+        totalReturnMarginLoss += marginLoss;
 
-        const inv = String(r.invoiceRef || '').replace('#', '').trim().toLowerCase();
-        const pId = String(r.productId || '').trim().toLowerCase();
-        const pName = String(r.productName || '').trim().toLowerCase();
-
-        if (inv) {
-            if (pId) returnQtyMap[`${inv}_${pId}`] = (returnQtyMap[`${inv}_${pId}`] || 0) + qty;
-            if (pName) returnQtyMap[`${inv}_${pName}`] = (returnQtyMap[`${inv}_${pName}`] || 0) + qty;
-        }
+        retTableRows += `
+            <tr>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
+                    <strong style="color: #0f172a; font-size: 0.88rem;">${r.productName || 'Product'}</strong><br>
+                    <small style="color: #64748b; font-size: 0.76rem;">${(r.date || '').substring(0, 16)} ${r.invoiceRef ? '| Inv #' + r.invoiceRef : ''}</small>
+                </td>
+                <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">${qty}</td>
+                <td style="text-align: right; font-weight: 600; color: #475569; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">Rs. ${totalCost.toLocaleString()}</td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">Rs. ${totalSold.toLocaleString()}</td>
+                <td style="text-align: right; font-weight: 800; color: #dc2626; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">Rs. ${marginLoss.toLocaleString()}</td>
+            </tr>
+        `;
     });
 
-    let netRevenue = 0;
-    let netCogs = 0;
-    let rowsHtml = '';
-    let totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-
-    // 2. Itemized Sales Table (Returned items sales table se nikal kar sirf net bachi hui biki cheezein show hongi)
-    filteredSales.forEach(s => {
-        let itemsList = s.items || [];
-        if (!itemsList.length && s.productName) {
-            itemsList = [{
-                name: s.productName,
-                qty: Number(s.qty || 1),
-                costPrice: Number(s.costPrice || 0),
-                price: Number(s.price || s.total || 0)
-            }];
-        }
-
-        itemsList.forEach(it => {
-            const originalProd = (window.menuItems || []).find(m => m.id === it.id || (m.name && it.name && m.name.toLowerCase() === it.name.toLowerCase()));
-            const costPrice = Number(it.costPrice !== undefined ? it.costPrice : (originalProd ? originalProd.costPrice : 0)) || 0;
-            const salePrice = Number(it.price !== undefined ? it.price : (it.originalPrice || 0)) || 0;
-            const originalSoldQty = Number(it.qty || 1);
-
-            const inv = String(s.invoiceId || '').replace('#', '').trim().toLowerCase();
-            const pId = String(it.id || '').trim().toLowerCase();
-            const pName = String(it.name || '').trim().toLowerCase();
-
-            let returnedQty = 0;
-            if (inv && returnQtyMap[`${inv}_${pId}`]) {
-                returnedQty = returnQtyMap[`${inv}_${pId}`];
-            } else if (inv && returnQtyMap[`${inv}_${pName}`]) {
-                returnedQty = returnQtyMap[`${inv}_${pName}`];
-            }
-
-            // Net Quantity
-            const netQty = Math.max(0, originalSoldQty - returnedQty);
-
-            // AGAR ITEM MUKAMMAL RETURN HO CHUKA HAI TO YAHAN SE HAT JAYE
-            if (netQty <= 0) return;
-
-            const lineCost = costPrice * netQty;
-            const lineSale = salePrice * netQty;
-            const lineProfit = lineSale - lineCost;
-
-            netRevenue += lineSale;
-            netCogs += lineCost;
-
-            const invNum = s.invoiceId ? `(inv #${s.invoiceId})` : '';
-
-            rowsHtml += `
-                <tr>
-                    <td style="text-align: left; padding: 12px 14px;">
-                        <strong style="color: #0f172a; font-size: 0.95rem;">${it.name || 'Product'}</strong> 
-                        <span style="color: #64748b; font-size: 0.8rem; margin-left: 4px;">${invNum}</span>
-                    </td>
-                    <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 12px 14px;">
-                        ${netQty}
-                    </td>
-                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">
-                        Rs. ${costPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </td>
-                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">
-                        Rs. ${salePrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </td>
-                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 700;">
-                        Rs. ${lineCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </td>
-                    <td style="text-align: right; font-weight: 800; color: #0f172a; padding: 12px 14px;">
-                        Rs. ${lineSale.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </td>
-                    <td style="text-align: right; font-weight: 900; color: ${lineProfit >= 0 ? '#16a34a' : '#ef4444'}; padding: 12px 14px;">
-                        Rs. ${lineProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </td>
-                </tr>
-            `;
-        });
-    });
-
-    tbody.innerHTML = rowsHtml || `<tr><td colspan="7" class="empty-placeholder" style="text-align:center; padding: 25px;">Selected period ke liye koi sales data mojood nahi hai.</td></tr>`;
-
-    // 3. Returns Container Table
     if (returnsContainer) {
         if (filteredReturns.length === 0) {
             returnsContainer.innerHTML = `<div class="empty-placeholder" style="padding:15px;">Selected period mein koi returns nahi hain.</div>`;
         } else {
-            let retTableRows = '';
-            filteredReturns.forEach(r => {
-                const origProd = (window.menuItems || []).find(m => m.id === r.productId || (m.name && r.productName && m.name.toLowerCase() === r.productName.toLowerCase()));
-                const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
-                const qty = Number(r.qty || 1);
-                const totalCost = unitCost * qty;
-                const totalSold = Number(r.refund || 0);
-                const profit = totalSold - totalCost;
-
-                retTableRows += `
-                    <tr>
-                        <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
-                            <strong style="color: #0f172a; font-size: 0.88rem;">${r.productName || 'Product'}</strong><br>
-                            <small style="color: #64748b; font-size: 0.76rem;">${(r.date || '').substring(0, 16)} ${r.invoiceRef ? '| Inv #' + r.invoiceRef : ''}</small>
-                        </td>
-                        <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
-                            ${qty}
-                        </td>
-                        <td style="text-align: right; font-weight: 600; color: #475569; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
-                            Rs. ${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                        <td style="text-align: right; font-weight: 700; color: #0f172a; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
-                            Rs. ${totalSold.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                        <td style="text-align: right; font-weight: 800; color: ${profit >= 0 ? '#16a34a' : '#ef4444'}; padding: 10px 8px; border-bottom: 1px solid #f1f5f9;">
-                            Rs. ${profit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                    </tr>
-                `;
-            });
-
             returnsContainer.innerHTML = `
                 <div style="overflow-x: auto; width: 100%;">
                     <table class="pl-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f8fafc;">
-                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Product Returned</th>
-                                <th style="text-align: center; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Qty</th>
-                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Total Cost</th>
-                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Total Sold</th>
-                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Profit Loss</th>
+                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Product Returned</th>
+                                <th style="text-align: center; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Qty</th>
+                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Total Cost</th>
+                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Refund Amount</th>
+                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Margin Loss</th>
                             </tr>
                         </thead>
                         <tbody>${retTableRows}</tbody>
@@ -9298,60 +9151,110 @@ window.renderProfitLossReport = function() {
         }
     }
 
-    // 4. Expenses Container Table
+    // 2. Sales Items & Total Calculations
+    let totalGrossRevenue = 0;
+    let totalGrossCogs = 0;
+    let rowsHtml = '';
+
+    filteredSales.forEach(s => {
+        (s.items || []).forEach(it => {
+            const originalProd = (window.menuItems || []).find(m => m.id === it.id);
+            const costPrice = Number(it.costPrice !== undefined ? it.costPrice : (originalProd ? originalProd.costPrice : 0)) || 0;
+            const salePrice = Number(it.price || 0);
+            const qty = Number(it.qty || 1);
+
+            const lineCost = costPrice * qty;
+            const lineSale = salePrice * qty;
+            const lineProfit = lineSale - lineCost;
+
+            totalGrossRevenue += lineSale;
+            totalGrossCogs += lineCost;
+
+            rowsHtml += `
+                <tr>
+                    <td style="text-align: left; padding: 12px 14px;">
+                        <strong style="color: #0f172a; font-size: 0.95rem;">${it.name || 'Product'}</strong> 
+                        <span style="color: #64748b; font-size: 0.8rem; margin-left: 4px;">(inv #${s.invoiceId || '-'})</span>
+                    </td>
+                    <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 12px 14px;">${qty}</td>
+                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">Rs. ${costPrice.toLocaleString()}</td>
+                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">Rs. ${salePrice.toLocaleString()}</td>
+                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 700;">Rs. ${lineCost.toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: 800; color: #0f172a; padding: 12px 14px;">Rs. ${lineSale.toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: 900; color: ${lineProfit >= 0 ? '#16a34a' : '#ef4444'}; padding: 12px 14px;">Rs. ${lineProfit.toLocaleString()}</td>
+                </tr>
+            `;
+        });
+    });
+
+    tbody.innerHTML = rowsHtml || `<tr><td colspan="7" class="empty-placeholder" style="text-align:center; padding: 25px;">Selected period ke liye koi sales data mojood nahi hai.</td></tr>`;
+
+    // 3. Expenses Calculation
+    let totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     if (expContainer) {
         if (filteredExpenses.length === 0) {
             expContainer.innerHTML = `<div class="empty-placeholder" style="padding:15px;">Selected period ka koi kharcha darj nahi hai.</div>`;
         } else {
-            let expTableRows = '';
+            let expRows = '';
             filteredExpenses.forEach(e => {
                 const amt = Number(e.amount || 0);
-                const expDate = (e.date || '').substring(0, 10);
-                const parts = expDate.split('-');
-                const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : expDate;
-
-                expTableRows += `
+                expRows += `
                     <tr>
-                        <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #475569; font-weight: 600; white-space: nowrap;">${formattedDate}</td>
+                        <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #475569; font-weight: 600;">${(e.date || '').substring(0, 10)}</td>
                         <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9;"><span class="status-badge" style="background: #f1f5f9; color: #334155; font-size: 0.76rem; font-weight: 700;">${e.category || 'General'}</span></td>
                         <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; color: #0f172a; font-weight: 700;">${e.title || '-'}</td>
-                        <td style="text-align: right; font-weight: 800; color: #ef4444; padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;">Rs. ${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="text-align: right; font-weight: 800; color: #ef4444; padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;">Rs. ${amt.toLocaleString()}</td>
                     </tr>
                 `;
             });
-
             expContainer.innerHTML = `
                 <div style="overflow-x: auto; width: 100%;">
                     <table class="pl-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f8fafc;">
-                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Date</th>
-                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Category</th>
-                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Description</th>
-                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase;">Amount</th>
+                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Date</th>
+                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Category</th>
+                                <th style="text-align: left; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Description</th>
+                                <th style="text-align: right; padding: 10px 8px; font-size: 0.78rem; font-weight: 700; color: #475569;">Amount</th>
                             </tr>
                         </thead>
-                        <tbody>${expTableRows}</tbody>
+                        <tbody>${expRows}</tbody>
                     </table>
                 </div>
             `;
         }
     }
 
-    const grossProfit = netRevenue - netCogs;
+    // 4. Exact Calculations (Screen Cards ke liye)
+    const grossProfit = totalGrossRevenue - totalGrossCogs; // 6,400 - 6,000 = 400
+    const netProfit = grossProfit - totalReturnMarginLoss - totalExpenses; // 400 - 100 - 2,500 = -2,200
 
-    const netProfit = grossProfit - totalExpenses;
-
-
-    // Update KPI Elements
-    if (document.getElementById('kpi-revenue')) document.getElementById('kpi-revenue').textContent = `Rs. ${netRevenue.toLocaleString()}`;
-    if (document.getElementById('kpi-cogs')) document.getElementById('kpi-cogs').textContent = `Rs. ${netCogs.toLocaleString()}`;
+    // 5. Update KPI Cards on Screen
+    if (document.getElementById('kpi-revenue')) document.getElementById('kpi-revenue').textContent = `Rs. ${totalGrossRevenue.toLocaleString()}`;
+    if (document.getElementById('kpi-cogs')) document.getElementById('kpi-cogs').textContent = `Rs. ${totalGrossCogs.toLocaleString()}`;
     if (document.getElementById('kpi-gross')) document.getElementById('kpi-gross').textContent = `Rs. ${grossProfit.toLocaleString()}`;
     if (document.getElementById('kpi-expenses')) document.getElementById('kpi-expenses').textContent = `Rs. ${totalExpenses.toLocaleString()}`;
-    if (document.getElementById('pl-screen-total-refunds')) document.getElementById('pl-screen-total-refunds').textContent = `Rs. ${totalReturnProfitSum.toLocaleString()}`;
-    if (document.getElementById('kpi-net')) {
-        document.getElementById('kpi-net').textContent = `Rs. ${netProfit.toLocaleString()}`;
-        document.getElementById('kpi-net').style.color = netProfit >= 0 ? '#16a34a' : '#ef4444';
+    if (document.getElementById('pl-screen-total-refunds')) document.getElementById('pl-screen-total-refunds').textContent = `Rs. ${totalReturnMarginLoss.toLocaleString()}`;
+
+    const netEl = document.getElementById('kpi-net');
+    const netCard = document.getElementById('kpi-net-card');
+    const netIcon = document.getElementById('kpi-net-icon');
+    const netSub = document.getElementById('kpi-net-sub');
+
+    if (netEl) {
+        if (netProfit >= 0) {
+            netEl.textContent = `Rs. ${netProfit.toLocaleString()}`;
+            netEl.style.color = '#16a34a';
+            if (netCard) { netCard.classList.remove('net-loss'); netCard.classList.add('net-profit'); }
+            if (netIcon) { netIcon.style.background = '#dcfce7'; netIcon.style.color = '#16a34a'; netIcon.innerHTML = `<i class='bx bx-check-double'></i>`; }
+            if (netSub) netSub.textContent = 'Net business profit';
+        } else {
+            netEl.textContent = `Rs. -${Math.abs(netProfit).toLocaleString()}`;
+            netEl.style.color = '#ef4444';
+            if (netCard) { netCard.classList.remove('net-profit'); netCard.classList.add('net-loss'); }
+            if (netIcon) { netIcon.style.background = '#fee2e2'; netIcon.style.color = '#ef4444'; netIcon.innerHTML = `<i class='bx bx-trending-down'></i>`; }
+            if (netSub) netSub.textContent = 'Net business loss';
+        }
     }
 };
 
@@ -9387,19 +9290,25 @@ window.downloadCleanProfitLossPDF = function() {
         return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dStr;
     };
 
+    // Helper: Negative numbers ko (Rs. 100.00) jaisa professional format dena
+    const formatCur = (num, isDeduction = false) => {
+        const val = Number(num || 0);
+        if (isDeduction || val < 0) {
+            return `(Rs. ${Math.abs(val).toFixed(2)})`;
+        }
+        return `Rs. ${val.toFixed(2)}`;
+    };
+
     const filteredSales = (window.salesHistory || []).filter(s => isWithinPeriod(s.date));
     const filteredExpenses = (window.expensesList || []).filter(e => isWithinPeriod(e.date));
     const filteredReturns = (window.returnsList || []).filter(r => isWithinPeriod(r.date));
 
-    // Returns Tracking Map
-    const returnQtyMap = {};
-    let totalRefunds = 0;
-    let totalReturnCogs = 0;
+    // 1. Returns Tracking & Rows
     let totalReturnMarginLoss = 0;
     let returnsRowsHtml = '';
 
     if (filteredReturns.length === 0) {
-        returnsRowsHtml = `<tr><td colspan="5" style="padding: 12px; color: #475569;">No returns in this period.</td></tr>`;
+        returnsRowsHtml = `<tr><td colspan="5" style="padding: 10px; color: #64748b; text-align: center;">No returns in this period.</td></tr>`;
     } else {
         filteredReturns.forEach(r => {
             const refundAmt = Number(r.refund || 0);
@@ -9409,33 +9318,23 @@ window.downloadCleanProfitLossPDF = function() {
             const lineCost = unitCost * qty;
             const lineMarginLoss = Math.max(0, refundAmt - lineCost);
 
-            totalRefunds += refundAmt;
-            totalReturnCogs += lineCost;
             totalReturnMarginLoss += lineMarginLoss;
-
-            const inv = String(r.invoiceRef || '').replace('#', '').trim().toLowerCase();
-            const pId = String(r.productId || '').trim().toLowerCase();
-            const pName = String(r.productName || '').trim().toLowerCase();
-
-            if (inv) {
-                if (pId) returnQtyMap[`${inv}_${pId}`] = (returnQtyMap[`${inv}_${pId}`] || 0) + qty;
-                if (pName) returnQtyMap[`${inv}_${pName}`] = (returnQtyMap[`${inv}_${pName}`] || 0) + qty;
-            }
 
             returnsRowsHtml += `
                 <tr style="page-break-inside: avoid;">
-                    <td>${r.productName} (inv #${r.invoiceRef || '-'})</td>
+                    <td>${r.productName || 'Product'}</td>
                     <td style="text-align: center;">${qty}</td>
-                    <td style="text-align: right;">Rs.${lineCost.toFixed(2)}</td>
-                    <td style="text-align: right;">Rs.${refundAmt.toFixed(2)}</td>
-                    <td style="text-align: right; color: #dc2626; font-weight: 600;">Rs.${lineMarginLoss.toFixed(2)}</td>
+                    <td style="text-align: right;">Rs. ${lineCost.toFixed(2)}</td>
+                    <td style="text-align: right;">Rs. ${refundAmt.toFixed(2)}</td>
+                    <td style="text-align: right; color: #dc2626; font-weight: 700;">Rs. ${lineMarginLoss.toFixed(2)}</td>
                 </tr>
             `;
         });
     }
 
-    let netRevenue = 0;
-    let netCogs = 0;
+    // 2. Sales Items & Rows
+    let totalGrossRevenue = 0;
+    let totalGrossCogs = 0;
     let salesRowsHtml = '';
 
     filteredSales.forEach(s => {
@@ -9443,50 +9342,33 @@ window.downloadCleanProfitLossPDF = function() {
             const originalProd = (window.menuItems || []).find(m => m.id === it.id);
             const cost = it.costPrice !== undefined ? Number(it.costPrice) : (originalProd ? Number(originalProd.costPrice || 0) : 0);
             const sale = Number(it.price || 0);
-            const originalSoldQty = Number(it.qty || 1);
+            const qty = Number(it.qty || 1);
 
-            const inv = String(s.invoiceId || '').replace('#', '').trim().toLowerCase();
-            const pId = String(it.id || '').trim().toLowerCase();
-            const pName = String(it.name || '').trim().toLowerCase();
-
-            let returnedQty = 0;
-            if (inv && returnQtyMap[`${inv}_${pId}`]) {
-                returnedQty = returnQtyMap[`${inv}_${pId}`];
-            } else if (inv && returnQtyMap[`${inv}_${pName}`]) {
-                returnedQty = returnQtyMap[`${inv}_${pName}`];
-            }
-
-            const netQty = Math.max(0, originalSoldQty - returnedQty);
-
-            // AGAR MUKAMMAL RETURN HOGAYI TO PDF SALES TABLE SE BHI HAT JAYE
-            if (netQty <= 0) return;
-
-            const lineCost = cost * netQty;
-            const lineSale = sale * netQty;
+            const lineCost = cost * qty;
+            const lineSale = sale * qty;
             const lineProfit = lineSale - lineCost;
 
-            netRevenue += lineSale;
-            netCogs += lineCost;
+            totalGrossRevenue += lineSale;
+            totalGrossCogs += lineCost;
 
             salesRowsHtml += `
                 <tr style="page-break-inside: avoid;">
-                    <td>${it.name} (inv #${s.invoiceId})</td>
-                    <td style="text-align: center;">${netQty}</td>
-                    <td style="text-align: right;">Rs.${cost.toFixed(2)}</td>
-                    <td style="text-align: right;">Rs.${sale.toFixed(2)}</td>
-                    <td style="text-align: right;">Rs.${lineCost.toFixed(2)}</td>
-                    <td style="text-align: right;">Rs.${lineSale.toFixed(2)}</td>
-                    <td style="text-align: right; font-weight: 600;">Rs.${lineProfit.toFixed(2)}</td>
+                    <td>${it.name || 'Product'} (inv #${s.invoiceId || '-'})</td>
+                    <td style="text-align: center;">${qty}</td>
+                    <td style="text-align: right;">Rs. ${lineCost.toFixed(2)}</td>
+                    <td style="text-align: right;">Rs. ${lineSale.toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: 700; color: ${lineProfit >= 0 ? '#16a34a' : '#dc2626'};">Rs. ${lineProfit.toFixed(2)}</td>
                 </tr>
             `;
         });
     });
 
+    // 3. Expenses Rows
     let totalExpenses = 0;
     let expensesRowsHtml = '';
 
     if (filteredExpenses.length === 0) {
-        expensesRowsHtml = `<tr><td colspan="4" style="padding: 12px; color: #475569;">No expenses recorded in this period.</td></tr>`;
+        expensesRowsHtml = `<tr><td colspan="4" style="padding: 10px; color: #64748b; text-align: center;">No expenses recorded.</td></tr>`;
     } else {
         filteredExpenses.forEach(exp => {
             const amt = Number(exp.amount || 0);
@@ -9494,105 +9376,95 @@ window.downloadCleanProfitLossPDF = function() {
             expensesRowsHtml += `
                 <tr style="page-break-inside: avoid;">
                     <td>${formatDateSlash(exp.date)}</td>
-                    <td>${exp.category || 'General'}</td>
-                    <td>${exp.title || '-'}</td>
-                    <td style="text-align: right; font-weight: 600;">Rs.${amt.toFixed(2)}</td>
+                    <td>${exp.category || 'Other'}</td>
+                    <td>${exp.title || exp.description || '-'}</td>
+                    <td style="text-align: right; font-weight: 700; color: #dc2626;">Rs. ${amt.toFixed(2)}</td>
                 </tr>
             `;
         });
     }
 
-  // PDF me sahi Gross Profit aur Net Profit calculation
-    const grossProfit = netRevenue - netCogs;
-    const netProfitLoss = grossProfit - totalExpenses;
+    // 4. Exact Calculations (Aapki Report ke mutabiq)
+    const grossProfit = totalGrossRevenue - totalGrossCogs; // 6400 - 6000 = 400
+    const netProfitLoss = grossProfit - totalReturnMarginLoss - totalExpenses; // 400 - 100 - 2500 = -2200
 
-    let periodDisplay = '';
-    if (window.currentPLPreset === 'today') {
-        periodDisplay = `${formatDateSlash(todayStr)} to ${formatDateSlash(todayStr)}`;
-    } else if (window.currentPLPreset === 'custom' && fromDate && toDate) {
-        periodDisplay = `${formatDateSlash(fromDate)} to ${formatDateSlash(toDate)}`;
-    } else {
-        const allDates = [
-            ...filteredSales.map(s => (s.date || '').substring(0, 10)),
-            ...filteredExpenses.map(e => (e.date || '').substring(0, 10)),
-            ...filteredReturns.map(r => (r.date || '').substring(0, 10))
-        ].filter(Boolean).sort();
-        periodDisplay = allDates.length > 0 ? `${formatDateSlash(allDates[0])} to ${formatDateSlash(allDates[allDates.length - 1])}` : `${formatDateSlash(todayStr)} to ${formatDateSlash(todayStr)}`;
-    }
+    let periodDisplay = `${formatDateSlash(fromDate || todayStr)} to ${formatDateSlash(toDate || todayStr)}`;
 
+    // 5. Clean PDF HTML Layout
     const pdfHtml = `
-        <div style="width: 100%; max-width: 195mm; margin: 0 auto; padding: 20px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; background: #ffffff; box-sizing: border-box; font-size: 11px;">
+        <div style="width: 100%; max-width: 195mm; margin: 0 auto; padding: 20px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #111827; background: #ffffff; box-sizing: border-box; font-size: 11px;">
             <style>
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 25px; table-layout: fixed; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 22px; table-layout: fixed; }
                 th, td { border: 1px solid #e5e7eb; padding: 7px 10px; font-size: 10px; vertical-align: middle; word-wrap: break-word; }
                 th { background-color: #f9fafb; font-weight: 700; color: #111827; }
-                h2.sec-heading { font-size: 14px; font-weight: 800; color: #111827; margin: 24px 0 10px 0; }
+                h2.sec-heading { font-size: 13.5px; font-weight: 800; color: #111827; margin: 20px 0 8px 0; }
             </style>
 
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h1 style="font-size: 26px; font-weight: 800; margin: 0 0 6px 0; color: #000000; letter-spacing: -0.5px;">Profit &amp; Loss Statement</h1>
-                <div style="font-size: 12px; font-weight: 600; color: #374151;">Period: ${periodDisplay}</div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="font-size: 24px; font-weight: 800; margin: 0 0 5px 0; color: #000000; letter-spacing: -0.5px;">Profit &amp; Loss Statement</h1>
+                <div style="font-size: 11.5px; font-weight: 600; color: #4b5563;">Period: ${periodDisplay}</div>
             </div>
 
-           <table style="width: 100%; margin-bottom: 28px; border: 1px solid #e5e7eb;">
+            <!-- Summary Table (Clean & Accurate Labels) -->
+            <table>
                 <tbody>
                     <tr>
-                        <td style="width: 65%; font-weight: 700; font-size: 11px;">Revenue (Sales)</td>
-                        <td style="width: 35%; text-align: right; font-weight: 700; font-size: 11.5px;">Rs.${netRevenue.toFixed(2)}</td>
+                        <td style="width: 65%; font-weight: 700; font-size: 11px;">Gross Sales (Revenue)</td>
+                        <td style="width: 35%; text-align: right; font-weight: 700; font-size: 11.5px;">Rs. ${totalGrossRevenue.toFixed(2)}</td>
                     </tr>
                     <tr>
                         <td style="font-weight: 700; font-size: 11px;">Cost of Goods Sold (COGS)</td>
-                        <td style="text-align: right; font-weight: 700; font-size: 11.5px;">(Rs. ${netCogs.toFixed(2)})</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 700; font-size: 11px;">Total Refunds (Return Item Loss)</td>
-                        <td style="text-align: right; font-weight: 700; font-size: 11.5px; color: #dc2626;">(Rs. ${totalReturnMarginLoss.toFixed(2)})</td>
+                        <td style="text-align: right; font-weight: 700; font-size: 11.5px;">(Rs. ${totalGrossCogs.toFixed(2)})</td>
                     </tr>
                     <tr style="background: #fafafa;">
                         <td style="font-weight: 800; font-size: 11.5px;">Gross Profit</td>
-                        <td style="text-align: right; font-weight: 800; font-size: 12px; color: #16a34a;">Rs.${grossProfit.toFixed(2)}</td>
+                        <td style="text-align: right; font-weight: 800; font-size: 12px; color: #16a34a;">Rs. ${grossProfit.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700; font-size: 11px;">Return Item Loss</td>
+                        <td style="text-align: right; font-weight: 700; font-size: 11.5px; color: #dc2626;">(Rs. ${totalReturnMarginLoss.toFixed(2)})</td>
                     </tr>
                     <tr>
                         <td style="font-weight: 700; font-size: 11px;">Operating Expenses</td>
-                        <td style="text-align: right; font-weight: 700; font-size: 11.5px;">(Rs. ${totalExpenses.toFixed(2)})</td>
+                        <td style="text-align: right; font-weight: 700; font-size: 11.5px; color: #dc2626;">(Rs. ${totalExpenses.toFixed(2)})</td>
                     </tr>
                     <tr style="background: #f3f4f6;">
                         <td style="font-weight: 900; font-size: 12px;">Net Profit / Loss</td>
-                        <td style="text-align: right; font-weight: 900; font-size: 13px; color: ${netProfitLoss >= 0 ? '#111827' : '#dc2626'};">
-                            Rs.${netProfitLoss.toFixed(2)}
+                        <td style="text-align: right; font-weight: 900; font-size: 12.5px; color: ${netProfitLoss >= 0 ? '#16a34a' : '#dc2626'};">
+                            ${netProfitLoss >= 0 ? 'Rs. ' + netProfitLoss.toFixed(2) : '(Rs. ' + Math.abs(netProfitLoss).toFixed(2) + ')'}
                         </td>
                     </tr>
                 </tbody>
             </table>
 
+            <!-- Itemized Cost & Profit Details -->
             <h2 class="sec-heading">Itemized Cost &amp; Profit Details</h2>
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 28%; text-align: left;">Product Sold</th>
-                        <th style="width: 6%; text-align: center;">Qty</th>
-                        <th style="width: 13%; text-align: right;">Cost Price</th>
-                        <th style="width: 13%; text-align: right;">Selling Price</th>
-                        <th style="width: 13%; text-align: right;">Total Cost</th>
-                        <th style="width: 13%; text-align: right;">Total Sale</th>
-                        <th style="width: 14%; text-align: right;">Profit / Loss</th>
+                        <th style="width: 36%; text-align: left;">Product Sold</th>
+                        <th style="width: 8%; text-align: center;">Qty</th>
+                        <th style="width: 18%; text-align: right;">Total Cost</th>
+                        <th style="width: 18%; text-align: right;">Total Sale</th>
+                        <th style="width: 20%; text-align: right;">Profit / Loss</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${salesRowsHtml || '<tr><td colspan="7" style="padding:10px; color:#64748b;">No sales in this period.</td></tr>'}
+                    ${salesRowsHtml || '<tr><td colspan="5" style="padding:10px; color:#64748b; text-align:center;">No sales in this period.</td></tr>'}
                 </tbody>
             </table>
 
+            <!-- Itemized COGS Returns Details (Header Restored) -->
             <h2 class="sec-heading">Itemized COGS Returns Details</h2>
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 44%; text-align: left;">Product Returned</th>
+                        <th style="width: 36%; text-align: left;">Product Returned</th>
                         <th style="width: 8%; text-align: center;">Qty</th>
-                        <th style="width: 16%; text-align: right;">Total Cost</th>
-                        <th style="width: 16%; text-align: right;">Refund Amount</th>
-                        <th style="width: 16%; text-align: right;">Margin Loss</th>
+                        <th style="width: 18%; text-align: right;">Total Cost</th>
+                        <th style="width: 18%; text-align: right;">Refund Amount</th>
+                        <th style="width: 20%; text-align: right;">Margin Loss</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -9600,13 +9472,14 @@ window.downloadCleanProfitLossPDF = function() {
                 </tbody>
             </table>
 
+            <!-- Operating Expenses Details -->
             <h2 class="sec-heading">Operating Expenses Details</h2>
             <table>
                 <thead>
                     <tr>
                         <th style="width: 16%; text-align: left;">Date</th>
-                        <th style="width: 24%; text-align: left;">Category</th>
-                        <th style="width: 40%; text-align: left;">Description</th>
+                        <th style="width: 22%; text-align: left;">Category</th>
+                        <th style="width: 42%; text-align: left;">Description</th>
                         <th style="width: 20%; text-align: right;">Amount</th>
                     </tr>
                 </thead>
@@ -10591,18 +10464,10 @@ window.renderAllReportsView = function() {
     }, 0);
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     
-    // Return items ka profit calculate karna (Total Sold - Total Cost)
-    let totalReturnProfitSum = 0;
-    filteredReturns.forEach(r => {
-        const origProd = (window.menuItems || []).find(m => m.id === r.productId || (m.name && r.productName && m.name.toLowerCase() === r.productName.toLowerCase()));
-        const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
-        const qty = Number(r.qty || 1);
-        const totalItemCost = unitCost * qty;
-        const totalItemSold = Number(r.refund || 0);
-        totalReturnProfitSum += (totalItemSold - totalItemCost);
-    });
-
+    // Customer ko di gayi asal cash refund (Rs. 1,600)
     const totalRefund = filteredReturns.reduce((sum, r) => sum + Number(r.refund || 0), 0);
+    
+    // Net Cash in Hand = Payment - Expenses - Refunds (6400 - 2500 - 1600 = 2300)
     const netCashInHand = totalPayment - totalExpenses - totalRefund;
 
     // 2. Update KPI Card Displays
@@ -10610,8 +10475,9 @@ window.renderAllReportsView = function() {
     if(document.getElementById('ar-kpi-payment')) document.getElementById('ar-kpi-payment').textContent = `Rs. ${totalPayment.toLocaleString()}`;
     if(document.getElementById('ar-kpi-expenses')) document.getElementById('ar-kpi-expenses').textContent = `Rs. ${totalExpenses.toLocaleString()}`;
     
-    const retCardEl = document.getElementById('pl-kpi-return-profit-total') || document.getElementById('ar-kpi-refund') || document.getElementById('pl-screen-total-refunds');
-    if(retCardEl) retCardEl.textContent = `Rs. ${totalReturnProfitSum.toLocaleString()}`;
+    // Yahan ab Rs. 1,600 display hoga (Rs. 100 nahi)
+    const retCardEl = document.getElementById('ar-kpi-refund') || document.getElementById('pl-kpi-return-profit-total');
+    if(retCardEl) retCardEl.textContent = `Rs. ${totalRefund.toLocaleString()}`;
     
     if(document.getElementById('ar-kpi-receivable')) document.getElementById('ar-kpi-receivable').textContent = `Rs. ${totalReceivable.toLocaleString()}`;
 
@@ -10620,7 +10486,6 @@ window.renderAllReportsView = function() {
         netCashEl.textContent = `Rs. ${netCashInHand.toLocaleString()}`;
         netCashEl.style.color = netCashInHand >= 0 ? '#059669' : '#ef4444';
     }
-
     if (periodText) {
         periodText.textContent = `Period: ${(window.currentAllReportsPreset || 'TODAY').toUpperCase()} | Recorded Invoices: ${filteredSales.length} | Expenses: ${filteredExpenses.length}`;
     }
@@ -10749,7 +10614,7 @@ window.renderAllReportsView = function() {
 };
 
 // =========================================================================
-// EXACT "COMPREHENSIVE FINANCIAL REPORT" A4 PDF GENERATOR
+// EXACT "COMPREHENSIVE FINANCIAL REPORT" A4 PDF GENERATOR (100% ACCURATE)
 // =========================================================================
 window.downloadAllReportsPDF = function() {
     const now = new Date();
@@ -10810,7 +10675,7 @@ window.downloadAllReportsPDF = function() {
         }
     }
 
-    // 2. Financial Summary Calculation
+    // 2. Financial Summary Calculation (Bilkul Sahi Hisab)
     const totalSale = filteredSales.reduce((sum, s) => sum + Number(s.total || 0), 0);
     const totalPayment = filteredSales.reduce((sum, s) => {
         const total = Number(s.total || 0);
@@ -10824,19 +10689,10 @@ window.downloadAllReportsPDF = function() {
     }, 0);
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-    // Total Refunds ko Itemized Return Profit (Margin Loss = Rs. 6,000) calculate karein
-    let totalRefunds = 0;
-    filteredReturns.forEach(r => {
-        const origProd = (window.menuItems || []).find(m => m.id === r.productId || (m.name && r.productName && m.name.toLowerCase() === r.productName.toLowerCase()));
-        const unitCost = r.costPrice !== undefined ? Number(r.costPrice) : (origProd ? Number(origProd.costPrice || 0) : 0);
-        const qty = Number(r.qty || 1);
-        const lineCost = unitCost * qty;
-        const refundAmt = Number(r.refund || 0);
-        const returnProfitLoss = Math.max(0, refundAmt - lineCost); // (3000 - 1500 = 1500)
-        
-        totalRefunds += returnProfitLoss; // 1500 + 1500 + 1500 + 1500 = 6,000
-    });
+    // Asal Customer Refund Amount (No Margin Bug)
+    const totalRefunds = filteredReturns.reduce((sum, r) => sum + Number(r.refund || 0), 0);
 
+    // Net Cash in Hand = Kul Wasooli - Kharchay - Asal Refunds
     const netCashInHand = totalPayment - totalExpenses - totalRefunds;
 
     // 3. Sales Details Table Rows Generation
@@ -10861,7 +10717,7 @@ window.downloadAllReportsPDF = function() {
                         <td>${invId}</td>
                         <td>${customer}</td>
                         <td>General Sale</td>
-                        <td>1</td>
+                        <td style="text-align:center;">1</td>
                         <td>Rs.${total.toFixed(2)}</td>
                         <td>${saleDate} [${payMode}]: Rs.${paid.toFixed(2)}</td>
                         <td>Rs.${balance.toFixed(2)}</td>
@@ -10872,7 +10728,6 @@ window.downloadAllReportsPDF = function() {
                     const itemQty = it.qty || 1;
                     const itemAmt = (Number(it.price || 0) * itemQty).toFixed(2);
                     
-                    // Screenshot pattern: Sirf pehle item ki row par Paid aur Balance show hota hai, baqi rows par '-'
                     const paidCol = idx === 0 ? `${saleDate} [${payMode}]: Rs.${paid.toFixed(2)}` : '-';
                     const balCol = idx === 0 ? `Rs.${balance.toFixed(2)}` : '-';
 
@@ -10882,7 +10737,7 @@ window.downloadAllReportsPDF = function() {
                             <td>${invId}</td>
                             <td>${customer}</td>
                             <td>${it.name || 'Product'}</td>
-                            <td>${itemQty}</td>
+                            <td style="text-align:center;">${itemQty}</td>
                             <td>Rs.${itemAmt}</td>
                             <td>${paidCol}</td>
                             <td>${balCol}</td>
@@ -10924,20 +10779,20 @@ window.downloadAllReportsPDF = function() {
                     <td>${ret.invoiceRef || '-'}</td>
                     <td>${ret.customerName || 'Cash Customer'}</td>
                     <td>${ret.productName || '-'}</td>
-                    <td>${ret.qty || 1}</td>
+                    <td style="text-align:center;">${ret.qty || 1}</td>
                     <td>Rs.${Number(ret.refund || 0).toFixed(2)}</td>
                 </tr>
             `;
         });
     }
 
-    // 6. PDF Layout (Strict A4 Match with the Provided Reference Screenshots)
+    // 6. PDF Layout (Strict A4 Layout & Perfect Columns)
     const reportHtml = `
         <div id="pdf-report-root" style="width: 100%; max-width: 195mm; margin: 0 auto; padding: 10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #000000; background: #ffffff; box-sizing: border-box; font-size: 11px;">
             <style>
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 table { width: 100%; border-collapse: collapse; margin-bottom: 22px; table-layout: fixed; }
-                th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 10px; vertical-align: top; word-wrap: break-word; }
+                th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 10px; vertical-align: middle; word-wrap: break-word; }
                 th { background-color: #f9fafb; font-weight: 700; color: #111827; }
                 h2.sec-heading { font-size: 14px; font-weight: 800; color: #000000; margin: 20px 0 10px 0; }
                 .text-center { text-align: center; }
@@ -10980,19 +10835,19 @@ window.downloadAllReportsPDF = function() {
                 </tbody>
             </table>
 
-            <!-- 2. Sales Details Section -->
+            <!-- 2. Sales Details Section (Columns Adjusted to Prevent Text Wrapping) -->
             <h2 class="sec-heading">Sales Details</h2>
             <table>
                 <thead>
                     <tr>
                         <th style="width: 12%; text-align: left;">Date</th>
                         <th style="width: 8%; text-align: left;">Inv ID</th>
-                        <th style="width: 13%; text-align: left;">Customer</th>
-                        <th style="width: 25%; text-align: left;">Product</th>
-                        <th style="width: 6%; text-align: left;">Qty</th>
-                        <th style="width: 12%; text-align: left;">Amount</th>
-                        <th style="width: 16%; text-align: left;">Paid</th>
-                        <th style="width: 8%; text-align: left;">Bal</th>
+                        <th style="width: 14%; text-align: left;">Customer</th>
+                        <th style="width: 20%; text-align: left;">Product</th>
+                        <th style="width: 6%; text-align: center;">Qty</th>
+                        <th style="width: 13%; text-align: left;">Amount</th>
+                        <th style="width: 17%; text-align: left;">Paid</th>
+                        <th style="width: 10%; text-align: left;">Bal</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -11025,7 +10880,7 @@ window.downloadAllReportsPDF = function() {
                         <th style="width: 16%; text-align: left;">Original Invoice</th>
                         <th style="width: 22%; text-align: left;">Customer</th>
                         <th style="width: 26%; text-align: left;">Returned Item(s)</th>
-                        <th style="width: 8%; text-align: left;">Qty</th>
+                        <th style="width: 8%; text-align: center;">Qty</th>
                         <th style="width: 14%; text-align: left;">Refund Amount</th>
                     </tr>
                 </thead>
@@ -11050,7 +10905,6 @@ window.downloadAllReportsPDF = function() {
 
     html2pdf().set(opt).from(element).save();
 };
-
 
 
 let chosenDirectoryHandle = null;
