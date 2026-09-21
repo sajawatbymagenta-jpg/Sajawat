@@ -708,7 +708,7 @@
                 display: block !important;
             }
 
-            .bcp-price {
+          .bcp-price {
                 font-size: var(--bc-font-price, 10px) !important;
                 font-weight: 900 !important;
                 letter-spacing: 0.3px;
@@ -716,7 +716,7 @@
                 margin: 0 !important;
                 padding: 0.5mm 0 0 0 !important;
                 color: #000000 !important;
-                border-top: 1px solid #000000 !important;
+                border-top: none !important;
                 width: 96% !important;
             }
         }
@@ -1760,25 +1760,7 @@
                             </div>
                         </div>
 
-                      <div class="pl-card-section" style="width: 100%;">
-                            <div class="pl-card-title"><i class='bx bx-list-check' style="color:var(--primary);"></i> Itemized Cost & Profit Details</div>
-                            <div style="overflow-x: auto; width: 100%;">
-                                <table class="pl-table" style="width: 100%;">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 28%; text-align: left;">Product Sold</th>
-                                            <th style="width: 6%; text-align: center;">Qty</th>
-                                            <th style="width: 13%; text-align: right;">Cost Price</th>
-                                            <th style="width: 13%; text-align: right;">Selling Price</th>
-                                            <th style="width: 13%; text-align: right;">Total Cost</th>
-                                            <th style="width: 13%; text-align: right;">Total Sale</th>
-                                            <th style="width: 14%; text-align: right;">Profit / Loss</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="pl-screen-itemized-tbody"></tbody>
-                                </table>
-                            </div>
-                        </div>
+                     
                         <!-- 1. Sales Details Table -->
                         <div class="pl-card-section" style="width: 100%; margin-top: 20px;">
                             <div class="pl-card-title" style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">
@@ -2776,9 +2758,10 @@
                     <label>Qty Returned *</label>
                     <input type="number" id="return-qty" min="1" value="1" style="font-weight: 800; text-align: center; color: #ef4444;" oninput="autoFillReturnPrice()">
                 </div>
+                
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label>Refund Amount (Rs.) *</label>
-                    <input type="number" id="return-refund-val" min="0" style="font-weight: 800; text-align: right; color: #0f172a;">
+                    <label><i class='bx bx-lock-alt'></i> Refund Amount (Rs.) * (Locked)</label>
+                    <input type="number" id="return-refund-val" min="0" readonly style="font-weight: 800; text-align: right; color: #0f172a; background: #f1f5f9; cursor: not-allowed;">
                 </div>
             </div>
 
@@ -8298,7 +8281,7 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
             document.getElementById('return-modal')?.classList.remove('visible');
         };
 
-        // 5. Price aur Qty Limit Auto-Calculate Karna
+       // 5. Price aur Qty Limit Auto-Calculate Karna (Customer ki khareedi hui tadaad ke mutabiq)
         window.autoFillReturnPrice = function() {
             const prodSelect = document.getElementById('return-product-select');
             const qtyInput = document.getElementById('return-qty');
@@ -8314,15 +8297,15 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
             }
 
             const unitPrice = parseFloat(selectedOption.dataset.price) || 0;
-            const maxQty = parseInt(selectedOption.dataset.maxqty) || 1; // Bill mein jitne bikay thay
+            const billSoldQty = parseInt(selectedOption.dataset.maxqty) || 1; // Bill mein jitne khareeday thay
             
             let qty = parseInt(qtyInput.value) || 1;
             
-            // Limit check: Customer ne jitne piece khareeday thay us se zyada wapas nahi le sakte
-            if (qty > maxQty) {
-                qty = maxQty;
-                qtyInput.value = maxQty;
-                Toast.fire({ icon: 'warning', title: `Is bill mein customer ne sirf ${maxQty} piece liye thay!` });
+            // Agar customer ne jitne khareeday us se zyada likhein toh rok dein
+            if (qty > billSoldQty) {
+                qty = billSoldQty;
+                qtyInput.value = billSoldQty;
+                Toast.fire({ icon: 'warning', title: `Customer ne is bill mein sirf ${billSoldQty} piece khareeday thay!` });
             }
 
             if (qty <= 0) {
@@ -8330,10 +8313,11 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
                 qtyInput.value = 1;
             }
 
+            // Price auto calculate ho kar lock rahegi
             refundInput.value = unitPrice * qty;
 
             if (hint) {
-                hint.innerHTML = `<span style="color:#16a34a; font-weight:700;">✓ Unit Price: Rs. ${unitPrice.toLocaleString()} | Maximum ${maxQty} piece wapas ho sakte hain.</span>`;
+                hint.innerHTML = `<span style="color:#16a34a; font-weight:700;">✓ Unit Price: Rs. ${unitPrice.toLocaleString()} | Maximum ${billSoldQty} piece wapas ho sakte hain.</span>`;
             }
         };
 
@@ -8356,11 +8340,16 @@ window.handleTransferScannedBarcode = function(rawBarcode) {
                 return;
             }
 
-            if (qty <= 0) {
+if (qty <= 0) {
                 alert("Quantity kam az kam 1 honi chahiye!");
                 return;
             }
 
+            const maxBillQty = parseInt(selectedOption?.dataset?.maxqty) || 1;
+            if (qty > maxBillQty) {
+                alert(`Is bill mein sirf ${maxBillQty} piece biki theen, is se zyada return nahi ho saktay!`);
+                return;
+            }
             // Bill dhoondein
             const matchedSale = (window.salesHistory || []).find(s => 
                 String(s.invoiceId).trim().toLowerCase() === cleanRef
@@ -10489,34 +10478,7 @@ window.renderAllReportsView = function() {
         periodText.textContent = `Period: ${(window.currentAllReportsPreset || 'TODAY').toUpperCase()} | Recorded Invoices: ${filteredSales.length} | Expenses: ${filteredExpenses.length}`;
     }
 
-    // 3. Render Itemized Cost & Profit Table
-    if (itemizedTbody) {
-        let itemizedRowsHtml = '';
-        filteredSales.forEach(s => {
-            (s.items || []).forEach(it => {
-                const originalProd = (window.menuItems || []).find(m => m.id === it.id);
-                const costPrice = Number(it.costPrice !== undefined ? it.costPrice : (originalProd ? originalProd.costPrice : 0)) || 0;
-                const salePrice = Number(it.price || 0);
-                const qty = Number(it.qty || 1);
-                const lineCost = costPrice * qty;
-                const lineSale = salePrice * qty;
-                const lineProfit = lineSale - lineCost;
-
-                itemizedRowsHtml += `
-                    <tr>
-                        <td><strong>${it.name || 'Product'}</strong> <small style="color:#64748b;">(Inv #${s.invoiceId || '-'})</small></td>
-                        <td style="text-align:center; font-weight:700;">${qty}</td>
-                        <td style="text-align:right;">Rs. ${costPrice.toLocaleString()}</td>
-                        <td style="text-align:right;">Rs. ${salePrice.toLocaleString()}</td>
-                        <td style="text-align:right;">Rs. ${lineCost.toLocaleString()}</td>
-                        <td style="text-align:right; font-weight:700;">Rs. ${lineSale.toLocaleString()}</td>
-                        <td style="text-align:right; font-weight:800; color:${lineProfit >= 0 ? '#16a34a' : '#ef4444'};">Rs. ${lineProfit.toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-        });
-        itemizedTbody.innerHTML = itemizedRowsHtml || `<tr><td colspan="7" class="empty-placeholder">Chuni hui muddat mein koi sale nahi hui.</td></tr>`;
-    }
+    
 
     // 4. Render Sales Details Table
     if (salesDetailsTbody) {
