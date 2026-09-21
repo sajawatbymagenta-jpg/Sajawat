@@ -636,30 +636,27 @@
                 display: none !important;
             }
 
-            /* 5. XP-80 Single Continuous Roll Print Support (Clean Spacing & Large Bold Text) */
+            /* 5. Black Copper BC-LP1300 Dedicated Thermal Label Print Engine */
             #barcode-print-area:not(:empty) {
-                display: flex !important;
+                display: block !important;
                 position: relative !important;
-                width: 100% !important;
-                max-width: 78mm !important;
+                width: var(--bc-width, 50mm) !important;
                 margin: 0 auto !important;
                 padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
                 background: #ffffff !important;
-                flex-direction: column !important;
-                align-items: center !important;
                 page-break-inside: auto !important;
                 break-inside: auto !important;
             }
 
             .barcode-sticker-print-box {
                 width: var(--bc-width, 50mm) !important;
-                min-height: var(--bc-height, 24mm) !important;
-                height: auto !important;
-                margin: 0 auto 2.5mm auto !important;
-                padding: 1.5mm 1mm !important;
+                height: var(--bc-height, 25mm) !important;
+                max-height: var(--bc-height, 25mm) !important;
+                margin: 0 !important;
+                padding: 1mm 1.5mm !important;
                 text-align: center;
-                border: 1px dashed #000000 !important;
-                border-radius: 4px !important;
+                border: none !important; /* Label roll par border nahi chahye */
+                border-radius: 0 !important;
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
@@ -667,21 +664,23 @@
                 box-sizing: border-box !important;
                 background: #ffffff !important;
                 overflow: hidden !important;
-                font-family: var(--bc-font-family, 'Plus Jakarta Sans', Arial, sans-serif) !important;
+                font-family: var(--bc-font-family, Arial, sans-serif) !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+                page-break-after: always !important; /* BC-LP1300 sensor aglay sticker par khud rokega */
+                break-after: page !important;
             }
 
             .bcp-company {
                 font-size: var(--bc-font-comp, 8px) !important;
-                font-weight: var(--bc-font-weight, 800) !important;
+                font-weight: var(--bc-font-weight, 900) !important;
                 text-transform: uppercase;
-                letter-spacing: 0.3px;
+                letter-spacing: 0.2px;
                 line-height: 1.1 !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 color: #000000 !important;
-                max-width: 96%;
+                max-width: 98%;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -691,20 +690,20 @@
                 font-size: var(--bc-font-name, 9px) !important;
                 font-weight: var(--bc-font-weight, 800) !important;
                 line-height: 1.1 !important;
-                max-width: 96% !important;
+                max-width: 98% !important;
                 white-space: nowrap !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
-                margin: 1px 0 !important;
+                margin: 0 !important;
                 padding: 0 !important;
                 color: #000000 !important;
                 text-transform: uppercase;
             }
 
             .bcp-svg {
-                width: 92% !important;
+                width: 96% !important;
                 height: var(--bc-barcode-h, 11mm) !important;
-                margin: 1px auto !important;
+                margin: 0.5mm auto !important;
                 padding: 0 !important;
                 display: block !important;
             }
@@ -714,11 +713,11 @@
                 font-weight: 900 !important;
                 letter-spacing: 0.3px;
                 line-height: 1.1 !important;
-                margin: 1px 0 0 0 !important;
-                padding: 1px 0 0 0 !important;
+                margin: 0 !important;
+                padding: 0.5mm 0 0 0 !important;
                 color: #000000 !important;
-                border-top: 1px dashed #000000 !important;
-                width: 92% !important;
+                border-top: 1px solid #000000 !important;
+                width: 96% !important;
             }
         }
         /* =========================================================================
@@ -11269,23 +11268,18 @@ updateNetworkStatus();
             }
         };
 
-// =========================================================================
-        // BARCODE PRINT VIEW & ALIGNMENT SETTINGS CONTROLLER
-        // =========================================================================
-       // =========================================================================
-// ADVANCED BARCODE PRINT VIEW, DRAGGING & ALIGNMENT CONTROLLER
-// =========================================================================
+
 const DEFAULT_BC_SETTINGS = {
-    width: 50,          // mm
-    height: 24,         // mm
+    width: 50,          // mm (BC-LP1300 Standard)
+    height: 25,         // mm (BC-LP1300 Standard)
     leftOffset: 0,      // mm
     topOffset: 0,       // mm
     barcodeH: 11,       // mm
     fontComp: 8,        // px
     fontName: 9,        // px
     fontPrice: 10,      // px
-    fontWeight: '800',  // bold / extra bold
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
+    fontWeight: '900',  // Thermal print par safai ke liye extra bold
+    fontFamily: "Arial, sans-serif"
 };
 
 // 1. Stored Settings Fetch Karna
@@ -12178,26 +12172,23 @@ window.openDeveloperOverrideModal = async function() {
 
 @media print {
     #barcode-print-area:not(:empty) {
+        display: block !important;
         position: relative !important;
-        width: 100% !important;
-        max-width: 78mm !important;
+        width: var(--bc-width, 50mm) !important;
         margin: 0 auto !important;
         padding: var(--bc-top-offset, 0mm) 0 0 var(--bc-left-offset, 0mm) !important;
         background: #ffffff !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
     }
 
     .barcode-sticker-print-box {
         width: var(--bc-width, 50mm) !important;
-        height: var(--bc-height, 24mm) !important;
-        min-height: var(--bc-height, 24mm) !important;
-        margin: 0 auto 2.5mm auto !important;
-        padding: 1.5mm 1mm !important;
+        height: var(--bc-height, 25mm) !important;
+        max-height: var(--bc-height, 25mm) !important;
+        margin: 0 !important;
+        padding: 1mm 1.5mm !important;
         text-align: center;
-        border: 1px dashed #000000 !important;
-        border-radius: 4px !important;
+        border: none !important;
+        border-radius: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -12205,19 +12196,21 @@ window.openDeveloperOverrideModal = async function() {
         box-sizing: border-box !important;
         background: #ffffff !important;
         overflow: hidden !important;
-        font-family: var(--bc-font-family) !important;
+        font-family: var(--bc-font-family, Arial, sans-serif) !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
     .bcp-company {
         font-size: var(--bc-font-comp, 8px) !important;
-        font-weight: var(--bc-font-weight, 800) !important;
+        font-weight: var(--bc-font-weight, 900) !important;
         text-transform: uppercase;
         line-height: 1.1 !important;
         margin: 0 !important;
         color: #000000 !important;
-        max-width: 96%;
+        max-width: 98%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -12227,7 +12220,7 @@ window.openDeveloperOverrideModal = async function() {
         font-size: var(--bc-font-name, 9px) !important;
         font-weight: var(--bc-font-weight, 800) !important;
         line-height: 1.1 !important;
-        max-width: 96% !important;
+        max-width: 98% !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
@@ -12236,9 +12229,9 @@ window.openDeveloperOverrideModal = async function() {
     }
 
     .bcp-svg {
-        width: 92% !important;
+        width: 96% !important;
         height: var(--bc-barcode-h, 11mm) !important;
-        margin: 0 auto !important;
+        margin: 0.5mm auto !important;
         display: block !important;
     }
 
@@ -12248,9 +12241,9 @@ window.openDeveloperOverrideModal = async function() {
         line-height: 1.1 !important;
         margin: 0 !important;
         color: #000000 !important;
-        border-top: 1px dashed #000000;
-        width: 92%;
-        padding-top: 1px;
+        border-top: 1px solid #000000;
+        width: 96%;
+        padding-top: 0.5mm;
     }
 }
 
