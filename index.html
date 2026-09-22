@@ -2965,14 +2965,14 @@
                 </div>
             </div>
 
-            <!-- Items Table (Without GST / GST%) -->
+           <!-- Items Table (Barcode & Description Alag Alag) -->
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th style="width: 44%;">Description</th>
-                        <th style="width: 14%; text-align: center;">Qty</th>
+                        <th style="width: 48%;">Barcode & Description</th>
+                        <th style="width: 12%; text-align: center;">Qty</th>
                         <th style="width: 20%; text-align: right;">Price</th>
-                        <th style="width: 22%; text-align: right;">Total</th>
+                        <th style="width: 20%; text-align: right;">Total</th>
                     </tr>
                 </thead>
                 <tbody id="invoice-items-body"></tbody>
@@ -2998,10 +2998,15 @@
                 <span id="inv-you-saved-val">0.00</span>
             </div>
 
-            <!-- Cashier & Counter -->
+           <!-- Cashier & Counter -->
             <div class="inv-user-counter">
                 <span>User: <b id="inv-cashier-name">COUNTER1</b></span>
                 <span>Counter: <b id="inv-counter-id">COUNTER1</b></span>
+            </div>
+
+            <!-- Bill Scanner Barcode (Lines wala Barcode) -->
+            <div style="text-align: center; margin: 8px 0 6px 0; border-top: 1px dashed #000; padding-top: 6px;">
+                <svg id="invoice-barcode-svg" style="max-width: 90%; height: 35px;"></svg>
             </div>
 
             <!-- Footer: Thank you & Policies -->
@@ -7379,9 +7384,10 @@ window.saveUserPermissions = async function() {
                     invoiceId: invId, date: invDate, customerName: custName, customerPhone: custPhone,
                     paymentMode: finalPaymentMode, paymentStatus: paymentStatus,
                     branchId: selectedBranch, branchName: branchNameRecorded,
-                    items: cart.map(i => ({ 
+                   items: cart.map(i => ({ 
                         id: i.id, 
                         name: i.name, 
+                        barcode: (i.barcode || ''), 
                         qty: i.qty, 
                         costPrice: (i.costPrice || 0), 
                         price: i.price,
@@ -7476,7 +7482,7 @@ window.showInvoiceModal = function(sale) {
     if (invTimeEl) invTimeEl.textContent = rawDate.length > 11 ? rawDate.substring(11) : new Date().toLocaleTimeString();
     if (custEl) custEl.textContent = (sale.customerName && sale.customerName !== 'Walk-in') ? sale.customerName : 'Cash Customer';
 
-    // 3. Items Table (Description, Qty, Price, Total - No GST)
+    // 3. Items Table (Item Barcode Number + Name)
     const tbody = document.getElementById('invoice-items-body');
     let totalPieces = 0;
     const itemsList = sale.items || [];
@@ -7488,13 +7494,16 @@ window.showInvoiceModal = function(sale) {
             totalPieces += qty;
             const price = Number(item.price || 0);
             const lineTotal = qty * price;
-            const barcodeVal = item.barcode ? `<small style="display:block; color:#475569; font-size:9.5px;">${item.barcode}</small>` : '';
+
+            // Barcode dhoondna: agar sale mein na ho to inventory menuItems se uthayega
+            const originalProd = (window.menuItems || []).find(m => m.id === item.id || m.name === item.name);
+            const barcodeNumber = item.barcode || (originalProd ? originalProd.barcode : '') || '100' + item.id.substring(0, 4);
 
             tbody.innerHTML += `
                 <tr class="inv-item-row">
                     <td>
-                        <b>${item.name}</b>
-                        ${barcodeVal}
+                        <div style="font-size: 10px; font-weight: 900; color: #000; letter-spacing: 0.5px;">${barcodeNumber}</div>
+                        <div style="font-weight: 700; font-size: 10.5px;">${item.name}</div>
                     </td>
                     <td style="text-align: center; font-weight:700;">${qty}</td>
                     <td style="text-align: right;">${price.toFixed(2)}</td>
@@ -7503,6 +7512,27 @@ window.showInvoiceModal = function(sale) {
             `;
         });
     }
+
+    // Modal show karein
+    document.getElementById('invoice-modal')?.classList.add('visible');
+
+    // 4. Pure Bill ka Scanner Barcode Draw Karna (Lines wala barcode)
+    setTimeout(() => {
+        try {
+            const billBarcodeVal = String(sale.invoiceId || '000').padStart(6, '0');
+            JsBarcode("#invoice-barcode-svg", billBarcodeVal, {
+                format: "CODE128",
+                width: 1.4,
+                height: 30,
+                displayValue: true,
+                fontSize: 10,
+                font: "Courier New",
+                margin: 0
+            });
+        } catch(e) {
+            console.warn("Barcode draw error:", e);
+        }
+    }, 80);
 
     // 4. Qty Count & Number of Items
     const totalQtyEl = document.getElementById('inv-total-qty');
@@ -10457,32 +10487,76 @@ window.downloadCleanProfitLossPDF = function() {
 
         const allTransactions = [];
 
-        // 1. CASH IN: Daily Counter Cash Sales
-        const dailySalesMap = {};
+       // 1. CASH IN: Daily Counter Cash Sales (Net Cash in Hand = Sales - Refunds - Expenses)
+        const dailySummaryMap = {};
+
+        // A. Cash Sales / Payment Received
         (window.salesHistory || []).forEach(s => {
             const isCash = (s.paymentMode || 'Cash').toLowerCase().includes('cash');
             const isPaid = (s.paymentStatus === 'Paid');
             if (isCash && isPaid && isWithinPeriod(s.date)) {
                 const d = (s.date || '').substring(0, 10);
-                if (!dailySalesMap[d]) {
-                    dailySalesMap[d] = {
-                        total: 0,
+                if (!dailySummaryMap[d]) {
+                    dailySummaryMap[d] = {
+                        sales: 0,
+                        refunds: 0,
+                        expenses: 0,
                         rawDate: new Date(s.date || now).getTime()
                     };
                 }
-                dailySalesMap[d].total += Number(s.total || 0);
+                const paid = s.paidAmount !== undefined ? Number(s.paidAmount) : Number(s.total || 0);
+                dailySummaryMap[d].sales += paid;
             }
         });
 
-        Object.keys(dailySalesMap).forEach(d => {
-            allTransactions.push({
-                date: d,
-                desc: 'Daily Cash Sales (Counter Sale)',
-                isSale: true,
-                cashIn: dailySalesMap[d].total,
-                cashOut: 0,
-                rawDate: dailySalesMap[d].rawDate
-            });
+        // B. Customer Returns / Refunds (Jo cash wapas diya gaya)
+        (window.returnsList || []).forEach(r => {
+            if (isWithinPeriod(r.date)) {
+                const d = (r.date || '').substring(0, 10);
+                if (!dailySummaryMap[d]) {
+                    dailySummaryMap[d] = {
+                        sales: 0,
+                        refunds: 0,
+                        expenses: 0,
+                        rawDate: new Date(r.date || now).getTime()
+                    };
+                }
+                dailySummaryMap[d].refunds += Number(r.refund || 0);
+            }
+        });
+
+        // C. Daily Store Expenses (Dukan ke rozana kharchay)
+        (window.expensesList || []).forEach(e => {
+            if (isWithinPeriod(e.date)) {
+                const d = (e.date || '').substring(0, 10);
+                if (!dailySummaryMap[d]) {
+                    dailySummaryMap[d] = {
+                        sales: 0,
+                        refunds: 0,
+                        expenses: 0,
+                        rawDate: new Date(e.date || now).getTime()
+                    };
+                }
+                dailySummaryMap[d].expenses += Number(e.amount || 0);
+            }
+        });
+
+        // D. Transaction List mein Net Cash in Hand Shamil Karna
+        Object.keys(dailySummaryMap).forEach(d => {
+            const dayData = dailySummaryMap[d];
+            // Net Cash in Hand = Sales (47,175) - Refunds (9,375) - Expenses (300) = 37,500
+            const netCashCollected = (dayData.sales - dayData.refunds - dayData.expenses);
+
+            if (dayData.sales > 0 || netCashCollected !== 0) {
+                allTransactions.push({
+                    date: d,
+                    desc: 'Daily Cash Sales (Counter Sale)',
+                    isSale: true,
+                    cashIn: Math.max(0, netCashCollected),
+                    cashOut: netCashCollected < 0 ? Math.abs(netCashCollected) : 0,
+                    rawDate: dayData.rawDate
+                });
+            }
         });
 
         // 2. CASH OUT: Purchaser Payments (Vendors ko jo cash diya)
