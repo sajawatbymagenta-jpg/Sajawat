@@ -1136,7 +1136,7 @@
                 </li>
 
                 <li id="nav-settings"><a href="#" onclick="switchView('settings')"><i class='bx bx-cog'></i><span class="links_name">Settings</span></a></li>
-                <li id="nav-users"><a href="#" onclick="switchView('users')"><i class='bx bx-user-pin'></i><span class="links_name">Users & Access</span></a></li>
+<li id="nav-dev-license" style="display:none;"><a href="javascript:void(0)" onclick="openSuperMasterModal()" style="color:#00d2ff;"><i class='bx bxs-shield-quarter'></i><span class="links_name">Dev License Control</span></a></li>
             </ul>
         </nav>
 
@@ -6261,40 +6261,37 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             }
         };
 
-        function applyUserPermissions(user) {
-            if (!user) return;
-            if (user.role === 'superadmin') {
-                document.querySelectorAll('.nav-list li').forEach(li => li.style.display = 'block');
-                const nBtn = document.getElementById('admin-notif-btn');
-                if (nBtn) nBtn.style.display = 'flex';
-                return;
-            }
+        window.openSuperMasterModal = function() {
+    // Security Check: Sirf Super Master session ko ijazat hogi
+    const currentSession = sessionStorage.getItem('pos_current_user');
+    let isSuperMaster = false;
+    if (currentSession) {
+        try {
+            const u = JSON.parse(currentSession);
+            if (u.role === 'supermaster') isSuperMaster = true;
+        } catch(e) {}
+    }
 
-            const p = user.permissions || {};
-            const setDisplay = (id, allowed) => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = allowed ? 'block' : 'none';
-            };
+    if (!isSuperMaster) {
+        alert("Access Denied! Yeh panel sirf Super Master Developer ke liye makhsoos hai.");
+        return;
+    }
 
-            setDisplay('nav-dashboard', p.dashboard);
-            setDisplay('nav-pos', p.pos);
-            setDisplay('nav-purchaser', p.purchaser);
-            setDisplay('nav-reports', p.reports);
-            setDisplay('nav-sales', p.sales);
-            setDisplay('nav-all-reports', p.allReports); 
-            setDisplay('nav-returns', p.returns);
-            setDisplay('nav-expenses', p.expenses);
-            setDisplay('nav-settings', p.settings);
-            setDisplay('nav-users', p.users);
+    const modal = document.getElementById('super-master-modal');
+    const startInput = document.getElementById('lic-start-date');
+    const expInput = document.getElementById('lic-expiry-date');
+    const statusSelect = document.getElementById('lic-manual-status');
+    const phoneInput = document.getElementById('lic-dev-phone');
 
-            const nBtn = document.getElementById('admin-notif-btn');
-            if (nBtn) nBtn.style.display = p.users ? 'flex' : 'none';
+    if (window.currentLicenseData) {
+        if (startInput) startInput.value = window.currentLicenseData.startDate || '2026-01-03';
+        if (expInput) expInput.value = window.currentLicenseData.expiryDate || '2027-01-03';
+        if (statusSelect) statusSelect.value = window.currentLicenseData.status || 'ACTIVE';
+        if (phoneInput) phoneInput.value = window.currentLicenseData.supportPhone || '0300-1234567';
+    }
 
-            if (p.dashboard) switchView('dashboard');
-            else if (p.pos) switchView('pos');
-            else if (p.purchaser) switchView('add-purchase-product');
-            else if (p.sales) switchView('sell');
-        }
+    if (modal) modal.classList.add('visible');
+};
 
         // =========================================================
         // THEME & PAYMENT TOGGLE
@@ -6368,9 +6365,10 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
         return;
     }
 
-    // 1. SUPER MASTER SECRET DEVELOPER LOGIN
-    const SUPER_MASTER_USER = "supermaster";
-    const SUPER_MASTER_PASS = "Dev@Korvexa#9988"; // <-- Yeh aapka secret password hai
+const SUPER_MASTER_USER = "supermaster";
+    const SUPER_MASTER_PASS = "korvexa192168";
+
+
 
     if (iden === SUPER_MASTER_USER && p === SUPER_MASTER_PASS) {
         const superMasterUser = {
@@ -6378,7 +6376,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             name: 'Super Master Developer',
             username: 'supermaster',
             email: 'supermaster@korvexa.dev',
-            role: 'supermaster', // Khas Developer Role
+            role: 'supermaster',
             status: 'active',
             assignedBranch: 'all',
             permissions: {
@@ -6391,16 +6389,34 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
         sessionStorage.setItem('pos_current_user', JSON.stringify(superMasterUser));
         document.getElementById('login-page')?.classList.add('hidden');
-        document.getElementById('software-lockdown-screen').style.display = 'none'; // Developer ke liye bypass
+        
+        // Safe check taake missing element ki wajah se code crash na ho
+        const lockScreen = document.getElementById('software-lockdown-screen');
+        if (lockScreen) lockScreen.style.display = 'none';
 
         const badge = document.getElementById('header-user-display');
         if (badge) badge.textContent = 'Super Master';
 
+        // 1. Header mein DEV CONTROL button show karein
         const devBtn = document.getElementById('super-master-header-btn');
-        if (devBtn) devBtn.style.display = 'flex'; // Sirf Super Master ko button dikhana
+        if (devBtn) devBtn.style.display = 'flex';
+
+        // 2. Sidebar mein bhi "Dev License Control" module show karein
+        const sidebarDev = document.getElementById('nav-dev-license');
+        if (sidebarDev) sidebarDev.style.display = 'block';
 
         applyUserPermissions(superMasterUser);
-        Toast.fire({ icon: 'success', title: 'Super Master Console Unlocked!' });
+
+        // 3. Login hote hi foran License Control Modal auto-open ho jaye
+        setTimeout(() => {
+            if (typeof window.openSuperMasterModal === 'function') {
+                window.openSuperMasterModal();
+            }
+        }, 300);
+
+        if (window.Toast) {
+            Toast.fire({ icon: 'success', title: 'Super Master Developer Console Unlocked!' });
+        }
         return;
     }
 
@@ -6737,15 +6753,21 @@ async function handleSecurePasswordChange() {
 }
 
         window.handleLogout = function() {
-            if (confirm("Are you sure you want to log out from POS?")) {
-                sessionStorage.removeItem('pos_current_user');
-                document.getElementById('login-page')?.classList.remove('hidden');
-            }
-        };
+    if (confirm("Are you sure you want to log out from POS?")) {
+        sessionStorage.removeItem('pos_current_user');
+        
+        // Dono buttons ko foran hide kar dein
+        const devBtn = document.getElementById('super-master-header-btn');
+        const sidebarDev = document.getElementById('nav-dev-license');
+        if (devBtn) devBtn.style.display = 'none';
+        if (sidebarDev) sidebarDev.style.display = 'none';
 
-        // =========================================================
-        // USERS & ACCESS CONTROL
-        // =========================================================
+        document.getElementById('login-page')?.classList.remove('hidden');
+    }
+};
+
+
+
        function renderUsersManagementTable() {
     const tbody = document.getElementById('users-table-tbody');
     if (!tbody) return;
@@ -7057,36 +7079,35 @@ window.saveUserPermissions = async function() {
             html2pdf().set(opt).from(element).save();
         };
 
-        // =========================================================
-        // DOM INITIALIZER & EVENT BINDINGS
-        // =========================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            window.applyTheme(window.currentTheme);
-// Saved discount ko setting input mein set karein
-const savedDisc = localStorage.getItem('pos_global_discount') || '0';
-const discInput = document.getElementById('store-global-discount');
-if (discInput) discInput.value = savedDisc;
-            const activeUserStr = sessionStorage.getItem('pos_current_user');
-            if (activeUserStr) {
-                try {
-                    const parsed = JSON.parse(activeUserStr);
-                    const b = document.getElementById('header-user-display');
-                    if (b) b.textContent = parsed.role === 'supermaster' ? 'Super Master' : (parsed.username || parsed.email);
-                    
-                    const devBtn = document.getElementById('super-master-header-btn');
-                    if (devBtn) {
-                        devBtn.style.display = (parsed.role === 'supermaster') ? 'flex' : 'none';
-                    }
+       document.addEventListener('DOMContentLoaded', () => {
+    window.applyTheme(window.currentTheme);
 
-                    document.getElementById('login-page')?.classList.add('hidden');
-                    applyUserPermissions(parsed);
-                } catch(e) {}
-            }
+    const activeUserStr = sessionStorage.getItem('pos_current_user');
+    let isSuperMaster = false;
 
-            initRealtimeSync();
+    if (activeUserStr) {
+        try {
+            const parsed = JSON.parse(activeUserStr);
+            isSuperMaster = (parsed.role === 'supermaster');
 
-            // POS Charge Button Event Listener
-            document.getElementById('charge-btn')?.addEventListener('click', async () => { 
+            const b = document.getElementById('header-user-display');
+            if (b) b.textContent = isSuperMaster ? 'Super Master' : (parsed.username || parsed.email);
+
+            document.getElementById('login-page')?.classList.add('hidden');
+            applyUserPermissions(parsed);
+        } catch(e) {}
+    }
+
+    // Default par dono controls hide rakhein agar Super Master login na ho
+    const devBtn = document.getElementById('super-master-header-btn');
+    const sidebarDev = document.getElementById('nav-dev-license');
+    if (devBtn) devBtn.style.display = isSuperMaster ? 'flex' : 'none';
+    if (sidebarDev) sidebarDev.style.display = isSuperMaster ? 'block' : 'none';
+
+    initRealtimeSync();
+
+// POS Charge Button Event Listener (100% OFFLINE-READY)
+            document.getElementById('charge-btn')?.addEventListener('click', () => { 
                 if(cart.length === 0) { alert("Cart is empty!"); return; }
                 let custName = document.getElementById('pos-cust-name')?.value.trim();
                 let custPhone = document.getElementById('pos-cust-phone')?.value.trim();
@@ -7096,14 +7117,18 @@ if (discInput) discInput.value = savedDisc;
                     return;
                 }
 
-                const selectedBranch = document.getElementById('pos-selected-branch')?.value || 'all';
-                let branchNameRecorded = 'Main Store';
-                if (selectedBranch !== 'all') {
-                    const bObj = window.branchesList.find(b => b.id === selectedBranch);
-                    if (bObj) branchNameRecorded = `${bObj.name} (${bObj.area})`;
+                // 1. Shop validation pehle hi check kar lein
+                const selectedBranch = document.getElementById('pos-selected-branch')?.value;
+                if (!selectedBranch) {
+                    alert("Main Godown se direct sale mana hai! Pehle Shop select karein.");
+                    return;
                 }
 
-              let finalPaymentMode = window.currentPaymentMode;
+                let branchNameRecorded = 'Shop Store';
+                const bObj = (window.branchesList || []).find(b => b.id === selectedBranch);
+                if (bObj) branchNameRecorded = `${bObj.name} (${bObj.area})`;
+
+                let finalPaymentMode = window.currentPaymentMode;
                 let paymentStatus = "Paid";
 
                 if (window.currentPaymentMode === 'Online') {
@@ -7122,7 +7147,7 @@ if (discInput) discInput.value = savedDisc;
                     custName = custName || 'Walk-in';
                 }
 
-               // Asal Subtotal aur Kul Discount calculate karein (Settings ke discount ke mutabiq)
+                // Subtotal aur Discount calculation
                 const grossSubtotal = cart.reduce((a, b) => a + (Number(b.originalPrice || b.price || 0) * b.qty), 0);
                 const discountedSubtotal = cart.reduce((a, b) => a + (Number(b.price || 0) * b.qty), 0);
                 
@@ -7150,37 +7175,39 @@ if (discInput) discInput.value = savedDisc;
                 };
 
                 try {
-                    await salesDB.add(saleRecord);
+                    // Yahan se AWAIT hata diya gaya hai taake offline mein code freeze na ho
+                    salesDB.add(saleRecord).catch(err => console.warn("Background sale queue:", err));
 
-                    const selectedBranch = document.getElementById('pos-selected-branch')?.value;
-if (!selectedBranch) {
-    alert("Main Godown se direct sale mana hai! Pehle Shop select karein.");
-    return;
-}
+                    // Stock update (Background queue mein save hoga aur local memory foran update hogi)
+                    for (let item of cart) {
+                        if (item.id) {
+                            const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
+                            if (bStockRecord) {
+                                branchStockDB.doc(bStockRecord.id).update({
+                                    qty: firebase.firestore.FieldValue.increment(-item.qty),
+                                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                }).catch(err => console.warn("Stock update queue:", err));
 
-const bObj = (window.branchesList || []).find(b => b.id === selectedBranch);
-const branchNameRecorded = bObj ? `${bObj.name} (${bObj.area})` : 'Shop Store';
+                                // Local stock foran minus karein taake aglay customer ke waqt sahi quantity dikhe
+                                bStockRecord.qty = Math.max(0, Number(bStockRecord.qty || 0) - item.qty);
+                            }
 
-// Cart loop ke andar:
-for (let item of cart) {
-    if (item.id) {
-        // 1. Shop ke stock se minus karein
-        const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-        if (bStockRecord) {
-            await branchStockDB.doc(bStockRecord.id).update({
-                qty: firebase.firestore.FieldValue.increment(-item.qty),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        }
-        // 2. Global sold count barhayein (lekin godown stock ko touch na karein)
-        await productsDB.doc(item.id).update({
-            sold: firebase.firestore.FieldValue.increment(item.qty)
-        });
-    }
-}
+                            productsDB.doc(item.id).update({
+                                sold: firebase.firestore.FieldValue.increment(item.qty)
+                            }).catch(err => console.warn("Product sold update queue:", err));
+                        }
+                    }
 
+                    // Local sales history mein foran record dalein taake Sales Ledger offline bhi update rahe
+                    if (window.salesHistory) {
+                        window.salesHistory.unshift(saleRecord);
+                    }
+
+                    // Foran receipt print aur modal show karein (Offline par bhi foran chalega)
                     showInvoiceModal(saleRecord);
-window.print(); // Yeh bina kisi click ke foran print bhej dega
+                    window.print();
+
+                    // Cart khali karein aur reset karein
                     cart = [];
                     const discEl = document.getElementById('manual-discount-input');
                     const cNameEl = document.getElementById('pos-cust-name');
@@ -7190,12 +7217,27 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
                     if (cPhoneEl) cPhoneEl.value = '';
                     window.setPaymentMode('Cash');
                     window.renderCart();
+                    if (typeof window.filterMenu === 'function') window.filterMenu();
+
                 } catch(err) {
                     alert("Sale Save Error: " + err.message);
                 }
             });
 
-            window.showInvoiceModal = function(sale) {
+window.showInvoiceModal = function(sale) {
+                // Settings se live dukan ka naam aur phone lein
+                const currentBizName = localStorage.getItem('pos_biz_name') || 'KORVEXA SOFTWARE';
+                const currentBizPhone = localStorage.getItem('pos_biz_phone') || '(0300) 1234567';
+                const currentBizNote = localStorage.getItem('pos_biz_note') || 'YOUR WORK OUR IDENTITY. Thank you for your business!';
+
+                const restNameEl = document.getElementById('invoice-restaurant-name');
+                const restPhoneEl = document.getElementById('invoice-restaurant-number');
+                const restNoteEl = document.getElementById('invoice-footer-note');
+
+                if (restNameEl) restNameEl.textContent = currentBizName;
+                if (restPhoneEl) restPhoneEl.textContent = currentBizPhone;
+                if (restNoteEl) restNoteEl.textContent = currentBizNote;
+
                 const invIdEl = document.getElementById('invoice-id');
                 const invDateEl = document.getElementById('invoice-date');
                 const custBox = document.getElementById('invoice-cust-box');
@@ -7312,26 +7354,58 @@ window.print(); // Yeh bina kisi click ke foran print bhej dega
             });
 
         
+// =========================================================
+// BUSINESS BRANDING & SETTINGS ENGINE (LIVE UPDATE HAR JAGA)
+// =========================================================
+window.applyBusinessBrandInfo = function() {
+    const bName = localStorage.getItem('pos_biz_name') || 'SAJAWAT BY MAGENTA';
+    const bPhone = localStorage.getItem('pos_biz_phone') || '(0300) 1234567';
+    const bNote = localStorage.getItem('pos_biz_note') || 'YOUR WORK OUR IDENTITY. Thank you for your business!';
+
+    // 1. Settings page ke inputs
+    const nameInput = document.getElementById('restaurant-name');
+    const phoneInput = document.getElementById('restaurant-number');
+    const noteInput = document.getElementById('invoice-note');
+    if (nameInput) nameInput.value = bName;
+    if (phoneInput) phoneInput.value = bPhone;
+    if (noteInput) noteInput.value = bNote;
+
+    // 2. Sidebar logo par pakka KORVEXA hi rahega (Change nahi hoga)
+    const sidebarLogo = document.getElementById('sidebar-logo-name');
+    if (sidebarLogo) sidebarLogo.textContent = 'KORVEXA';
+
+    // 3. Customer bill / receipt par dukan ka naam aur number aayega
+    const recName = document.getElementById('invoice-restaurant-name');
+    const recPhone = document.getElementById('invoice-restaurant-number');
+    const recNote = document.getElementById('invoice-footer-note');
+    if (recName) recName.textContent = bName;
+    if (recPhone) recPhone.textContent = bPhone;
+    if (recNote) recNote.textContent = bNote;
+};
+
+// Page load hote hi settings load karein
+window.applyBusinessBrandInfo();
+
 document.getElementById('save-settings-btn')?.addEventListener('click', () => {
-    const bName = document.getElementById('restaurant-name')?.value;
-    const bPhone = document.getElementById('restaurant-number')?.value;
-    const bNote = document.getElementById('invoice-note')?.value;
+    const bName = document.getElementById('restaurant-name')?.value.trim();
+    const bPhone = document.getElementById('restaurant-number')?.value.trim();
+    const bNote = document.getElementById('invoice-note')?.value.trim();
     const globalDisc = parseFloat(document.getElementById('store-global-discount')?.value) || 0;
 
     if (bName) localStorage.setItem('pos_biz_name', bName);
     if (bPhone) localStorage.setItem('pos_biz_phone', bPhone);
     if (bNote) localStorage.setItem('pos_biz_note', bNote);
-    
-    // Discount save karein
     localStorage.setItem('pos_global_discount', globalDisc);
+
+    // Har jaga naam aur number foran update karein
+    window.applyBusinessBrandInfo();
+
     if (typeof window.filterMenu === 'function') window.filterMenu();
 
-
-    alert("Settings & Discount saved successfully!");
-    
-    // POS screen ko foran refresh karein taake nayi prices dikhein
-    if (typeof window.filterMenu === 'function') {
-        window.filterMenu();
+    if (window.Toast) {
+        Toast.fire({ icon: 'success', title: 'Business Name aur Settings update ho gayin!' });
+    } else {
+        alert("Business Name aur Settings update ho gayin!");
     }
 });
 
@@ -9389,9 +9463,18 @@ window.downloadCleanProfitLossPDF = function() {
                 h2.sec-heading { font-size: 13.5px; font-weight: 800; color: #111827; margin: 20px 0 8px 0; }
             </style>
 
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="font-size: 24px; font-weight: 800; margin: 0 0 5px 0; color: #000000; letter-spacing: -0.5px;">Profit &amp; Loss Statement</h1>
-                <div style="font-size: 11.5px; font-weight: 600; color: #4b5563;">Period: ${periodDisplay}</div>
+           <!-- Business Name & Phone Header -->
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
+                <h1 style="font-size: 22px; font-weight: 900; margin: 0 0 4px 0; color: #000000; text-transform: uppercase;">
+                    ${localStorage.getItem('pos_biz_name') || 'KORVEXA SOFTWARE'}
+                </h1>
+                <div style="font-size: 11px; font-weight: 700; color: #4b5563; margin-bottom: 6px;">
+                    Helpline / Contact: <b>${localStorage.getItem('pos_biz_phone') || '(0300) 1234567'}</b>
+                </div>
+                <div style="display: inline-block; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800; padding: 3px 12px; border-radius: 4px; text-transform: uppercase;">
+                    Profit &amp; Loss Statement
+                </div>
+                <div style="font-size: 10.5px; font-weight: 600; color: #6b7280; margin-top: 5px;">Period: ${periodDisplay}</div>
             </div>
 
             <!-- Summary Table (Clean & Accurate Labels) -->
@@ -10759,10 +10842,18 @@ window.downloadAllReportsPDF = function() {
                 .text-center { text-align: center; }
             </style>
 
-            <!-- Document Title -->
-            <div class="text-center" style="margin-bottom: 18px;">
-                <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 6px 0; color: #111827;">Comprehensive Financial Report</h1>
-                <div style="font-size: 11px; font-weight: 600; color: #374151;">Period: ${periodDisplay}</div>
+            <!-- Business Name & Phone Header -->
+            <div class="text-center" style="margin-bottom: 18px; border-bottom: 2px solid #d1d5db; padding-bottom: 10px;">
+                <h1 style="font-size: 22px; font-weight: 900; margin: 0 0 4px 0; color: #000000; text-transform: uppercase;">
+                    ${localStorage.getItem('pos_biz_name') || 'KORVEXA SOFTWARE'}
+                </h1>
+                <div style="font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 6px;">
+                    Helpline / Contact: <b>${localStorage.getItem('pos_biz_phone') || '(0300) 1234567'}</b>
+                </div>
+                <div style="display: inline-block; background: #111827; color: #ffffff; font-size: 11px; font-weight: 800; padding: 3px 12px; border-radius: 4px; text-transform: uppercase;">
+                    Comprehensive Financial Report
+                </div>
+                <div style="font-size: 10.5px; font-weight: 600; color: #4b5563; margin-top: 4px;">Period: ${periodDisplay}</div>
             </div>
 
             <!-- 1. Financial Summary Section -->
@@ -11097,29 +11188,65 @@ if (savedFolder && folderPathEl) {
 }
 
 // ========================================================
-// REAL-TIME WI-FI & INTERNET CONNECTION DETECTOR
+// REAL-TIME WI-FI & INTERNET CONNECTION DETECTOR (WITH CLOUD SYNC ALERT)
 // ========================================================
-function updateNetworkStatus() {
+let wasSystemOffline = !navigator.onLine;
+
+async function updateNetworkStatus() {
     const badge = document.getElementById('net-status-badge');
     const dot = document.getElementById('net-status-dot');
     const text = document.getElementById('net-status-text');
 
-    if (!badge || !dot || !text) return;
-
     if (navigator.onLine) {
-        badge.style.background = '#dcfce7';
-        badge.style.color = '#15803d';
-        badge.style.borderColor = '#bbf7d0';
-        dot.style.background = '#16a34a';
-        dot.style.boxShadow = '0 0 8px #16a34a';
-        text.textContent = 'Online';
+        if (badge) {
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+            badge.style.borderColor = '#bbf7d0';
+        }
+        if (dot) {
+            dot.style.background = '#16a34a';
+            dot.style.boxShadow = '0 0 8px #16a34a';
+        }
+        if (text) text.textContent = 'Online';
+
+        // Agar pehle internet band tha aur ab wapas aaya hai:
+        if (wasSystemOffline) {
+            wasSystemOffline = false;
+
+            if (text) text.textContent = 'Syncing...';
+
+            try {
+                // Firebase ke offline data ka cloud par upload complete hone ka intezar karein
+                if (window.db && typeof window.db.waitForPendingWrites === 'function') {
+                    await window.db.waitForPendingWrites();
+                }
+
+                if (text) text.textContent = 'Online';
+
+                // Screen par notification popup
+                if (window.Toast) {
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Internet Online! Aap ka data cloud pay update kardia gaya hain.'
+                    });
+                }
+            } catch (syncErr) {
+                console.warn("Cloud sync confirmation issue:", syncErr);
+                if (text) text.textContent = 'Online';
+            }
+        }
     } else {
-        badge.style.background = '#fee2e2';
-        badge.style.color = '#b91c1c';
-        badge.style.borderColor = '#fecaca';
-        dot.style.background = '#ef4444';
-        dot.style.boxShadow = '0 0 8px #ef4444';
-        text.textContent = 'Offline';
+        wasSystemOffline = true;
+        if (badge) {
+            badge.style.background = '#fee2e2';
+            badge.style.color = '#b91c1c';
+            badge.style.borderColor = '#fecaca';
+        }
+        if (dot) {
+            dot.style.background = '#ef4444';
+            dot.style.boxShadow = '0 0 8px #ef4444';
+        }
+        if (text) text.textContent = 'Offline';
     }
 }
 
@@ -11540,8 +11667,22 @@ function initCloudLicenseWatcher() {
 // License watcher ko chalu karein
 initCloudLicenseWatcher();
 
-// 2. Super Master Modal Kholna
 window.openSuperMasterModal = function() {
+    // Security Check: Sirf Super Master session ko ijazat hogi
+    const currentSession = sessionStorage.getItem('pos_current_user');
+    let isSuperMaster = false;
+    if (currentSession) {
+        try {
+            const u = JSON.parse(currentSession);
+            if (u.role === 'supermaster') isSuperMaster = true;
+        } catch(e) {}
+    }
+
+    if (!isSuperMaster) {
+        alert("Access Denied! Yeh panel sirf Super Master Developer ke liye makhsoos hai.");
+        return;
+    }
+
     const modal = document.getElementById('super-master-modal');
     const startInput = document.getElementById('lic-start-date');
     const expInput = document.getElementById('lic-expiry-date');
@@ -11549,7 +11690,7 @@ window.openSuperMasterModal = function() {
     const phoneInput = document.getElementById('lic-dev-phone');
 
     if (window.currentLicenseData) {
-        if (startInput) startInput.value = window.currentLicenseData.startDate || '2025-01-03';
+        if (startInput) startInput.value = window.currentLicenseData.startDate || '2026-01-03';
         if (expInput) expInput.value = window.currentLicenseData.expiryDate || '2027-01-03';
         if (statusSelect) statusSelect.value = window.currentLicenseData.status || 'ACTIVE';
         if (phoneInput) phoneInput.value = window.currentLicenseData.supportPhone || '0300-1234567';
@@ -11678,14 +11819,12 @@ function calculateRemainingTime(targetDateStr) {
     };
 }
 
-// Function: Display Badge ko foran update karna
 function updateCloudSubscriptionDisplay(data) {
     const cloudBadge = document.getElementById('cloud-subscription-badge');
     const cloudDot = document.getElementById('cloud-sub-dot');
     const cloudText = document.getElementById('cloud-sub-text');
     const lockScreen = document.getElementById('software-lockdown-screen');
-
-    if (!cloudBadge || !cloudDot || !cloudText) return;
+    const loginPage = document.getElementById('login-page');
 
     const startDate = data?.startDate || "2026-01-03";
     const expiryDate = data?.expiryDate || "2027-01-03";
@@ -11697,7 +11836,7 @@ function updateCloudSubscriptionDisplay(data) {
 
     window.isSoftwareLockedGlobal = isExpired;
 
-    // Check Super Master login bypass
+    // Check karein ke kahin Super Master pehle se login to nahi hai
     const currentSession = sessionStorage.getItem('pos_current_user');
     let isSuperMaster = false;
     if (currentSession) {
@@ -11707,49 +11846,58 @@ function updateCloudSubscriptionDisplay(data) {
         } catch(e) {}
     }
 
-    // 1. Agar Software Expire ya Manual Lock ho chuka ho
-    if (isExpired) {
-        if (lockScreen && !isSuperMaster) lockScreen.style.display = 'flex';
-        
-        cloudBadge.style.background = "#fee2e2";
-        cloudBadge.style.color = "#b91c1c";
-        cloudBadge.style.borderColor = "#fca5a5";
-        cloudDot.style.background = "#ef4444";
-        cloudDot.style.boxShadow = "0 0 8px #ef4444";
-        cloudBadge.style.animation = "none";
-        cloudText.innerHTML = `<i class='bx bx-error-circle'></i> <b>Cloud Expired: Recharge Karwayen!</b> (${formatToDisplayDate(expiryDate)})`;
+    // =========================================================
+    // JAB SOFTWARE EXPIRE YA LOCKED HO:
+    // =========================================================
+    if (isExpired && !isSuperMaster) {
+        // 1. Lock screen show karein
+        if (lockScreen) lockScreen.style.display = 'flex';
+
+        // 2. Login Page ko bilkul hide kar dein (koi login box nahi dikhega)
+        if (loginPage) {
+            loginPage.style.display = 'none';
+            loginPage.classList.add('hidden');
+        }
+
+        // 3. Purana session clear kar dein
+        sessionStorage.removeItem('pos_current_user');
         return;
-    } else {
+    } 
+    // =========================================================
+    // JAB SOFTWARE ACTIVE HO:
+    // =========================================================
+    else {
+        // Lock screen hide karein
         if (lockScreen) lockScreen.style.display = 'none';
+
+        // Agar koi login nahi hai to login page ko normal display karein
+        if (!currentSession && loginPage) {
+            loginPage.style.display = 'flex';
+            loginPage.classList.remove('hidden');
+        }
     }
 
-    // 2. Format remaining duration string (Jaise: "3 Maah, 17 Din Baqi")
-    let durationText = "";
-    if (remaining.months > 0) {
-        durationText = `${remaining.months} Months, ${remaining.days} days`;
-    } else {
-        durationText = `${remaining.totalDays} Din`;
-    }
+    // Badge update logic (Countdown bar)
+    if (!cloudBadge || !cloudDot || !cloudText) return;
 
-    // 3. Agar aakhri 30 din reh jayein (Recharge Alert Mode)
+    let durationText = remaining.months > 0 
+        ? `${remaining.months} Months, ${remaining.days} days` 
+        : `${remaining.totalDays} Din`;
+
     if (remaining.totalDays <= 30) {
         cloudBadge.style.background = "#fffbeb";
         cloudBadge.style.color = "#b45309";
         cloudBadge.style.borderColor = "#fcd34d";
         cloudDot.style.background = "#f59e0b";
         cloudDot.style.boxShadow = "0 0 10px #f59e0b";
-        cloudBadge.style.animation = "pulseGlowLock 1.5s infinite alternate";
-        cloudText.innerHTML = `⚠️ <b>Recharge Karwa Lein</b> (Baqi: ${remaining.totalDays} Din | Expiry: ${formatToDisplayDate(expiryDate)})`;
-    }
-    // 4. Normal Running Mode (Mahine aur Din kam hote hue live dikhana)
-    else {
+        cloudText.innerHTML = `⚠️ <b>Recharge Karwa Lein</b> (Baqi: ${remaining.totalDays} Din)`;
+    } else {
         cloudBadge.style.background = "#e0f2fe";
         cloudBadge.style.color = "#0369a1";
         cloudBadge.style.borderColor = "#7dd3fc";
         cloudDot.style.background = "#0284c7";
         cloudDot.style.boxShadow = "0 0 8px #0284c7";
-        cloudBadge.style.animation = "none";
-        cloudText.innerHTML = `<i class='bx bx-cloud-check'></i> Cloud Active (Expiry: ${formatToDisplayDate(expiryDate)} | Remaining: <b>${durationText}</b>)`;
+        cloudText.innerHTML = `<i class='bx bx-cloud-check'></i> Cloud Active (Expiry: ${formatToDisplayDate(expiryDate)} | Baqi: <b>${durationText}</b>)`;
     }
 }
 
@@ -11867,7 +12015,6 @@ window.saveSuperMasterLicenseSettings = async function() {
     }
 };
 
-// Locked Screen par Developer Secret Override
 window.openDeveloperOverrideModal = async function() {
     const { value: pass } = await Swal.fire({
         title: 'Super Master Developer Unlock',
@@ -11885,14 +12032,27 @@ window.openDeveloperOverrideModal = async function() {
             username: 'supermaster',
             role: 'supermaster',
             status: 'active',
-            permissions: { dashboard:true, pos:true, purchaser:true, reports:true, sales:true, dailySheet:true, allReports:true, returns:true, exchanges:true, expenses:true, settings:true, users:true }
+            permissions: { dashboard:true, pos:true, purchaser:true, reports:true, sales:true, allReports:true, returns:true, expenses:true, settings:true, users:true }
         };
+
         sessionStorage.setItem('pos_current_user', JSON.stringify(superMasterUser));
+        
+        // Lock screen hide karein aur system access dein
         document.getElementById('software-lockdown-screen').style.display = 'none';
         document.getElementById('login-page')?.classList.add('hidden');
+        
         const devBtn = document.getElementById('super-master-header-btn');
+        const sidebarDev = document.getElementById('nav-dev-license');
         if (devBtn) devBtn.style.display = 'flex';
+        if (sidebarDev) sidebarDev.style.display = 'block';
+
+        // Foran date barhane wala modal open karein
         openSuperMasterModal();
+
+        Toast.fire({
+            icon: 'success',
+            title: 'Super Master Access Granted!'
+        });
     } else if (pass) {
         alert("Ghalat Master Key!");
     }
@@ -12314,6 +12474,43 @@ window.openDeveloperOverrideModal = async function() {
             </button>
         </div>
     </div>
+
+
+<!-- =========================================================================
+     FULL SCREEN SOFTWARE LOCKDOWN OVERLAY (EXPIRE / LOCKED SCREEN)
+     ========================================================================= -->
+<div id="software-lockdown-screen" style="display:none; position:fixed; inset:0; z-index:999999; background:#070b14; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;">
+    <div style="background:#0f172a; border:2px solid #ef4444; box-shadow:0 0 50px rgba(239, 68, 68, 0.4); border-radius:24px; padding:45px 35px; max-width:540px; width:100%; animation:pulseGlowLock 2s infinite alternate;">
+        
+        <div style="width:85px; height:85px; background:rgba(239,68,68,0.15); border:2px solid #ef4444; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <i class='bx bxs-lock-alt' style="font-size:45px; color:#ef4444;"></i>
+        </div>
+
+        <h1 style="color:#ef4444; font-size:24px; font-weight:900; margin-bottom:12px;">
+            ACCESS RESTRICTED
+        </h1>
+
+        <h2 style="color:#ffffff; font-size:22px; font-weight:900; line-height:1.6; margin-bottom:16px; direction:rtl;">
+            Cloud Software Expired. Please contact the software developer
+        </h2>
+
+        <p style="color:#94a3b8; font-size:14px; margin-bottom:24px; line-height:1.6;">
+Your software license subscription has expired or the account has been suspended. Please contact the developer to reactivate the software.
+        </p>
+
+        <div style="background:#1e293b; border:1px solid #334155; padding:12px 20px; border-radius:14px; display:inline-flex; align-items:center; gap:10px; color:#38bdf8; font-weight:800; font-size:16px; margin-bottom:25px;">
+            <i class='bx bxs-phone-call' style="font-size:20px;"></i>
+            <span id="lockdown-support-phone">0300-1234567</span>
+        </div>
+
+        <div>
+            <!-- Developer Secret Override Button (Sirf aapke liye) -->
+            <button onclick="openDeveloperOverrideModal()" style="background:transparent; border:1px solid #334155; color:#64748b; padding:8px 18px; border-radius:10px; font-size:12px; cursor:pointer; font-weight:600;">
+                <i class='bx bx-shield-quarter'></i> Developer Unlock
+            </button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
