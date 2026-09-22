@@ -2545,6 +2545,13 @@
     <small style="color: #64748b; font-size: 0.8rem;">Yahan percentage likhein, yeh discount POS ki har product par foran lag jayega.</small>
 </div>
 
+<!-- Invoice Number Reset Control -->
+<div class="form-group">
+    <label><i class='bx bx-hash' style="color:var(--primary);"></i> Next Starting Invoice Number (POS Bill No)</label>
+    <input type="number" id="setting-next-invoice-no" min="1" value="1" placeholder="e.g. 1">
+    <small style="color: #64748b; font-size: 0.8rem;">Yahan 1 likh kar Save Settings dabayein to agla bill Invoice #1 banega, phir 2, 3, 4 banta rahega.</small>
+</div>
+
                         <!-- LOCAL DRIVE BACKUP & STORAGE PATH SECTION -->
                         <hr style="margin: 25px 0; border-color: var(--border-color);">
                         <h2><i class='bx bx-hdd' style="color:var(--primary);"></i> Local Drive Data Storage & Backup</h2>
@@ -3994,7 +4001,7 @@ const auth = firebase.auth();
                     // =========================================================================
                     saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Godown Mein Maal Save Ho Raha Hai...";
 
-                    const serialNo = "PUR-" + new Date().toISOString().slice(2,10).replace(/-/g, '') + "-" + Math.floor(1000 + Math.random() * 9000);
+const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;const serialNo = "PUR-" + String(nextPurSeq).padStart(4, '0'); // PUR-0001, PUR-0002...
                     const now = new Date();
                     const purchaseDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
@@ -4577,7 +4584,7 @@ const auth = firebase.auth();
             }
 
             const totalUnits = transferQueue.reduce((acc, it) => acc + it.qty, 0);
-            const challanNo = "CHL-" + new Date().toISOString().slice(2, 10).replace(/-/g, '') + "-" + Math.floor(100 + Math.random() * 900);
+const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;const challanNo = "CHL-" + String(nextChlSeq).padStart(4, '0'); // CHL-0001, CHL-0002...
             const now = new Date();
             const dispatchDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
@@ -7376,7 +7383,11 @@ window.saveUserPermissions = async function() {
                 const totalDiscountVal = (grossSubtotal - discountedSubtotal);
                 const total = Math.max(0, grossSubtotal - totalDiscountVal);
                 
-                const invId = (Math.floor(Math.random() * 900) + 100).toString();
+                // Sequential Invoice Number (1, 2, 3, 4... auto-increment)
+                let currentSeq = parseInt(localStorage.getItem('pos_next_invoice_no') || '1', 10);
+                const invId = currentSeq.toString();
+                localStorage.setItem('pos_next_invoice_no', (currentSeq + 1).toString());
+
                 const now = new Date();
                 const invDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
@@ -7657,10 +7668,12 @@ window.applyBusinessBrandInfo = function() {
     // 1. Settings page ke inputs
     const nameInput = document.getElementById('restaurant-name');
     const phoneInput = document.getElementById('restaurant-number');
-    const noteInput = document.getElementById('invoice-note');
+   const noteInput = document.getElementById('invoice-note');
+    const nextInvInput = document.getElementById('setting-next-invoice-no');
     if (nameInput) nameInput.value = bName;
     if (phoneInput) phoneInput.value = bPhone;
     if (noteInput) noteInput.value = bNote;
+    if (nextInvInput) nextInvInput.value = localStorage.getItem('pos_next_invoice_no') || '1';
 
     // 2. Sidebar logo par pakka KORVEXA hi rahega (Change nahi hoga)
     const sidebarLogo = document.getElementById('sidebar-logo-name');
@@ -7683,11 +7696,13 @@ document.getElementById('save-settings-btn')?.addEventListener('click', () => {
     const bPhone = document.getElementById('restaurant-number')?.value.trim();
     const bNote = document.getElementById('invoice-note')?.value.trim();
     const globalDisc = parseFloat(document.getElementById('store-global-discount')?.value) || 0;
+    const nextInvNo = parseInt(document.getElementById('setting-next-invoice-no')?.value) || 1;
 
     if (bName) localStorage.setItem('pos_biz_name', bName);
     if (bPhone) localStorage.setItem('pos_biz_phone', bPhone);
     if (bNote) localStorage.setItem('pos_biz_note', bNote);
     localStorage.setItem('pos_global_discount', globalDisc);
+    localStorage.setItem('pos_next_invoice_no', nextInvNo.toString());
 
     // Har jaga naam aur number foran update karein
     window.applyBusinessBrandInfo();
@@ -8721,7 +8736,7 @@ if (qty <= 0) {
                 String(s.invoiceId).trim().toLowerCase() === cleanRef
             );
 
-            const returnId = "RET-" + Math.floor(100000 + Math.random() * 900000);
+const nextRetSeq = (window.returnsList ? window.returnsList.length : 0) + 1; const returnId = "RET-" + String(nextRetSeq).padStart(4, '0'); // RET-0001, RET-0002...
             const now = new Date();
             const returnDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             const customerName = matchedSale ? (matchedSale.customerName || 'Walk-in') : 'Customer';
