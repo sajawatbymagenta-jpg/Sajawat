@@ -1136,7 +1136,8 @@
                 </li>
 
                 <li id="nav-settings"><a href="#" onclick="switchView('settings')"><i class='bx bx-cog'></i><span class="links_name">Settings</span></a></li>
-<li id="nav-dev-license" style="display:none;"><a href="javascript:void(0)" onclick="openSuperMasterModal()" style="color:#00d2ff;"><i class='bx bxs-shield-quarter'></i><span class="links_name">Dev License Control</span></a></li>
+                <li id="nav-users"><a href="#" onclick="switchView('users')"><i class='bx bx-user-check'></i><span class="links_name">Users & Access</span></a></li>
+                <li id="nav-dev-license" style="display:none;"><a href="javascript:void(0)" onclick="openSuperMasterModal()" style="color:#00d2ff;"><i class='bx bxs-shield-quarter'></i><span class="links_name">Dev License Control</span></a></li>
             </ul>
         </nav>
 
@@ -6437,13 +6438,37 @@ const SUPER_MASTER_USER = "supermaster";
         return;
     }
 
-    // 2. CHECK: AGAR SOFTWARE BAND / EXPIRED HAI TO KOI BHI LOGIN NAHI HO SAKTA (HATTA KE MASTER ADMIN BHI NAHI)
+    // 2. CHECK: AGAR SOFTWARE BAND / EXPIRED HAI TO POPUP & MESSAGE SHOW HO
     if (window.isSoftwareLockedGlobal === true) {
-        document.getElementById('software-lockdown-screen').style.display = 'flex';
+        const supportPhone = window.currentLicenseData?.supportPhone || '0300-1234567';
+
+        // Login screen par red error text
         if (err) {
             err.textContent = 'سافٹ ویئر ایکسپائر کلاؤڈ، پلیز کانٹیکٹ سافٹ ویئر ڈویلپر';
             err.className = 'auth-msg error';
         }
+
+        // User ko wazeh alert popup show ho jaye
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'error',
+                title: 'سافٹ ویئر ایکسپائر کلاؤڈ',
+                html: `
+                    <p style="font-size: 1.05rem; font-weight: 700; color: #b91c1c; margin-top: 6px;">
+                        پلیز کانٹیکٹ سافٹ ویئر ڈویلپر
+                    </p>
+                    <p style="font-size: 0.88rem; color: #64748b; margin-top: 8px;">
+                        Aap ka software subscription expire ho chuka hai. Reactivate karwane ke liye developer se rabta karein.
+                    </p>
+                    <div style="margin-top: 14px; background: #fef2f2; border: 1.5px dashed #f87171; padding: 10px; border-radius: 10px; font-weight: 800; color: #0284c7; font-size: 1.1rem;">
+                        <i class='bx bxs-phone-call'></i> Helpline: ${supportPhone}
+                    </div>
+                `,
+                confirmButtonText: 'Theek Hai (OK)',
+                confirmButtonColor: '#ef4444'
+            });
+        }
+
         return;
     }
 
@@ -6624,7 +6649,7 @@ const SUPER_MASTER_USER = "supermaster";
         }
 
 
-        
+
         setTimeout(() => switchAuthMode('login'), 2000);
 
     } catch(e) {
@@ -11884,30 +11909,26 @@ function updateCloudSubscriptionDisplay(data) {
     }
 
     // =========================================================
-    // JAB SOFTWARE EXPIRE YA LOCKED HO:
+    // JAB SOFTWARE EXPIRE YA LOCKED HO (LOGIN SHOW RAHEGA):
     // =========================================================
     if (isExpired && !isSuperMaster) {
-        // 1. Lock screen show karein
-        if (lockScreen) lockScreen.style.display = 'flex';
+        // Lockdown full screen abhi hide rahegi taake login page nazar aaye
+        if (lockScreen) lockScreen.style.display = 'none';
 
-        // 2. Login Page ko bilkul hide kar dein (koi login box nahi dikhega)
-        if (loginPage) {
-            loginPage.style.display = 'none';
-            loginPage.classList.add('hidden');
+        // Login page ko samnay show rakhein
+        if (!currentSession && loginPage) {
+            loginPage.style.display = 'flex';
+            loginPage.classList.remove('hidden');
         }
 
-        // 3. Purana session clear kar dein
         sessionStorage.removeItem('pos_current_user');
-        return;
     } 
     // =========================================================
     // JAB SOFTWARE ACTIVE HO:
     // =========================================================
     else {
-        // Lock screen hide karein
         if (lockScreen) lockScreen.style.display = 'none';
 
-        // Agar koi login nahi hai to login page ko normal display karein
         if (!currentSession && loginPage) {
             loginPage.style.display = 'flex';
             loginPage.classList.remove('hidden');
