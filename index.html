@@ -6448,23 +6448,23 @@ const SUPER_MASTER_USER = "supermaster";
             err.className = 'auth-msg error';
         }
 
-        // User ko wazeh alert popup show ho jaye
+       // User ko clear English alert popup show ho jaye
         if (window.Swal) {
             Swal.fire({
                 icon: 'error',
                 title: 'Cloud Software Expired',
                 html: `
                     <p style="font-size: 1.05rem; font-weight: 700; color: #b91c1c; margin-top: 6px;">
-                        پلیز کانٹیکٹ سافٹ ویئر ڈویلپر
+                        Please Contact Software Developer
                     </p>
-                    <p style="font-size: 0.88rem; color: #64748b; margin-top: 8px;">
-                        Aap ka software subscription expire ho chuka hai. Reactivate karwane ke liye developer se rabta karein.
+                    <p style="font-size: 0.88rem; color: #64748b; margin-top: 8px; line-height: 1.5;">
+                        Your software license subscription has expired. Please contact the developer to reactivate your access.
                     </p>
                     <div style="margin-top: 14px; background: #fef2f2; border: 1.5px dashed #f87171; padding: 10px; border-radius: 10px; font-weight: 800; color: #0284c7; font-size: 1.1rem;">
                         <i class='bx bxs-phone-call'></i> Helpline: ${supportPhone}
                     </div>
                 `,
-                confirmButtonText: 'Theek Hai (OK)',
+                confirmButtonText: 'OK',
                 confirmButtonColor: '#ef4444'
             });
         }
