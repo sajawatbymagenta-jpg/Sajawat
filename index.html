@@ -1443,9 +1443,9 @@
                                     </div>
                                     <div class="form-group" style="margin-bottom:8px; grid-column: span 2;">
                                         <label><i class='bx bx-image-add' style="color:var(--primary);"></i> Product Picture (Auto-Compressed)</label>
-                                        <div style="display:flex; gap:12px; align-items:center;">
+                                     <div style="display:flex; gap:12px; align-items:center;">
                                             <input type="file" id="dia-prod-img-input" accept="image/*" onchange="previewProductUploadImage(this)" style="padding:7px; font-size:0.85rem;">
-                                            <img id="dia-prod-img-preview" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0;">
+                                            <img id="dia-prod-img-preview" src="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; display:none;">
                                         </div>
                                     </div>
                                 </div>
@@ -3270,9 +3270,9 @@ const auth = firebase.auth();
         let cart = [];
         let salesChartInstance = null;
 
-        window.diagramPurchaseItems = [];
-        const DEFAULT_PROD_IMG = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
-        let currentUploadedImageBase64 = DEFAULT_PROD_IMG;
+       window.diagramPurchaseItems = [];
+        const DEFAULT_PROD_IMG = ''; // Biryani image link khatam
+        let currentUploadedImageBase64 = '';
 
         function formatToYMD(d) {
             const year = d.getFullYear();
@@ -5735,13 +5735,18 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             `;
         }
 
+        // Sirf tab tasweer aayegi jab upload ki gayi ho, warna clean icon dikhega
+        const imageHtml = (item.img && item.img.trim() !== '') 
+            ? `<img src="${item.img}" alt="${item.name}">` 
+            : `<div style="height: 110px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 12px; margin-bottom: 4px; border: 1px dashed #e2e8f0;"><i class='bx bx-shopping-bag' style="font-size: 38px; color: #cbd5e1;"></i></div>`;
+
         const card = document.createElement('div');
         card.className = `card ${displayStock <= 3 ? 'low-stock' : ''}`;
         card.innerHTML = `
             <div class="barcode-tag"><i class='bx bx-barcode'></i> ${item.barcode || 'N/A'}</div>
             <div class="stock-qty">${displayStock} units</div>
             ${discountBadgeHtml}
-            <img src="${item.img || DEFAULT_PROD_IMG}" alt="${item.name}">
+            ${imageHtml}
             <h4>${item.name}</h4>
             <p class="selling-p">${priceDisplayHtml}</p>
             ${branchTag}
@@ -12826,7 +12831,7 @@ window.openDeveloperOverrideModal = async function() {
                 <label><i class='bx bx-image-add' style="color:var(--primary);"></i> Product Picture</label>
                 <div style="display:flex; gap:12px; align-items:center;">
                     <input type="file" id="edit-dia-img-input" accept="image/*" onchange="previewEditDiaUploadImage(this)" style="padding:7px; font-size:0.85rem;">
-                    <img id="edit-dia-img-preview" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80" style="width:50px; height:50px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1;">
+                    <img id="edit-dia-img-preview" src="" style="width:50px; height:50px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; display:none;">
                 </div>
             </div>
 
