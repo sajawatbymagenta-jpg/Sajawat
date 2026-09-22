@@ -4440,7 +4440,9 @@ const auth = firebase.auth();
                             stock: firebase.firestore.FieldValue.increment(-transferQty)
                         });
                         const localP = (window.menuItems || []).find(p => p.id === item.productId);
-                        if (localP) localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
+                        if (localP) {
+                            localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
+                        }
                     } else {
                         const srcBStock = (window.branchStockList || []).find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
                         if (srcBStock) {
@@ -4458,7 +4460,9 @@ const auth = firebase.auth();
                             stock: firebase.firestore.FieldValue.increment(transferQty)
                         });
                         const localP = (window.menuItems || []).find(p => p.id === item.productId);
-                        if (localP) localP.stock = Number(localP.stock || 0) + transferQty;
+                        if (localP) {
+                            localP.stock = Number(localP.stock || 0) + transferQty;
+                        }
                     } else {
                         const destBStock = (window.branchStockList || []).find(bs => bs.branchId === item.toStoreId && bs.productId === item.productId);
                         if (destBStock) {
@@ -4511,10 +4515,12 @@ const auth = firebase.auth();
                 // PDF Gatepass trigger
                 window.printTransferGatePassPDF(transferRecord);
 
-                // Table refresh karein
+                // Table aur Reports foran refresh karein
                 window.renderAllTransferProductsTable();
+                window.renderTransferHistoryReports();
                 if (typeof window.renderStockReport === 'function') window.renderStockReport();
                 if (typeof window.filterMenu === 'function') window.filterMenu();
+                if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
 
             } catch(e) {
                 console.error("Transfer Error:", e);
@@ -9636,13 +9642,16 @@ window.downloadCleanProfitLossPDF = function() {
 
     html2pdf().set(opt).from(element).save();
 };
-        // Area Dropdown Populate Karna
+       // Area Dropdown Populate Karna (Godown aur Stores alag alag)
         window.populateStockReportBranchDropdown = function() {
             const selectEl = document.getElementById('stock-report-branch-filter');
             if (!selectEl) return;
-            const currentSelected = selectEl.value || 'all';
+            const currentSelected = selectEl.value || 'godown';
 
-            selectEl.innerHTML = `<option value="all">Main Godown / Overall (All Areas)</option>`;
+            selectEl.innerHTML = `
+                <option value="godown">Main Godown (Warehouse Only)</option>
+                <option value="all">Overall (Godown + All Stores Combined)</option>
+            `;
             (window.branchesList || []).forEach(branch => {
                 selectEl.innerHTML += `<option value="${branch.id}">${branch.name} - ${branch.area}</option>`;
             });
@@ -9653,10 +9662,10 @@ window.downloadCleanProfitLossPDF = function() {
             window.populateStockReportBranchDropdown();
 
             const tbody = document.getElementById('report-tbody');
-            const theadTr = document.querySelector('#report-tbody').previousElementSibling.querySelector('tr');
+            const theadTr = document.querySelector('#report-tbody')?.previousElementSibling?.querySelector('tr');
             const remainEl = document.getElementById('report-remaining');
             const saleValEl = document.getElementById('report-sale-val');
-            const selectedBranch = document.getElementById('stock-report-branch-filter')?.value || 'all';
+            const selectedBranch = document.getElementById('stock-report-branch-filter')?.value || 'godown';
 
             if (!tbody || !theadTr) return;
 
@@ -9664,19 +9673,21 @@ window.downloadCleanProfitLossPDF = function() {
             const currentUserStr = sessionStorage.getItem('pos_current_user');
             let cols = { barcode: true, product: true, costPrice: true, sellingPrice: true, totalStock: true };
             if (currentUserStr) {
-                const user = JSON.parse(currentUserStr);
-                if (user.role !== 'superadmin' && user.permissions && user.permissions.stockCols) {
-                    cols = user.permissions.stockCols;
-                }
+                try {
+                    const user = JSON.parse(currentUserStr);
+                    if (user.role !== 'superadmin' && user.permissions && user.permissions.stockCols) {
+                        cols = user.permissions.stockCols;
+                    }
+                } catch(e) {}
             }
 
             // DYNAMIC HEADER RENDER
             theadTr.innerHTML = `
                 ${cols.barcode ? `<th style="text-align: left; width: 18%;">Barcode</th>` : ''}
-                ${cols.product ? `<th style="text-align: left; width: 34%;">Product</th>` : ''}
+                ${cols.product ? `<th style="text-align: left; width: 34%;">Product & Location</th>` : ''}
                 ${cols.costPrice ? `<th style="text-align: right; width: 16%;">Cost Price</th>` : ''}
                 ${cols.sellingPrice ? `<th style="text-align: right; width: 16%;">Selling Price</th>` : ''}
-                ${cols.totalStock ? `<th style="text-align: center; width: 16%;">Total Stock</th>` : ''}
+                ${cols.totalStock ? `<th style="text-align: center; width: 16%;">Available Stock</th>` : ''}
             `;
 
             tbody.innerHTML = '';
@@ -9686,24 +9697,57 @@ window.downloadCleanProfitLossPDF = function() {
             const products = window.menuItems || [];
             let displayRows = [];
 
-            if (selectedBranch === 'all') {
+            // CASE 1: Sirf Main Godown ka bacha hua stock (3 - 2 = 1 yahan dikhega)
+            if (selectedBranch === 'godown') {
                 displayRows = products.map(p => {
+                    const godownQty = Number(p.stock || 0);
                     return {
-                        id: p.id, barcode: p.barcode || 'N/A', name: p.name,
-                        costPrice: Number(p.costPrice || 0), price: Number(p.price || 0),
-                        stock: Number(p.stock || 0), areaTag: 'Main Warehouse'
+                        id: p.id,
+                        barcode: p.barcode || 'N/A',
+                        name: p.name,
+                        costPrice: Number(p.costPrice || 0),
+                        price: Number(p.price || 0),
+                        stock: godownQty,
+                        areaTag: 'Main Godown / Warehouse'
                     };
                 });
-            } else {
+            } 
+            // CASE 2: Godown + Tamam Stores ka total jamah shuda stock
+            else if (selectedBranch === 'all') {
+                displayRows = products.map(p => {
+                    const godownQty = Number(p.stock || 0);
+                    const storesQty = (window.branchStockList || [])
+                        .filter(bs => bs.productId === p.id)
+                        .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
+                    
+                    const totalQty = godownQty + storesQty;
+                    return {
+                        id: p.id,
+                        barcode: p.barcode || 'N/A',
+                        name: p.name,
+                        costPrice: Number(p.costPrice || 0),
+                        price: Number(p.price || 0),
+                        stock: totalQty,
+                        areaTag: `Godown: ${godownQty} | Stores: ${storesQty}`
+                    };
+                });
+            } 
+            // CASE 3: Kisi Makhsoos Store / Shop ka stock (Jaise Malir Store ke 2 table)
+            else {
                 const branchObj = (window.branchesList || []).find(b => b.id === selectedBranch);
-                const areaLabel = branchObj ? `${branchObj.name} (${branchObj.area})` : 'Selected Area';
+                const areaLabel = branchObj ? `${branchObj.name} (${branchObj.area})` : 'Store Shop';
 
                 displayRows = products.map(p => {
                     const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === p.id);
+                    const storeQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
                     return {
-                        id: p.id, barcode: p.barcode || 'N/A', name: p.name,
-                        costPrice: Number(p.costPrice || 0), price: Number(p.price || 0),
-                        stock: bStockRecord ? Number(bStockRecord.qty || 0) : 0, areaTag: areaLabel
+                        id: p.id,
+                        barcode: p.barcode || 'N/A',
+                        name: p.name,
+                        costPrice: Number(p.costPrice || 0),
+                        price: Number(p.price || 0),
+                        stock: storeQty,
+                        areaTag: areaLabel
                     };
                 });
             }
@@ -9712,7 +9756,7 @@ window.downloadCleanProfitLossPDF = function() {
 
             if (displayRows.length === 0) {
                 const visibleColCount = Object.values(cols).filter(v => v).length;
-                tbody.innerHTML = `<tr><td colspan="${visibleColCount}" class="empty-placeholder">Chune hue area mein koi mojood (Available) stock nahi mila.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${visibleColCount}" class="empty-placeholder">Is jagah / godown mein koi stock mojood nahi hai.</td></tr>`;
             } else {
                 displayRows.forEach(item => {
                     totalRemainingUnits += item.stock;
@@ -9724,7 +9768,7 @@ window.downloadCleanProfitLossPDF = function() {
                             ${cols.product ? `<td style="text-align:left;"><strong>${item.name}</strong><br><small style="color:#0284c7; font-weight:700;"><i class='bx bx-map-pin'></i> ${item.areaTag}</small></td>` : ''}
                             ${cols.costPrice ? `<td style="text-align:right; font-weight:600; color:#0f172a;">Rs. ${item.costPrice.toLocaleString()}</td>` : ''}
                             ${cols.sellingPrice ? `<td style="text-align:right; font-weight:700; color:var(--primary);">Rs. ${item.price.toLocaleString()}</td>` : ''}
-                            ${cols.totalStock ? `<td style="text-align:center;"><strong style="font-size:1.02rem; color:#10b981;">${item.stock} pcs</strong></td>` : ''}
+                            ${cols.totalStock ? `<td style="text-align:center;"><strong style="font-size:1.02rem; color:#10b981; background:#dcfce7; padding:3px 10px; border-radius:6px;">${item.stock} pcs</strong></td>` : ''}
                         </tr>
                     `;
                 });
