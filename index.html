@@ -7265,9 +7265,9 @@ window.saveUserPermissions = async function() {
                         window.salesHistory.unshift(saleRecord);
                     }
 
-                    // Foran receipt print aur modal show karein (Offline par bhi foran chalega)
+                // Sirf receipt modal show karein, auto print dialogue popup na aaye
                     showInvoiceModal(saleRecord);
-                    window.print();
+                    // window.print(); // Yeh line hata di taake printer box disturb na kare
 
                     // Cart khali karein aur reset karein
                     cart = [];
