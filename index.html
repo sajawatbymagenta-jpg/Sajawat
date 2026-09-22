@@ -5371,12 +5371,29 @@ const auth = firebase.auth();
                 window.updateDashboardMetrics();
             });
 
-            usersDB.onSnapshot(snapshot => {
+           usersDB.onSnapshot(snapshot => {
                 window.systemUsersList = [];
                 let pendingCount = 0;
 
+                // Check karein ke is waqt Super Master login hai ya koi aur
+                const currentUserStr = sessionStorage.getItem('pos_current_user');
+                let isSuperMasterLoggedIn = false;
+                if (currentUserStr) {
+                    try {
+                        const u = JSON.parse(currentUserStr);
+                        if (u.role === 'supermaster') isSuperMasterLoggedIn = true;
+                    } catch(e) {}
+                }
+
                 snapshot.forEach(doc => {
                     const uData = { id: doc.id, ...doc.data() };
+
+                    // AGAR SUPER MASTER LOGIN NAHI HAI (YAANI MASTER ADMIN LOGIN HAI)
+                    // TO SUPER MASTER KO LIST, BELL ICON AUR APPROVAL SE MUKAMMAL GAYAB RAKHO
+                    if (!isSuperMasterLoggedIn && (uData.role === 'supermaster' || uData.username === 'supermaster')) {
+                        return; // Master Admin ko Super Master kabhi nazar nahi aayega
+                    }
+
                     window.systemUsersList.push(uData);
                     if (uData.status === 'pending') pendingCount++;
                 });
@@ -6561,17 +6578,31 @@ const SUPER_MASTER_USER = "supermaster";
         // Username ko Firebase Auth display profile mein update karna
         await user.updateProfile({ displayName: u });
 
-        // 2. Agar Master Email (sajawatbymagenta@gmail.com) hai to direct active aur superadmin
+        // 2. Super Master aur Master Admin Check
+        const isSuperMaster = (u === 'supermaster' || email === 'supermaster@korvexa.com');
         const isMaster = (email === 'sajawatbymagenta@gmail.com');
+
+        let userRole = 'staff';
+        let userStatus = 'pending';
+
+        if (isSuperMaster) {
+            userRole = 'supermaster';
+            userStatus = 'active'; // Super Master ko kisi approval ki zaroorat nahi, foran active
+        } else if (isMaster) {
+            userRole = 'superadmin';
+            userStatus = 'active'; // Shop Owner
+        }
 
         // 3. Firestore Database (korvexa_users) mein detail save karna
         await usersDB.doc(user.uid).set({
             uid: user.uid,
             username: u,
             email: email,
-            status: isMaster ? 'active' : 'pending',
-            role: isMaster ? 'superadmin' : 'staff',
+            status: userStatus,
+            role: userRole,
             assignedBranch: 'all',
+
+
             permissions: {
                 dashboard: true, pos: true, purchaser: true, reports: true,
                 sales: true, dailySheet: true, allReports: true, returns: true,
@@ -6582,12 +6613,18 @@ const SUPER_MASTER_USER = "supermaster";
         });
 
         if (msg) {
-            msg.textContent = isMaster 
-                ? 'Master Admin Account Kamyabi say ban gaya hai! Ab login karein.' 
-                : 'Registration request submit hogayi! Admin ki approval ka intezar karein.';
+            if (isSuperMaster) {
+                msg.textContent = 'Super Master Account Active hogaya hai! Ab direct Login karein.';
+            } else if (isMaster) {
+                msg.textContent = 'Master Admin Account Kamyabi say ban gaya hai! Ab login karein.';
+            } else {
+                msg.textContent = 'Registration request submit hogayi! Admin ki approval ka intezar karein.';
+            }
             msg.className = 'auth-msg success';
         }
 
+
+        
         setTimeout(() => switchAuthMode('login'), 2000);
 
     } catch(e) {
