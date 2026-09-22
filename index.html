@@ -4525,7 +4525,7 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
             if (unitsEl) unitsEl.textContent = `${totalUnits} units`;
         };
 
-        window.executeSelectedProductsTransfer = async function() {
+       window.executeSelectedProductsTransfer = async function() {
             const executeBtn = document.getElementById('execute-batch-transfer-btn');
             const fromSelect = document.getElementById('transfer-from-store');
             const toSelect = document.getElementById('transfer-to-store');
@@ -4584,7 +4584,8 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
             }
 
             const totalUnits = transferQueue.reduce((acc, it) => acc + it.qty, 0);
-const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;const challanNo = "CHL-" + String(nextChlSeq).padStart(4, '0'); // CHL-0001, CHL-0002...
+            const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
+            const challanNo = "CHL-" + String(nextChlSeq).padStart(4, '0');
             const now = new Date();
             const dispatchDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
@@ -4595,15 +4596,11 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 for (let item of transferQueue) {
                     const transferQty = item.qty;
 
-                    // 1. Source Store / Godown se Minus (- Qty)
+                    // 1. Source Store / Godown se Minus (- Qty) sirf Firestore me hoga (Double minus khatam)
                     if (item.fromStoreId === 'main') {
                         await productsDB.doc(item.productId).update({
                             stock: firebase.firestore.FieldValue.increment(-transferQty)
                         });
-                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
-                        if (localP) {
-                            localP.stock = Math.max(0, Number(localP.stock || 0) - transferQty);
-                        }
                     } else {
                         const srcBStock = (window.branchStockList || []).find(bs => bs.branchId === item.fromStoreId && bs.productId === item.productId);
                         if (srcBStock) {
@@ -4611,19 +4608,14 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                                 qty: firebase.firestore.FieldValue.increment(-transferQty),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            srcBStock.qty = Math.max(0, Number(srcBStock.qty || 0) - transferQty);
                         }
                     }
 
-                    // 2. Destination Store / Godown mein Add (+ Qty)
+                    // 2. Destination Store / Godown mein Add (+ Qty) sirf Firestore me hoga (Double add khatam)
                     if (item.toStoreId === 'main') {
                         await productsDB.doc(item.productId).update({
                             stock: firebase.firestore.FieldValue.increment(transferQty)
                         });
-                        const localP = (window.menuItems || []).find(p => p.id === item.productId);
-                        if (localP) {
-                            localP.stock = Number(localP.stock || 0) + transferQty;
-                        }
                     } else {
                         const destBStock = (window.branchStockList || []).find(bs => bs.branchId === item.toStoreId && bs.productId === item.productId);
                         if (destBStock) {
@@ -4631,10 +4623,9 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                                 qty: firebase.firestore.FieldValue.increment(transferQty),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            destBStock.qty = Number(destBStock.qty || 0) + transferQty;
                         } else {
                             const bObj = (window.branchesList || []).find(b => b.id === item.toStoreId);
-                            const newDocRef = await branchStockDB.add({
+                            await branchStockDB.add({
                                 branchId: item.toStoreId,
                                 branchName: bObj ? bObj.name : item.toStoreName,
                                 branchArea: bObj ? bObj.area : '',
@@ -4644,17 +4635,6 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                                 productBarcode: item.barcode || '',
                                 qty: transferQty,
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                            window.branchStockList.push({
-                                id: newDocRef.id,
-                                branchId: item.toStoreId,
-                                branchName: bObj ? bObj.name : item.toStoreName,
-                                branchArea: bObj ? bObj.area : '',
-                                productId: item.productId,
-                                productName: item.productName,
-                                productPrice: item.price,
-                                productBarcode: item.barcode || '',
-                                qty: transferQty
                             });
                         }
                     }
@@ -4671,17 +4651,28 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
 
                 await transfersDB.add(transferRecord);
 
-                alert(`Kamyabi! Kul ${totalUnits} units (${transferQueue.length} products) ka Challan #${challanNo} generate hogaya aur stock transfer hogaya.`);
+                Toast.fire({
+                    icon: 'success',
+                    title: `Kamyabi! ${totalUnits} units ka Challan #${challanNo} ban gaya aur stock shift hogaya.`
+                });
 
                 // PDF Gatepass trigger
                 window.printTransferGatePassPDF(transferRecord);
 
-                // Table aur Reports foran refresh karein
-                window.renderAllTransferProductsTable();
-                window.renderTransferHistoryReports();
-                if (typeof window.renderStockReport === 'function') window.renderStockReport();
-                if (typeof window.filterMenu === 'function') window.filterMenu();
-                if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
+                // Transfer ke baad selection checkboxes saaf karein
+                window.toggleSelectAllTransferProducts(false);
+                if (toSelect) toSelect.value = '';
+
+                // Tamam screens ko live update karein
+                if (typeof window.triggerGlobalAutoRefresh === 'function') {
+                    window.triggerGlobalAutoRefresh();
+                } else {
+                    window.renderAllTransferProductsTable();
+                    window.renderTransferHistoryReports();
+                    if (typeof window.renderStockReport === 'function') window.renderStockReport();
+                    if (typeof window.filterMenu === 'function') window.filterMenu();
+                    if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
+                }
 
             } catch(e) {
                 console.error("Transfer Error:", e);
@@ -5473,20 +5464,51 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
             }
         };
 
+      // =========================================================
+        // UNIVERSAL AUTO-REFRESH ENGINE (TAMAM MODULES LIVE UPDATE)
         // =========================================================
-        // REALTIME SYNCHRONIZATION
+        window.triggerGlobalAutoRefresh = function() {
+            // 1. Move Store Products & Available Quantities
+            if (typeof window.renderAllTransferProductsTable === 'function') {
+                window.renderAllTransferProductsTable();
+            }
+            // 2. Transfer Challan & Dispatch Reports
+            if (typeof window.renderTransferHistoryReports === 'function') {
+                window.renderTransferHistoryReports();
+            }
+            // 3. POS Products & Shop Stock
+            if (typeof window.filterMenu === 'function') {
+                window.filterMenu();
+            }
+            // 4. Stock & Inventory Report (Godown + Stores)
+            if (typeof window.renderStockReport === 'function') {
+                window.renderStockReport();
+            }
+            // 5. Dashboard Summary Cards & Charts
+            if (typeof window.updateDashboardMetrics === 'function') {
+                window.updateDashboardMetrics();
+            }
+            // 6. Product Barcodes List
+            if (typeof window.renderAllProductBarcodesView === 'function') {
+                window.renderAllProductBarcodesView();
+            }
+            // 7. Store Stock Lookup Modal
+            if (typeof window.renderBranchOverviewModalTable === 'function') {
+                window.renderBranchOverviewModalTable();
+            }
+        };
+
+        // =========================================================
+        // REALTIME SYNCHRONIZATION (WITH AUTO-REFRESH INTEGRATION)
         // =========================================================
         function initRealtimeSync() {
+            // Godown / Main Inventory Products Listener
             productsDB.onSnapshot(snapshot => {
                 window.menuItems = [];
                 snapshot.forEach(doc => {
                     window.menuItems.push({ id: doc.id, ...doc.data() });
                 });
-                window.filterMenu();
-                window.renderStockReport();
-                window.updateDashboardMetrics();
-                window.renderAllProductBarcodesView();
-                window.populateBatchProductDropdown();
+                window.triggerGlobalAutoRefresh();
             });
 
             categoriesDB.onSnapshot(snapshot => {
@@ -5494,7 +5516,7 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.categories.push({ id: doc.id, name: doc.data().name });
                 });
-                window.renderCategories();
+                if (typeof window.renderCategories === 'function') window.renderCategories();
             });
 
             purchasesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
@@ -5502,8 +5524,8 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.purchasesList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderPurchaserReport();
-                window.renderPurchaseDetailsView();
+                if (typeof window.renderPurchaserReport === 'function') window.renderPurchaserReport();
+                if (typeof window.renderPurchaseDetailsView === 'function') window.renderPurchaseDetailsView();
             });
 
             salesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
@@ -5511,10 +5533,10 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.salesHistory.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderSellView();
-                window.renderCashBookFlow();
-                window.renderCashBookReport();
-                window.updateDashboardMetrics();
+                if (typeof window.renderSellView === 'function') window.renderSellView();
+                if (typeof window.renderCashBookFlow === 'function') window.renderCashBookFlow();
+                if (typeof window.renderCashBookReport === 'function') window.renderCashBookReport();
+                if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
             });
 
             returnsDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
@@ -5522,9 +5544,9 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.returnsList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderReturnView();
-                window.renderReturnReport();
-                window.updateDashboardMetrics();
+                if (typeof window.renderReturnView === 'function') window.renderReturnView();
+                if (typeof window.renderReturnReport === 'function') window.renderReturnReport();
+                if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
             });
 
             expensesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
@@ -5532,18 +5554,17 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.expensesList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderExpenseView();
-                window.renderCashBookFlow();
-                window.renderExpenseReport();
-                window.renderCashBookReport();
-                window.updateDashboardMetrics();
+                if (typeof window.renderExpenseView === 'function') window.renderExpenseView();
+                if (typeof window.renderCashBookFlow === 'function') window.renderCashBookFlow();
+                if (typeof window.renderExpenseReport === 'function') window.renderExpenseReport();
+                if (typeof window.renderCashBookReport === 'function') window.renderCashBookReport();
+                if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
             });
 
-           usersDB.onSnapshot(snapshot => {
+            usersDB.onSnapshot(snapshot => {
                 window.systemUsersList = [];
                 let pendingCount = 0;
 
-                // Check karein ke is waqt Super Master login hai ya koi aur
                 const currentUserStr = sessionStorage.getItem('pos_current_user');
                 let isSuperMasterLoggedIn = false;
                 if (currentUserStr) {
@@ -5555,13 +5576,9 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
 
                 snapshot.forEach(doc => {
                     const uData = { id: doc.id, ...doc.data() };
-
-                    // AGAR SUPER MASTER LOGIN NAHI HAI (YAANI MASTER ADMIN LOGIN HAI)
-                    // TO SUPER MASTER KO LIST, BELL ICON AUR APPROVAL SE MUKAMMAL GAYAB RAKHO
                     if (!isSuperMasterLoggedIn && (uData.role === 'supermaster' || uData.username === 'supermaster')) {
-                        return; // Master Admin ko Super Master kabhi nazar nahi aayega
+                        return;
                     }
-
                     window.systemUsersList.push(uData);
                     if (uData.status === 'pending') pendingCount++;
                 });
@@ -5571,20 +5588,14 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 const alertText = document.getElementById('pending-users-count-text');
 
                 if (pendingCount > 0) {
-                    if (badge) {
-                        badge.style.display = 'block';
-                        badge.textContent = pendingCount;
-                    }
-                    if (alertBox) {
-                        alertBox.style.display = 'block';
-                        alertText.textContent = `${pendingCount} New Users Pending Approval`;
-                    }
+                    if (badge) { badge.style.display = 'block'; badge.textContent = pendingCount; }
+                    if (alertBox) { alertBox.style.display = 'block'; alertText.textContent = `${pendingCount} New Users Pending Approval`; }
                 } else {
                     if (badge) badge.style.display = 'none';
                     if (alertBox) alertBox.style.display = 'none';
                 }
 
-                renderUsersManagementTable();
+                if (typeof renderUsersManagementTable === 'function') renderUsersManagementTable();
             });
 
             branchesDB.orderBy('createdAt', 'asc').onSnapshot(snapshot => {
@@ -5592,30 +5603,28 @@ const nextChlSeq = (window.transfersList ? window.transfersList.length : 0) + 1;
                 snapshot.forEach(doc => {
                     window.branchesList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderBranchListView();
-                window.populateTransferStoreDropdowns();
+                if (typeof window.renderBranchListView === 'function') window.renderBranchListView();
+                if (typeof window.populateTransferStoreDropdowns === 'function') window.populateTransferStoreDropdowns();
             });
 
-           branchStockDB.onSnapshot(snapshot => {
+            // Store Stock Listener (Shop Stock update hote hi foran UI refresh hogi)
+            branchStockDB.onSnapshot(snapshot => {
                 window.branchStockList = [];
                 snapshot.forEach(doc => {
                     window.branchStockList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderBranchOverviewModalTable();
-                if (typeof window.filterMenu === 'function') {
-                    window.filterMenu();
-                }
-                if (typeof window.populateBatchProductDropdown === 'function') {
-                    window.populateBatchProductDropdown();
-                }
+                window.triggerGlobalAutoRefresh();
             });
 
+            // Stock Move History Listener
             transfersDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 window.transfersList = [];
                 snapshot.forEach(doc => {
                     window.transfersList.push({ id: doc.id, ...doc.data() });
                 });
-                window.renderTransferHistoryReports();
+                if (typeof window.renderTransferHistoryReports === 'function') {
+                    window.renderTransferHistoryReports();
+                }
             });
         }
 
@@ -7388,10 +7397,19 @@ window.saveUserPermissions = async function() {
                 const totalDiscountVal = (grossSubtotal - discountedSubtotal);
                 const total = Math.max(0, grossSubtotal - totalDiscountVal);
                 
-                // Sequential Invoice Number (1, 2, 3, 4... auto-increment)
-                let currentSeq = parseInt(localStorage.getItem('pos_next_invoice_no') || '1', 10);
-                const invId = currentSeq.toString();
-                localStorage.setItem('pos_next_invoice_no', (currentSeq + 1).toString());
+               // Sequential Invoice Number (Database Auto-Scan & Auto-Increment)
+                let maxInvNum = 0;
+                (window.salesHistory || []).forEach(s => {
+                    const num = parseInt(String(s.invoiceId || '').replace(/\D/g, ''), 10);
+                    if (!isNaN(num) && num > maxInvNum) {
+                        maxInvNum = num;
+                    }
+                });
+                let storedSeq = parseInt(localStorage.getItem('pos_next_invoice_no') || '1', 10);
+                // Agar database mein pehle se bill 1 mojood hai to agla bill lazmi 2 banega
+                let nextInvSeq = Math.max(maxInvNum + 1, storedSeq);
+                const invId = nextInvSeq.toString();
+                localStorage.setItem('pos_next_invoice_no', (nextInvSeq + 1).toString());
 
                 const now = new Date();
                 const invDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -7677,8 +7695,16 @@ window.applyBusinessBrandInfo = function() {
     const nextInvInput = document.getElementById('setting-next-invoice-no');
     if (nameInput) nameInput.value = bName;
     if (phoneInput) phoneInput.value = bPhone;
-    if (noteInput) noteInput.value = bNote;
-    if (nextInvInput) nextInvInput.value = localStorage.getItem('pos_next_invoice_no') || '1';
+  if (noteInput) noteInput.value = bNote;
+
+    // Database check: Settings mein hamesha asal agla invoice number dikhayein
+    let maxInvCheck = 0;
+    (window.salesHistory || []).forEach(s => {
+        const num = parseInt(String(s.invoiceId || '').replace(/\D/g, ''), 10);
+        if (!isNaN(num) && num > maxInvCheck) maxInvCheck = num;
+    });
+    let storedNext = parseInt(localStorage.getItem('pos_next_invoice_no') || '1', 10);
+    if (nextInvInput) nextInvInput.value = Math.max(maxInvCheck + 1, storedNext);
 
     // 2. Sidebar logo par pakka KORVEXA hi rahega (Change nahi hoga)
     const sidebarLogo = document.getElementById('sidebar-logo-name');
@@ -10510,11 +10536,14 @@ window.downloadCleanProfitLossPDF = function() {
        // 1. CASH IN: Daily Counter Cash Sales (Net Cash in Hand = Sales - Refunds - Expenses)
         const dailySummaryMap = {};
 
-        // A. Cash Sales / Payment Received
+        // A. Cash Sales / Payment Received (All Reports ke sath 100% Synced)
         (window.salesHistory || []).forEach(s => {
-            const isCash = (s.paymentMode || 'Cash').toLowerCase().includes('cash');
-            const isPaid = (s.paymentStatus === 'Paid');
-            if (isCash && isPaid && isWithinPeriod(s.date)) {
+            const status = String(s.paymentStatus || 'Paid').trim().toLowerCase();
+            const isUnpaid = (status === 'unpaid');
+            // Agar invoice Paid hai ya partial payment mili hai to received amount uthayein
+            const paid = s.paidAmount !== undefined ? Number(s.paidAmount) : (isUnpaid ? 0 : Number(s.total || 0));
+
+            if (paid > 0 && isWithinPeriod(s.date)) {
                 const d = (s.date || '').substring(0, 10);
                 if (!dailySummaryMap[d]) {
                     dailySummaryMap[d] = {
@@ -10524,7 +10553,6 @@ window.downloadCleanProfitLossPDF = function() {
                         rawDate: new Date(s.date || now).getTime()
                     };
                 }
-                const paid = s.paidAmount !== undefined ? Number(s.paidAmount) : Number(s.total || 0);
                 dailySummaryMap[d].sales += paid;
             }
         });
