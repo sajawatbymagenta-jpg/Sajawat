@@ -6444,7 +6444,7 @@ const SUPER_MASTER_USER = "supermaster";
 
         // Login screen par red error text
         if (err) {
-            err.textContent = 'سافٹ ویئر ایکسپائر کلاؤڈ، پلیز کانٹیکٹ سافٹ ویئر ڈویلپر';
+            err.textContent = 'Software Expired: Please Contact Developer';
             err.className = 'auth-msg error';
         }
 
@@ -6452,7 +6452,7 @@ const SUPER_MASTER_USER = "supermaster";
         if (window.Swal) {
             Swal.fire({
                 icon: 'error',
-                title: 'سافٹ ویئر ایکسپائر کلاؤڈ',
+                title: 'Cloud Software Expired',
                 html: `
                     <p style="font-size: 1.05rem; font-weight: 700; color: #b91c1c; margin-top: 6px;">
                         پلیز کانٹیکٹ سافٹ ویئر ڈویلپر
