@@ -3935,31 +3935,38 @@ const auth = firebase.auth();
                         }
                     }
 
-                    // 2. Naye edited products ka stock aur details (Name samet) Godown me apply karein
+                  // 2. Naye edited products ka stock, NAAM aur details Godown me apply karein
                     for (let prod of window.diagramPurchaseItems) {
-                        const targetBarcode = String(prod.origBarcode || prod.barcode || '').trim().toLowerCase();
-                        const targetName = String(prod.origName || prod.name || '').trim().toLowerCase();
-
+                        // Pehle Product ID se dhoondein, phir purane barcode ya purane naam se
                         const matchedProduct = window.menuItems.find(p => 
-                            (targetBarcode && p.barcode && String(p.barcode).trim().toLowerCase() === targetBarcode) || 
-                            (targetName && p.name && p.name.trim().toLowerCase() === targetName)
+                            (prod.productId && p.id === prod.productId) ||
+                            (prod.origBarcode && p.barcode && String(p.barcode).trim() === String(prod.origBarcode).trim()) ||
+                            (prod.barcode && p.barcode && String(p.barcode).trim() === String(prod.barcode).trim()) ||
+                            (prod.origName && p.name && p.name.trim().toLowerCase() === String(prod.origName).trim().toLowerCase()) ||
+                            (p.name && p.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase())
                         );
 
                         if (matchedProduct) {
+                            const newCost = Number(prod.cost !== undefined ? prod.cost : prod.costPrice) || 0;
+                            const newSale = Number(prod.sale !== undefined ? prod.sale : prod.price) || 0;
+
                             await productsDB.doc(matchedProduct.id).update({
                                 name: prod.name,
                                 stock: firebase.firestore.FieldValue.increment(Number(prod.qty || 0)),
-                                costPrice: prod.cost,
-                                price: prod.sale,
-                                barcode: prod.barcode,
-                                img: prod.img || matchedProduct.img
+                                costPrice: newCost,
+                                price: newSale,
+                                barcode: prod.barcode || matchedProduct.barcode || '',
+                                img: prod.img || matchedProduct.img || ''
                             });
+
+                            // Local memory mein bhi foran naam aur keemat tabdeel karein
                             matchedProduct.name = prod.name;
                             matchedProduct.stock = Number(matchedProduct.stock || 0) + Number(prod.qty || 0);
-                            matchedProduct.costPrice = prod.cost;
-                            matchedProduct.price = prod.sale;
-                            matchedProduct.barcode = prod.barcode;
+                            matchedProduct.costPrice = newCost;
+                            matchedProduct.price = newSale;
+                            matchedProduct.barcode = prod.barcode || matchedProduct.barcode;
                             matchedProduct.img = prod.img || matchedProduct.img;
+                            prod.productId = matchedProduct.id;
                         } else {
                             const newDocRef = await productsDB.add({
                                 name: prod.name,
@@ -5301,7 +5308,7 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
             // Edit Mode Active karein
             window.editingPurchaseDocId = purchase.id;
 
-            let items = purchase.items || [];
+           let items = purchase.items || [];
             if (items.length === 0 && purchase.productName) {
                 items = [{
                     name: purchase.productName,
@@ -5313,6 +5320,21 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
                     img: purchase.img || DEFAULT_PROD_IMG
                 }];
             }
+
+            // Har item ke sath uski asal Database Product ID match karke attach karein
+            items = items.map(it => {
+                const foundProd = (window.menuItems || []).find(p => 
+                    (it.productId && p.id === it.productId) ||
+                    (it.barcode && p.barcode && String(p.barcode).trim() === String(it.barcode).trim()) ||
+                    (p.name && p.name.trim().toLowerCase() === String(it.name || '').trim().toLowerCase())
+                );
+                return {
+                    ...it,
+                    productId: it.productId || (foundProd ? foundProd.id : null),
+                    origName: it.name,
+                    origBarcode: it.barcode
+                };
+            });
 
             // Purane items ko memory me save karein taake stock diff nikal sake
             window.editingOriginalPurchaseItems = JSON.parse(JSON.stringify(items));
