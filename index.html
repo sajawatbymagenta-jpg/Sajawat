@@ -1441,10 +1441,13 @@
                                             <button type="button" class="outline-btn" style="padding:6px 10px;" onclick="generateDiaBarcode()" title="Auto Barcode"><i class='bx bx-refresh'></i></button>
                                         </div>
                                     </div>
-                                    <div class="form-group" style="margin-bottom:8px; grid-column: span 2;">
+                                  <div class="form-group" style="margin-bottom:8px; grid-column: span 2;">
                                         <label><i class='bx bx-image-add' style="color:var(--primary);"></i> Product Picture (Auto-Compressed)</label>
-                                     <div style="display:flex; gap:12px; align-items:center;">
-                                            <input type="file" id="dia-prod-img-input" accept="image/*" onchange="previewProductUploadImage(this)" style="padding:7px; font-size:0.85rem;">
+                                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                            <input type="file" id="dia-prod-img-input" accept="image/*" onchange="previewProductUploadImage(this)" style="padding:7px; font-size:0.85rem; flex:1; min-width:180px;">
+                                            <button type="button" class="outline-btn" style="padding:8px 12px; font-size:0.85rem; white-space:nowrap; gap:6px;" onclick="openProductCameraModal()">
+                                                <i class='bx bx-camera'></i> Open Camera
+                                            </button>
                                             <img id="dia-prod-img-preview" src="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; display:none;">
                                         </div>
                                     </div>
@@ -3441,8 +3444,12 @@ const auth = firebase.auth();
             document.getElementById('edit-dia-qty').value = item.qty || 1;
             document.getElementById('edit-dia-barcode').value = item.barcode || '';
             
-            currentEditItemImageBase64 = item.img || DEFAULT_PROD_IMG;
-            document.getElementById('edit-dia-img-preview').src = currentEditItemImageBase64;
+     currentEditItemImageBase64 = item.img || DEFAULT_PROD_IMG;
+            const previewEl = document.getElementById('edit-dia-img-preview');
+            if (previewEl) {
+                previewEl.src = currentEditItemImageBase64;
+                previewEl.style.display = currentEditItemImageBase64 ? 'block' : 'none';
+            }
             document.getElementById('edit-dia-img-input').value = '';
 
             document.getElementById('edit-dia-product-modal')?.classList.add('visible');
@@ -3537,9 +3544,12 @@ const auth = firebase.auth();
             if (isNaN(sale) || sale < 0) { alert("Durust Sale Price darj karein!"); return; }
             if (isNaN(qty) || qty <= 0) { alert("Quantity kam az kam 1 honi chahiye!"); return; }
 
-            // Item ki nayi values update karein
+           // Item ki nayi values update karein (aur purana naam/barcode track rakhein)
+            const currentItem = window.diagramPurchaseItems[index];
             window.diagramPurchaseItems[index] = {
-                ...window.diagramPurchaseItems[index],
+                ...currentItem,
+                origName: currentItem.origName || currentItem.name,
+                origBarcode: currentItem.origBarcode || currentItem.barcode,
                 name: name,
                 cost: cost,
                 costPrice: cost,
@@ -3547,7 +3557,7 @@ const auth = firebase.auth();
                 price: sale,
                 qty: qty,
                 total: cost * qty,
-                barcode: barcode || window.diagramPurchaseItems[index].barcode,
+                barcode: barcode || currentItem.barcode,
                 img: currentEditItemImageBase64
             };
 
@@ -3925,24 +3935,30 @@ const auth = firebase.auth();
                         }
                     }
 
-                    // 2. Naye edited products ka stock aur details Godown me apply karein
+                    // 2. Naye edited products ka stock aur details (Name samet) Godown me apply karein
                     for (let prod of window.diagramPurchaseItems) {
+                        const targetBarcode = String(prod.origBarcode || prod.barcode || '').trim().toLowerCase();
+                        const targetName = String(prod.origName || prod.name || '').trim().toLowerCase();
+
                         const matchedProduct = window.menuItems.find(p => 
-                            (prod.barcode && p.barcode && String(p.barcode).trim().toLowerCase() === String(prod.barcode).trim().toLowerCase()) || 
-                            (p.name && p.name.trim().toLowerCase() === prod.name.trim().toLowerCase())
+                            (targetBarcode && p.barcode && String(p.barcode).trim().toLowerCase() === targetBarcode) || 
+                            (targetName && p.name && p.name.trim().toLowerCase() === targetName)
                         );
 
                         if (matchedProduct) {
                             await productsDB.doc(matchedProduct.id).update({
+                                name: prod.name,
                                 stock: firebase.firestore.FieldValue.increment(Number(prod.qty || 0)),
                                 costPrice: prod.cost,
                                 price: prod.sale,
                                 barcode: prod.barcode,
                                 img: prod.img || matchedProduct.img
                             });
+                            matchedProduct.name = prod.name;
                             matchedProduct.stock = Number(matchedProduct.stock || 0) + Number(prod.qty || 0);
                             matchedProduct.costPrice = prod.cost;
                             matchedProduct.price = prod.sale;
+                            matchedProduct.barcode = prod.barcode;
                             matchedProduct.img = prod.img || matchedProduct.img;
                         } else {
                             const newDocRef = await productsDB.add({
@@ -12476,6 +12492,168 @@ window.openDeveloperOverrideModal = async function() {
     }
 };
 
+// =========================================================
+// PRODUCT LIVE CAMERA CAPTURE ENGINE
+// =========================================================
+let productCameraStream = null;
+
+// 1. Camera Modal Open karna aur Video stream chalu karna
+window.openProductCameraModal = async function() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Aapke browser mein camera access allow nahi hai!");
+        return;
+    }
+
+    const modal = document.getElementById('product-camera-modal');
+    const video = document.getElementById('prod-camera-video');
+
+    try {
+        // Rear/Environment camera pehle try karein (mobile ke liye), agar na ho to webcam
+        productCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        if (video) {
+            video.srcObject = productCameraStream;
+            await video.play();
+        }
+
+        if (modal) modal.classList.add('visible');
+
+    } catch (err) {
+        console.error("Camera access error:", err);
+        // Fallback user camera
+        try {
+            productCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            if (video) {
+                video.srcObject = productCameraStream;
+                await video.play();
+            }
+            if (modal) modal.classList.add('visible');
+        } catch (e2) {
+            alert("Camera shuru nahi ho saka: " + e2.message);
+        }
+    }
+};
+
+// 2. Camera Modal Band karna aur Stream rokna
+window.closeProductCameraModal = function() {
+    const modal = document.getElementById('product-camera-modal');
+    const video = document.getElementById('prod-camera-video');
+
+    if (productCameraStream) {
+        productCameraStream.getTracks().forEach(track => track.stop());
+        productCameraStream = null;
+    }
+    if (video) {
+        video.srcObject = null;
+    }
+    if (modal) modal.classList.remove('visible');
+};
+
+// 3. Frame Capture karna, Compress karna aur Preview/Drive par bhej dena
+window.captureProductSnapshot = async function() {
+    const video = document.getElementById('prod-camera-video');
+    const canvas = document.getElementById('prod-camera-canvas');
+    const previewImg = document.getElementById('dia-prod-img-preview');
+    const snapBtn = document.getElementById('btn-snap-prod-photo');
+
+    if (!video || !canvas || !video.videoWidth) {
+        alert("Camera tayyar nahi hai, baraye meherbani thora intezar karein!");
+        return;
+    }
+
+    try {
+        if (snapBtn) {
+            snapBtn.disabled = true;
+            snapBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Processing...";
+        }
+
+        // Canvas par video frame draw karein
+        const maxDim = 400;
+        let w = video.videoWidth;
+        let h = video.videoHeight;
+
+        if (w > h) {
+            if (w > maxDim) { h *= maxDim / w; w = maxDim; }
+        } else {
+            if (h > maxDim) { w *= maxDim / h; h = maxDim; }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, w, h);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Preview box foran update karein
+        if (previewImg) {
+            previewImg.src = compressedBase64;
+            previewImg.style.display = 'block';
+            previewImg.style.opacity = '0.4';
+        }
+
+        // Camera stream foran band karein aur modal close karein
+        window.closeProductCameraModal();
+
+        currentUploadedImageBase64 = compressedBase64;
+
+        // Toast alert
+        if (window.Toast) {
+            Toast.fire({ icon: 'info', title: 'Tasweer capture hogayi! Cloud par save ho rahi hai...' });
+        }
+
+        // Google Drive upload script (Wahi function jo pehle file upload par chal raha tha)
+        const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEp_vNRS4hr1Te4E_l9gPA9xf75Qh2giIHv-BmFiBRl1bRNPwLBRL17kiJSwm_7PH1Ng/exec";
+
+        try {
+            const payload = JSON.stringify({
+                base64: compressedBase64,
+                fileName: "cam_prod_" + Date.now() + ".jpg"
+            });
+
+            const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: payload
+            });
+
+            const result = await response.json();
+
+            if (result.status === "success") {
+                currentUploadedImageBase64 = result.url;
+                if (previewImg) {
+                    previewImg.src = result.url;
+                    previewImg.style.opacity = '1';
+                }
+                if (window.Toast) {
+                    Toast.fire({ icon: 'success', title: 'Tasweer kamyabi say Google Drive mein save hogayi!' });
+                }
+            } else {
+                throw new Error(result.message || "Upload fail");
+            }
+        } catch (uploadErr) {
+            console.warn("Drive cloud upload issue, retaining compressed local image:", uploadErr);
+            if (previewImg) previewImg.style.opacity = '1';
+        }
+
+    } catch (err) {
+        console.error("Snapshot error:", err);
+        alert("Photo capture karne mein masla aaya: " + err.message);
+    } finally {
+        if (snapBtn) {
+            snapBtn.disabled = false;
+            snapBtn.innerHTML = "<i class='bx bx-aperture'></i> Capture Photo";
+        }
+    }
+};
+
 
    </script>
 
@@ -12845,6 +13023,33 @@ window.openDeveloperOverrideModal = async function() {
     </div>
 </div>
 
+<!-- MODAL: PRODUCT SNAP CAMERA -->
+<div id="product-camera-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 460px; text-align:center; padding:20px;">
+        <span class="close-modal" onclick="closeProductCameraModal()">&times;</span>
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;">
+            <i class='bx bx-camera' style="font-size:1.6rem; color:var(--primary);"></i>
+            <h3 style="font-weight:800; font-size:1.2rem;">Capture Product Photo</h3>
+        </div>
+        <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">Product ko camera ke samne rakhein aur capture button dabayein.</p>
+        
+        <div style="width:100%; border-radius:14px; overflow:hidden; background:#070b14; position:relative; min-height:260px; display:flex; align-items:center; justify-content:center;">
+            <video id="prod-camera-video" autoplay playsinline style="width:100%; height:auto; max-height:300px; object-fit:cover;"></video>
+            <canvas id="prod-camera-canvas" style="display:none;"></canvas>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="button" class="outline-btn" style="flex:1; justify-content:center;" onclick="closeProductCameraModal()">
+                Cancel
+            </button>
+            <button type="button" class="save-btn" id="btn-snap-prod-photo" style="flex:1.4; justify-content:center;" onclick="captureProductSnapshot()">
+                <i class='bx bx-aperture'></i> Capture Photo
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <!-- MODAL: EDIT SINGLE PRODUCT IN PURCHASE DIAGRAM TABLE -->
     <div id="edit-dia-product-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 540px;">
@@ -12892,6 +13097,9 @@ window.openDeveloperOverrideModal = async function() {
             </button>
         </div>
     </div>
+
+
+
 
 
 <!-- =========================================================================
