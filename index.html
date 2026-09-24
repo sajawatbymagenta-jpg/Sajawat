@@ -3075,10 +3075,9 @@
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-purchaser"> Purchaser</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-reports"> Reports (Analytics)</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-sales"> Sales & Ledger</label>
-                
-                
-                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-all-reports"> All Reports (Master Financial Audit)</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-returns"> Return Management</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-expenses"> Expenses</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-all-reports"> All Reports (Master Financial Audit)</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-settings"> Settings</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-users"> Users & Access</label>
             </div>
@@ -6386,12 +6385,12 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             }
             if (backdrop) backdrop.style.display = 'none';
 
-            const currentUserStr = sessionStorage.getItem('pos_current_user');
+           const currentUserStr = sessionStorage.getItem('pos_current_user');
             if (currentUserStr) {
                 const currentUser = JSON.parse(currentUserStr);
-                if (currentUser.role !== 'superadmin') {
+                if (currentUser.role !== 'superadmin' && currentUser.role !== 'supermaster') {
                     const p = currentUser.permissions || {};
-                  const viewPermMap = {
+                    const viewPermMap = {
                         'dashboard': p.dashboard,
                         'pos': p.pos,
                         'add-purchase-product': p.purchaser,
@@ -6405,7 +6404,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                         'expense-report': p.reports,
                         'cashbook-report': p.reports,
                         'sell': p.sales,
-                        'cashbook': p.cashbook,
+                        'all-reports': p.allReports,
                         'return': p.returns,
                         'expense': p.expenses,
                         'settings': p.settings,
@@ -7149,8 +7148,9 @@ window.openUserAccessModal = function(userId) {
     setCheck('perm-purchaser', p.purchaser);
     setCheck('perm-reports', p.reports);
     setCheck('perm-sales', p.sales);
-    setCheck('perm-all-reports', p.allReports);
+    setCheck('perm-returns', p.returns);
     setCheck('perm-expenses', p.expenses);
+    setCheck('perm-all-reports', p.allReports);
     setCheck('perm-settings', p.settings);
     setCheck('perm-users', p.users);
 
@@ -7182,8 +7182,9 @@ window.saveUserPermissions = async function() {
         purchaser: document.getElementById('perm-purchaser').checked,
         reports: document.getElementById('perm-reports').checked,
         sales: document.getElementById('perm-sales').checked,
-        allReports: document.getElementById('perm-all-reports').checked,
+        returns: document.getElementById('perm-returns').checked,
         expenses: document.getElementById('perm-expenses').checked,
+        allReports: document.getElementById('perm-all-reports').checked,
         settings: document.getElementById('perm-settings').checked,
         users: document.getElementById('perm-users').checked,
         stockCols: {
@@ -7204,11 +7205,106 @@ window.saveUserPermissions = async function() {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // Agar current logged-in user ki apni permission change hui hai to foran local session update karein
+        const currentSession = sessionStorage.getItem('pos_current_user');
+        if (currentSession) {
+            try {
+                const curObj = JSON.parse(currentSession);
+                if (curObj.id === userId) {
+                    curObj.permissions = newPermissions;
+                    curObj.assignedBranch = assignedBranch;
+                    sessionStorage.setItem('pos_current_user', JSON.stringify(curObj));
+                    window.applyUserPermissions(curObj);
+                }
+            } catch(e) {}
+        }
+
         // Popup close karein
         window.closeUserAccessModal();
         alert("User Permissions aur Store Access kamyabi say update hogaye!");
     } catch(e) {
         alert("Error saving permissions: " + e.message);
+    }
+};
+
+// =========================================================================
+// 4. CORE ENGINE: APPLY USER PERMISSIONS & HIDE UNAUTHORIZED SIDEBAR MODULES
+// =========================================================================
+window.applyUserPermissions = function(user) {
+    if (!user) return;
+
+    const isSuper = (user.role === 'superadmin' || user.role === 'supermaster');
+
+    // Sidebar items ki mapping
+    const navItems = {
+        'nav-dashboard': { perm: 'dashboard', view: 'dashboard' },
+        'nav-pos': { perm: 'pos', view: 'pos' },
+        'nav-purchaser': { perm: 'purchaser', view: 'add-purchase-product' },
+        'nav-sales': { perm: 'sales', view: 'sell' },
+        'nav-all-reports': { perm: 'allReports', view: 'all-reports' },
+        'nav-returns': { perm: 'returns', view: 'return' },
+        'nav-expenses': { perm: 'expenses', view: 'expense' },
+        'nav-reports': { perm: 'reports', view: 'profit-loss' },
+        'nav-settings': { perm: 'settings', view: 'settings' },
+        'nav-users': { perm: 'users', view: 'users' }
+    };
+
+    const p = user.permissions || {};
+    let firstPermittedView = null;
+
+    Object.keys(navItems).forEach(navId => {
+        const itemEl = document.getElementById(navId);
+        if (!itemEl) return;
+
+        const permKey = navItems[navId].perm;
+        const isAllowed = isSuper || (p[permKey] === true);
+
+        if (isAllowed) {
+            itemEl.style.display = '';
+            if (!firstPermittedView) {
+                firstPermittedView = navItems[navId].view;
+            }
+        } else {
+            // Jin modules ka access nahi hai wo sidebar se mukammal gayab (hidden) ho jayenge
+            itemEl.style.display = 'none';
+        }
+    });
+
+    // Dev License Buttons control
+    const devBtn = document.getElementById('super-master-header-btn');
+    const sidebarDev = document.getElementById('nav-dev-license');
+    if (devBtn) devBtn.style.display = (user.role === 'supermaster') ? 'flex' : 'none';
+    if (sidebarDev) sidebarDev.style.display = (user.role === 'supermaster') ? 'block' : 'none';
+
+    // Agar user kisi disallowed view par khada hai to usko pehle allowed view par bhej dein
+    if (!isSuper && firstPermittedView) {
+        const activeView = document.querySelector('.view.active');
+        const activeId = activeView ? activeView.id.replace('-view', '') : '';
+
+        const viewPermMap = {
+            'dashboard': p.dashboard,
+            'pos': p.pos,
+            'add-purchase-product': p.purchaser,
+            'purchase-details': p.purchaser,
+            'branch-transfer': p.purchaser,
+            'product-barcodes': p.purchaser,
+            'profit-loss': p.reports,
+            'stock-report': p.reports,
+            'purchaser-report': p.reports,
+            'return-report': p.reports,
+            'expense-report': p.reports,
+            'cashbook-report': p.reports,
+            'sell': p.sales,
+            'all-reports': p.allReports,
+            'return': p.returns,
+            'expense': p.expenses,
+            'settings': p.settings,
+            'users': p.users
+        };
+
+        if (viewPermMap[activeId] === false || activeId === '') {
+            switchView(firstPermittedView);
+        }
     }
 };
 
