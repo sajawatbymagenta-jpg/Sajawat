@@ -1601,11 +1601,12 @@
                         </div>
                     </div>
 
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
                         <div class="search-box" style="max-width:380px;">
                             <i class='bx bx-search'></i>
                             <input type="text" id="purchase-details-search-input" placeholder="Search by Purchaser, Number, Serial # or Product..." oninput="renderPurchaseDetailsView()">
                         </div>
+                        <button type="button" class="save-btn" onclick="downloadPurchaserDetailsPDF()"><i class='bx bxs-file-pdf'></i> Export Purchaser Details PDF</button>
                     </div>
 
                     <div class="stock-table-wrapper">
@@ -2075,7 +2076,12 @@
                                 <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a;"><i class='bx bx-archive-in' style="color:var(--primary);"></i> Stock & Inventory Valuation Report</h2>
                                 <p style="color: #64748b; font-size: 0.88rem;">Area-wise inventory status: Kitna stock kis jagah mojood hai aur kitna sale ho chuka hai.</p>
                             </div>
-                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <!-- Item Search Box -->
+                                <div class="search-box" style="max-width: 260px; padding: 6px 12px;">
+                                    <i class='bx bx-search'></i>
+                                    <input type="text" id="stock-report-search-input" placeholder="Search item or barcode..." oninput="renderStockReport()">
+                                </div>
                                 <!-- Area / Branch Select Dropdown -->
                                 <div class="pos-branch-select-box" style="padding: 6px 14px; background: #ffffff; border: 1.5px solid var(--primary);">
                                     <label style="font-weight: 700; color: #0f172a; font-size: 0.88rem;"><i class='bx bx-map-pin' style="color:var(--primary);"></i> Select Area / Store:</label>
@@ -3209,7 +3215,8 @@ window.alert = function(message) {
     });
 };
        
-        const firebaseConfig = {
+   
+  const firebaseConfig = {
   apiKey: "AIzaSyC4BEqft3m0qI30ZkXKvcME-QQJjxlmHHM",
   authDomain: "sajawat-78155.firebaseapp.com",
   databaseURL: "https://sajawat-78155-default-rtdb.firebaseio.com",
@@ -10062,7 +10069,7 @@ window.downloadCleanProfitLossPDF = function() {
             selectEl.value = currentSelected;
         };
 
-      window.renderStockReport = function() {
+     window.renderStockReport = function() {
             window.populateStockReportBranchDropdown();
 
             const tbody = document.getElementById('report-tbody');
@@ -10070,6 +10077,7 @@ window.downloadCleanProfitLossPDF = function() {
             const remainEl = document.getElementById('report-remaining');
             const saleValEl = document.getElementById('report-sale-val');
             const selectedBranch = document.getElementById('stock-report-branch-filter')?.value || 'godown';
+            const searchTerm = (document.getElementById('stock-report-search-input')?.value || '').toLowerCase().trim();
 
             if (!tbody || !theadTr) return;
 
@@ -10101,14 +10109,14 @@ window.downloadCleanProfitLossPDF = function() {
             const products = window.menuItems || [];
             let displayRows = [];
 
-            // CASE 1: Sirf Main Godown ka bacha hua stock (3 - 2 = 1 yahan dikhega)
+            // CASE 1: Sirf Main Godown ka bacha hua stock
             if (selectedBranch === 'godown') {
                 displayRows = products.map(p => {
                     const godownQty = Number(p.stock || 0);
                     return {
                         id: p.id,
                         barcode: p.barcode || 'N/A',
-                        name: p.name,
+                        name: p.name || '',
                         costPrice: Number(p.costPrice || 0),
                         price: Number(p.price || 0),
                         stock: godownQty,
@@ -10128,7 +10136,7 @@ window.downloadCleanProfitLossPDF = function() {
                     return {
                         id: p.id,
                         barcode: p.barcode || 'N/A',
-                        name: p.name,
+                        name: p.name || '',
                         costPrice: Number(p.costPrice || 0),
                         price: Number(p.price || 0),
                         stock: totalQty,
@@ -10136,7 +10144,7 @@ window.downloadCleanProfitLossPDF = function() {
                     };
                 });
             } 
-            // CASE 3: Kisi Makhsoos Store / Shop ka stock (Jaise Malir Store ke 2 table)
+            // CASE 3: Makhsoos Store / Shop ka stock
             else {
                 const branchObj = (window.branchesList || []).find(b => b.id === selectedBranch);
                 const areaLabel = branchObj ? `${branchObj.name} (${branchObj.area})` : 'Store Shop';
@@ -10147,7 +10155,7 @@ window.downloadCleanProfitLossPDF = function() {
                     return {
                         id: p.id,
                         barcode: p.barcode || 'N/A',
-                        name: p.name,
+                        name: p.name || '',
                         costPrice: Number(p.costPrice || 0),
                         price: Number(p.price || 0),
                         stock: storeQty,
@@ -10156,11 +10164,21 @@ window.downloadCleanProfitLossPDF = function() {
                 });
             }
 
-            displayRows = displayRows.filter(item => Number(item.stock) > 0);
+            // Available Stock Filter + Search Filter (Product Name ya Barcode)
+            displayRows = displayRows.filter(item => {
+                const hasStock = Number(item.stock) > 0;
+                const matchesSearch = !searchTerm || 
+                    (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                    (item.barcode && String(item.barcode).toLowerCase().includes(searchTerm));
+                return hasStock && matchesSearch;
+            });
+
+            // ALPHABETICAL SORTING (A to Z sequence)
+            displayRows.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
 
             if (displayRows.length === 0) {
                 const visibleColCount = Object.values(cols).filter(v => v).length;
-                tbody.innerHTML = `<tr><td colspan="${visibleColCount}" class="empty-placeholder">Is jagah / godown mein koi stock mojood nahi hai.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${visibleColCount}" class="empty-placeholder">Koi item nahi mila.</td></tr>`;
             } else {
                 displayRows.forEach(item => {
                     totalRemainingUnits += item.stock;
@@ -12772,7 +12790,95 @@ window.captureProductSnapshot = async function() {
     }
 };
 
+// PURCHASER DETAILS SCREEN KE LIYE DEDICATED PDF EXPORT
+        window.downloadPurchaserDetailsPDF = function() {
+            const searchTerm = (document.getElementById('purchase-details-search-input')?.value || '').toLowerCase().trim();
 
+            const filtered = (window.purchasesList || []).filter(p => {
+                const sNo = p.serialNo || p.poNumber || '';
+                const itemsStr = (p.items || []).map(i => i.name).join(' ') + ' ' + (p.productName || '');
+                return sNo.toLowerCase().includes(searchTerm) ||
+                       (p.vendorName && p.vendorName.toLowerCase().includes(searchTerm)) ||
+                       (p.vendorPhone && p.vendorPhone.toLowerCase().includes(searchTerm)) ||
+                       itemsStr.toLowerCase().includes(searchTerm);
+            });
+
+            if (filtered.length === 0) {
+                alert("PDF banane ke liye koi record mojood nahi hai!");
+                return;
+            }
+
+            let totalBillSum = 0;
+            let totalPaidSum = 0;
+            let totalDueSum = 0;
+
+            const rows = filtered.map((item, idx) => {
+                const bill = Number(item.totalBill || 0);
+                const paid = Number(item.paidAmount !== undefined ? item.paidAmount : bill);
+                const due = Number(item.remainingDue !== undefined ? item.remainingDue : Math.max(0, bill - paid));
+
+                totalBillSum += bill;
+                totalPaidSum += paid;
+                totalDueSum += due;
+
+                let productsStr = '';
+                if (item.items && Array.isArray(item.items)) {
+                    productsStr = item.items.map(it => `${it.name} (x${it.qty})`).join(', ');
+                } else {
+                    productsStr = `${item.productName || 'Product'} (x${item.qty || 1})`;
+                }
+
+                let statusLabel = due <= 0 ? 'PAID' : (paid > 0 ? 'PARTIAL' : 'UNPAID');
+
+                return [
+                    String(idx + 1),
+                    item.serialNo || item.poNumber || '-',
+                    (item.date || '').substring(0, 16),
+                    `${item.vendorName || '-'} (${item.vendorPhone || '-'})`,
+                    productsStr,
+                    `Rs. ${bill.toLocaleString()}`,
+                    `Rs. ${paid.toLocaleString()}`,
+                    `Rs. ${due.toLocaleString()}`,
+                    statusLabel
+                ];
+            });
+
+            window.generateProfessionalPDF({
+                reportTitle: 'PURCHASER DETAILS & OUTSTANDING DUES STATEMENT',
+                periodText: searchTerm ? `Search Filter: "${searchTerm}"` : 'All Recorded Purchases',
+                fileName: 'Purchaser_Details_Statement',
+                orientation: 'landscape',
+                kpis: [
+                    { label: 'Total Purchases', value: `Rs. ${totalBillSum.toLocaleString()}`, color: '#0066ff' },
+                    { label: 'Total Paid', value: `Rs. ${totalPaidSum.toLocaleString()}`, color: '#10b981' },
+                    { label: 'Remaining Due', value: `Rs. ${totalDueSum.toLocaleString()}`, color: '#ef4444' },
+                    { label: 'Total Records', value: String(filtered.length), color: '#8b5cf6' }
+                ],
+                headers: [
+                    { title: 'Sr #', align: 'center' },
+                    { title: 'Serial #', align: 'left' },
+                    { title: 'Date & Time', align: 'left' },
+                    { title: 'Purchaser & Mobile', align: 'left' },
+                    { title: 'Product Details', align: 'left' },
+                    { title: 'Total Bill', align: 'right' },
+                    { title: 'Paid (Rs.)', align: 'right' },
+                    { title: 'Due (Rs.)', align: 'right' },
+                    { title: 'Status', align: 'center' }
+                ],
+                rows: rows,
+                totals: [
+                    'TOTAL SUMMARY',
+                    '-',
+                    '-',
+                    '-',
+                    '-',
+                    `Rs. ${totalBillSum.toLocaleString()}`,
+                    `Rs. ${totalPaidSum.toLocaleString()}`,
+                    `Rs. ${totalDueSum.toLocaleString()}`,
+                    '-'
+                ]
+            });
+        };
    </script>
 
 <!-- MODAL: ADVANCED BARCODE PRINT VIEW & INTERACTIVE SETTINGS -->
