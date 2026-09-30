@@ -3921,29 +3921,31 @@ const auth = firebase.auth();
             try {
                 saveBtn.disabled = true;
 
-                // =========================================================================
-                // CASE A: AGAR PURANI PURCHASE EDIT HO RAHI HAI
+               // =========================================================================
+                // CASE A: AGAR PURANI PURCHASE EDIT HO RAHI HAI (ULTRA FAST BATCH)
                 // =========================================================================
                 if (window.editingPurchaseDocId) {
                     saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Purchase & Stock Update Ho Raha Hai...";
 
-                    // 1. Purane products ka stock Godown se pehle minus (revert) karein
+                    const batch = db.batch();
+
+                    // 1. Purane products ka stock revert karein
                     for (let oldItem of window.editingOriginalPurchaseItems) {
                         const matchedOld = window.menuItems.find(p => 
+                            (oldItem.productId && p.id === oldItem.productId) ||
                             (oldItem.barcode && p.barcode && String(p.barcode).trim().toLowerCase() === String(oldItem.barcode).trim().toLowerCase()) || 
                             (p.name && p.name.trim().toLowerCase() === oldItem.name.trim().toLowerCase())
                         );
                         if (matchedOld) {
-                            await productsDB.doc(matchedOld.id).update({
+                            batch.update(productsDB.doc(matchedOld.id), {
                                 stock: firebase.firestore.FieldValue.increment(-Number(oldItem.qty || 0))
                             });
                             matchedOld.stock = Math.max(0, Number(matchedOld.stock || 0) - Number(oldItem.qty || 0));
                         }
                     }
 
-                  // 2. Naye edited products ka stock, NAAM aur details Godown me apply karein
+                    // 2. Naye products ka stock apply karein
                     for (let prod of window.diagramPurchaseItems) {
-                        // Pehle Product ID se dhoondein, phir purane barcode ya purane naam se
                         const matchedProduct = window.menuItems.find(p => 
                             (prod.productId && p.id === prod.productId) ||
                             (prod.origBarcode && p.barcode && String(p.barcode).trim() === String(prod.origBarcode).trim()) ||
@@ -3952,11 +3954,11 @@ const auth = firebase.auth();
                             (p.name && p.name.trim().toLowerCase() === String(prod.name).trim().toLowerCase())
                         );
 
-                        if (matchedProduct) {
-                            const newCost = Number(prod.cost !== undefined ? prod.cost : prod.costPrice) || 0;
-                            const newSale = Number(prod.sale !== undefined ? prod.sale : prod.price) || 0;
+                        const newCost = Number(prod.cost !== undefined ? prod.cost : prod.costPrice) || 0;
+                        const newSale = Number(prod.sale !== undefined ? prod.sale : prod.price) || 0;
 
-                            await productsDB.doc(matchedProduct.id).update({
+                        if (matchedProduct) {
+                            batch.update(productsDB.doc(matchedProduct.id), {
                                 name: prod.name,
                                 stock: firebase.firestore.FieldValue.increment(Number(prod.qty || 0)),
                                 costPrice: newCost,
@@ -3965,44 +3967,31 @@ const auth = firebase.auth();
                                 img: prod.img || matchedProduct.img || ''
                             });
 
-                            // Local memory mein bhi foran naam aur keemat tabdeel karein
                             matchedProduct.name = prod.name;
                             matchedProduct.stock = Number(matchedProduct.stock || 0) + Number(prod.qty || 0);
                             matchedProduct.costPrice = newCost;
                             matchedProduct.price = newSale;
-                            matchedProduct.barcode = prod.barcode || matchedProduct.barcode;
-                            matchedProduct.img = prod.img || matchedProduct.img;
                             prod.productId = matchedProduct.id;
                         } else {
-                            const newDocRef = await productsDB.add({
+                            const newDocRef = productsDB.doc();
+                            batch.set(newDocRef, {
                                 name: prod.name,
                                 barcode: prod.barcode,
                                 category: 'General',
-                                costPrice: prod.cost,
-                                price: prod.sale,
-                                stock: prod.qty,
+                                costPrice: newCost,
+                                price: newSale,
+                                stock: Number(prod.qty || 0),
                                 sold: 0,
-                                img: prod.img,
+                                img: prod.img || '',
                                 location: 'Main Warehouse / Godown',
                                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            window.menuItems.push({
-                                id: newDocRef.id,
-                                name: prod.name,
-                                barcode: prod.barcode,
-                                category: 'General',
-                                costPrice: prod.cost,
-                                price: prod.sale,
-                                stock: prod.qty,
-                                sold: 0,
-                                img: prod.img,
-                                location: 'Main Warehouse / Godown'
-                            });
+                            prod.productId = newDocRef.id;
                         }
                     }
 
-                    // 3. Purchase Document Firestore me update karein
-                    await purchasesDB.doc(window.editingPurchaseDocId).update({
+                    // 3. Purchase document update
+                    batch.update(purchasesDB.doc(window.editingPurchaseDocId), {
                         vendorName: purchaserName,
                         vendorPhone: purchaserPhone,
                         paymentMode: `${paymentMode} (Updated)`,
@@ -4014,6 +4003,9 @@ const auth = firebase.auth();
                         items: window.diagramPurchaseItems,
                         lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+
+                    // Tamam updates 1 hi dafa cloud par save hongi
+                    await batch.commit();
 
                     Toast.fire({
                         icon: 'success',
@@ -4458,7 +4450,10 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
                 return;
             }
 
-            itemsWithStock.forEach((item, idx) => {
+            // Performance Fix: Sirf pehle 50 items dikhao taake page fast chalay, baki search se ayenge
+            const limitedList = searchTerm ? itemsWithStock : itemsWithStock.slice(0, 50);
+
+            limitedList.forEach((item, idx) => {
                 tbody.innerHTML += `
                     <tr>
                         <td style="text-align:center;">
@@ -5511,35 +5506,27 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
       // =========================================================
         // UNIVERSAL AUTO-REFRESH ENGINE (TAMAM MODULES LIVE UPDATE)
         // =========================================================
+       // SMART AUTO-REFRESH: Sirf samnay khuli hui active screen ko render karega
+        let refreshTimeout = null;
         window.triggerGlobalAutoRefresh = function() {
-            // 1. Move Store Products & Available Quantities
-            if (typeof window.renderAllTransferProductsTable === 'function') {
-                window.renderAllTransferProductsTable();
-            }
-            // 2. Transfer Challan & Dispatch Reports
-            if (typeof window.renderTransferHistoryReports === 'function') {
-                window.renderTransferHistoryReports();
-            }
-            // 3. POS Products & Shop Stock
-            if (typeof window.filterMenu === 'function') {
-                window.filterMenu();
-            }
-            // 4. Stock & Inventory Report (Godown + Stores)
-            if (typeof window.renderStockReport === 'function') {
-                window.renderStockReport();
-            }
-            // 5. Dashboard Summary Cards & Charts
-            if (typeof window.updateDashboardMetrics === 'function') {
-                window.updateDashboardMetrics();
-            }
-            // 6. Product Barcodes List
-            if (typeof window.renderAllProductBarcodesView === 'function') {
-                window.renderAllProductBarcodesView();
-            }
-            // 7. Store Stock Lookup Modal
-            if (typeof window.renderBranchOverviewModalTable === 'function') {
-                window.renderBranchOverviewModalTable();
-            }
+            clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(() => {
+                const activeView = document.querySelector('.view.active');
+                const activeId = activeView ? activeView.id : '';
+
+                if (activeId === 'branch-transfer-view') {
+                    if (typeof window.renderAllTransferProductsTable === 'function') window.renderAllTransferProductsTable();
+                    if (typeof window.renderTransferHistoryReports === 'function') window.renderTransferHistoryReports();
+                } else if (activeId === 'pos-view') {
+                    if (typeof window.filterMenu === 'function') window.filterMenu();
+                } else if (activeId === 'stock-report-view') {
+                    if (typeof window.renderStockReport === 'function') window.renderStockReport();
+                } else if (activeId === 'dashboard-view') {
+                    if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
+                } else if (activeId === 'product-barcodes-view') {
+                    if (typeof window.renderAllProductBarcodesView === 'function') window.renderAllProductBarcodesView();
+                }
+            }, 100); // 100ms debounce taake lagatar 10 bar render na ho
         };
 
         // =========================================================
