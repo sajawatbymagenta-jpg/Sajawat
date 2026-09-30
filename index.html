@@ -3103,6 +3103,8 @@
     </div>
 
     <script>
+
+
        
        
 
@@ -4046,11 +4048,19 @@ const nextPurSeq = (window.purchasesList ? window.purchasesList.length : 0) + 1;
 
                     await purchasesDB.add(purchaseRecord);
 
+
+
                     for (let prod of window.diagramPurchaseItems) {
                         const existingProduct = window.menuItems.find(p => 
                             (p.barcode && String(p.barcode).trim().toLowerCase() === String(prod.barcode).trim().toLowerCase()) || 
                             (p.name && p.name.trim().toLowerCase() === prod.name.trim().toLowerCase())
                         );
+
+
+// Purchase save hote hi silent auto-backup banega
+if (typeof window.saveAllDataToLocalDrive === 'function') {
+    window.saveAllDataToLocalDrive(true);
+}
 
                         if (existingProduct) {
                             await productsDB.doc(existingProduct.id).update({
@@ -7562,6 +7572,12 @@ window.applyUserPermissions = function(user) {
                 try {
                     // Yahan se AWAIT hata diya gaya hai taake offline mein code freeze na ho
                     salesDB.add(saleRecord).catch(err => console.warn("Background sale queue:", err));
+
+
+                    // Sale complete hote hi local drive mein silent auto-backup banega
+if (typeof window.saveAllDataToLocalDrive === 'function') {
+    window.saveAllDataToLocalDrive(true);
+}
 
                     // Stock update (Background queue mein save hoga aur local memory foran update hogi)
                     for (let item of cart) {
@@ -11520,139 +11536,233 @@ window.downloadAllReportsPDF = function() {
 };
 
 
+// =========================================================================
+// ENTERPRISE FULL DEEP DATA BACKUP & DISASTER RECOVERY ENGINE
+// =========================================================================
+
 let chosenDirectoryHandle = null;
 
-// 1. Computer ki Drive se Folder Select Karna
+// 1. Computer ki Drive (D:\, E:\, Documents) ka folder select karna
 window.chooseLocalBackupDirectory = async function() {
     if ('showDirectoryPicker' in window) {
         try {
             chosenDirectoryHandle = await window.showDirectoryPicker();
             const folderName = chosenDirectoryHandle.name;
-            document.getElementById('local-drive-folder-path').value = `Folder: [ ${folderName} ] (Authorized)`;
+            const folderInput = document.getElementById('local-drive-folder-path');
+            if (folderInput) {
+                folderInput.value = `Folder: [ ${folderName} ] (Auto-Sync Active)`;
+            }
             localStorage.setItem('pos_local_folder_name', folderName);
             
             Toast.fire({
                 icon: 'success',
-                title: `Drive Folder [${folderName}] kamyabi say select hogaya!`
+                title: `Drive Folder [${folderName}] link hogaya! Auto-backup active hai.`
             });
+
+            // Folder link hote hi foran aik fresh backup save kar dein
+            window.saveAllDataToLocalDrive(true);
         } catch (err) {
             if (err.name !== 'AbortError') {
                 alert("Folder select karne mein masla aaya: " + err.message);
             }
         }
     } else {
-        // Agar browser purana ho
-        document.getElementById('local-drive-folder-path').value = "Default Browser Downloads / Local Drive";
-        alert("Aapka browser Direct Drive Folder Picker allow nahi kar raha. Data 'Downloads' folder ya direct save dialogue se save hoga.");
+        const folderInput = document.getElementById('local-drive-folder-path');
+        if (folderInput) folderInput.value = "Default Browser Downloads / Local Drive";
+        alert("Aapka browser Direct Folder Access allow nahi karta. Data direct Download ho kar save hoga.");
     }
 };
 
-// 2. Mukammal Data (All Models) ko Local Drive Folder Mein Save Karna
-window.saveAllDataToLocalDrive = async function() {
+// 2. Firebase Timestamps aur Date objects ko clean JSON-safe banane ka helper
+function cleanDocForBackup(docData) {
+    if (!docData || typeof docData !== 'object') return docData;
+    const clean = Array.isArray(docData) ? [] : {};
+
+    for (let key in docData) {
+        let val = docData[key];
+        if (val && typeof val === 'object' && typeof val.toDate === 'function') {
+            clean[key] = val.toDate().toISOString();
+        } else if (val && typeof val === 'object' && val.seconds !== undefined) {
+            clean[key] = new Date(val.seconds * 1000).toISOString();
+        } else if (typeof val === 'object' && val !== null) {
+            clean[key] = cleanDocForBackup(val);
+        } else {
+            clean[key] = val;
+        }
+    }
+    return clean;
+}
+
+// 3. Mukammal Deep Backup Banana (Har Module ki tafseelat ke sath)
+window.saveAllDataToLocalDrive = async function(isSilentAutoBackup = false) {
     const now = new Date();
     const timestampStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
     const fileName = `KORVEXA_POS_FULL_BACKUP_${timestampStr}.json`;
 
-    // Mukammal System ka sara data akatha karna
-    const masterBackupData = {
-        app: "KORVEXA POS & INVENTORY",
-        backupGeneratedAt: now.toISOString(),
-        formattedDate: now.toLocaleString(),
-        businessSettings: {
-            name: localStorage.getItem('pos_biz_name') || 'KORVEXA SOFTWARE',
-            phone: localStorage.getItem('pos_biz_phone') || '(0300) 1234567',
-            footerNote: localStorage.getItem('pos_biz_note') || '',
-            globalDiscount: localStorage.getItem('pos_global_discount') || '0',
-            activeTheme: localStorage.getItem('pos_active_theme') || 'theme-korvexa'
-        },
-        summaryCounts: {
-            totalProducts: (window.menuItems || []).length,
-            totalSales: (window.salesHistory || []).length,
-            totalPurchases: (window.purchasesList || []).length,
-            totalExpenses: (window.expensesList || []).length,
-            totalReturns: (window.returnsList || []).length,
-            totalExchanges: (window.exchangeList || []).length,
-            totalBranches: (window.branchesList || []).length,
-            totalTransfers: (window.transfersList || []).length,
-            totalCashEntries: (window.cashEntriesList || []).length
-        },
-        // Sara Data (Complete Arrays)
-        products: window.menuItems || [],
-        categories: window.categories || [],
-        sales: window.salesHistory || [],
-        purchases: window.purchasesList || [],
-        expenses: window.expensesList || [],
-        returns: window.returnsList || [],
-        exchanges: window.exchangeList || [],
-        branches: window.branchesList || [],
-        branchStock: window.branchStockList || [],
-        transfers: window.transfersList || [],
-        cashEntries: window.cashEntriesList || [],
-        systemUsers: (window.systemUsersList || []).map(u => ({
-            id: u.id,
-            username: u.username,
-            email: u.email,
-            status: u.status,
-            role: u.role,
-            permissions: u.permissions,
-            assignedBranch: u.assignedBranch
-        }))
-    };
+    if (!isSilentAutoBackup && window.Toast) {
+        Toast.fire({
+            icon: 'info',
+            title: 'Cloud se mukammal deep data backup collect ho raha hai...'
+        });
+    }
 
-    const jsonString = JSON.stringify(masterBackupData, null, 2);
+    try {
+        // Live Cloud Firestore se direct query karein, fallback memory arrays par rahega
+        const fetchCollectionData = async (colRef, memoryArray) => {
+            try {
+                if (navigator.onLine) {
+                    const snap = await colRef.get();
+                    if (!snap.empty) {
+                        return snap.docs.map(doc => ({ id: doc.id, ...cleanDocForBackup(doc.data()) }));
+                    }
+                }
+            } catch(e) {
+                console.warn("Direct DB fetch fallback to local memory:", e);
+            }
+            return (memoryArray || []).map(item => cleanDocForBackup(item));
+        };
 
-    // Agar Folder select kiya hua hai to direct us folder ke andar file likhein
-    if (chosenDirectoryHandle) {
-        try {
-            // Check permission
-            const options = { mode: 'readwrite' };
-            if ((await chosenDirectoryHandle.queryPermission(options)) !== 'granted') {
-                if ((await chosenDirectoryHandle.requestPermission(options)) !== 'granted') {
-                    alert("Folder mein likhne ki ijazat (permission) nahi mili!");
+        const [
+            allProducts,
+            allCategories,
+            allPurchases,
+            allSales,
+            allReturns,
+            allExpenses,
+            allBranches,
+            allBranchStock,
+            allTransfers,
+            allCashEntries,
+            allUsers,
+            licenseDocSnap
+        ] = await Promise.all([
+            fetchCollectionData(productsDB, window.menuItems),
+            fetchCollectionData(categoriesDB, window.categories),
+            fetchCollectionData(purchasesDB, window.purchasesList),
+            fetchCollectionData(salesDB, window.salesHistory),
+            fetchCollectionData(returnsDB, window.returnsList),
+            fetchCollectionData(expensesDB, window.expensesList),
+            fetchCollectionData(branchesDB, window.branchesList),
+            fetchCollectionData(branchStockDB, window.branchStockList),
+            fetchCollectionData(transfersDB, window.transfersList),
+            fetchCollectionData(cashEntriesDB, window.cashEntriesList),
+            fetchCollectionData(usersDB, window.systemUsersList),
+            licenseDB.doc('main_license').get().catch(() => null)
+        ]);
+
+        const licenseData = (licenseDocSnap && licenseDocSnap.exists) 
+            ? cleanDocForBackup(licenseDocSnap.data()) 
+            : (window.currentLicenseData || {});
+
+        // 100% COMPLETE SOURCE BACKUP OBJECT
+        const masterBackupData = {
+            system: "KORVEXA POS & INVENTORY ENTERPRISE",
+            backupType: "FULL_DISASTER_RECOVERY_DEEP_BACKUP",
+            backupGeneratedAt: now.toISOString(),
+            formattedDate: now.toLocaleString(),
+            
+            // System Settings & UI Preferences
+            businessSettings: {
+                name: localStorage.getItem('pos_biz_name') || 'SAJAWAT BY MAGENTA',
+                phone: localStorage.getItem('pos_biz_phone') || '(0300) 1234567',
+                footerNote: localStorage.getItem('pos_biz_note') || '',
+                globalDiscount: localStorage.getItem('pos_global_discount') || '0',
+                nextInvoiceNo: localStorage.getItem('pos_next_invoice_no') || '1',
+                activeTheme: localStorage.getItem('pos_active_theme') || 'theme-korvexa',
+                barcodeConfig: localStorage.getItem('pos_barcode_custom_config') || null
+            },
+
+            // Cloud License Details
+            licenseControl: licenseData,
+
+            // Summary Counts
+            summaryStats: {
+                totalProducts: allProducts.length,
+                totalSalesInvoices: allSales.length,
+                totalPurchases: allPurchases.length,
+                totalExpenses: allExpenses.length,
+                totalReturns: allReturns.length,
+                totalStores: allBranches.length,
+                totalStockMoveChallans: allTransfers.length,
+                totalCashBookEntries: allCashEntries.length,
+                totalUsers: allUsers.length
+            },
+
+            // CORE MODULES RAW DATA (WITH ORIGINAL FIRESTORE IDs)
+            data: {
+                products: allProducts,
+                categories: allCategories,
+                purchases: allPurchases,
+                sales: allSales,
+                returns: allReturns,
+                expenses: allExpenses,
+                branches: allBranches,
+                branchStock: allBranchStock,
+                transfers: allTransfers,
+                cashEntries: allCashEntries,
+                systemUsers: allUsers
+            }
+        };
+
+        const jsonString = JSON.stringify(masterBackupData, null, 2);
+
+        // A. Agar Drive Folder select kiya hua hai to direct background file write karein
+        if (chosenDirectoryHandle) {
+            try {
+                const options = { mode: 'readwrite' };
+                if ((await chosenDirectoryHandle.queryPermission(options)) === 'granted' || 
+                    (await chosenDirectoryHandle.requestPermission(options)) === 'granted') {
+                    
+                    // 1. Timestamped History Backup
+                    const fileHandle = await chosenDirectoryHandle.getFileHandle(fileName, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(jsonString);
+                    await writable.close();
+
+                    // 2. Continuous Master File (Hamesha taza backup aik fix naam se)
+                    const latestHandle = await chosenDirectoryHandle.getFileHandle("KORVEXA_LATEST_DATA.json", { create: true });
+                    const latestWritable = await latestHandle.createWritable();
+                    await latestWritable.write(jsonString);
+                    await latestWritable.close();
+
+                    if (!isSilentAutoBackup) {
+                        Toast.fire({
+                            icon: 'success',
+                            title: `Full Backup drive folder mein mehfooz hogaya!\nFile: ${fileName}`
+                        });
+                    }
                     return;
                 }
+            } catch (folderErr) {
+                console.warn("Direct file system write failed, falling back to download:", folderErr);
             }
+        }
 
-            // Folder ke andar nayi file banana
-            const fileHandle = await chosenDirectoryHandle.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(jsonString);
-            await writable.close();
-
-            // Ek Latest file bhi banayein taake hamesha taza data aik naam se bhi rahe
-            const latestHandle = await chosenDirectoryHandle.getFileHandle("KORVEXA_LATEST_DATA.json", { create: true });
-            const latestWritable = await latestHandle.createWritable();
-            await latestWritable.write(jsonString);
-            await latestWritable.close();
+        // B. Manual Download Fallback (Agar folder link na ho ya silent na ho)
+        if (!isSilentAutoBackup) {
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
 
             Toast.fire({
                 icon: 'success',
-                title: `Mukammal data aapke chune hue folder mein mehfooz hogaya!\nFile: ${fileName}`
+                title: 'Mukammal Full Backup File Download hogayi hai!'
             });
-            return;
-        } catch (e) {
-            console.warn("Direct file write fail, falling back to download:", e);
         }
+
+    } catch (err) {
+        console.error("Backup generation error:", err);
+        alert("Backup create karne mein masla aaya: " + err.message);
     }
-
-    // Fallback: Agar folder handle na ho ya download dialogue chahiye ho
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    Toast.fire({
-        icon: 'success',
-        title: `Sara data download hogaya! File ko apni pasandeeda drive mein save karlein.`
-    });
 };
 
-// 3. Local Drive ki File se Sara Data Wapas Restore Karna
+// 4. Disaster Recovery: Cloud se data urrne par 1-Click Complete Restore Engine
 window.restoreDataFromLocalFile = function(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -11660,79 +11770,129 @@ window.restoreDataFromLocalFile = function(input) {
 
     reader.onload = async function(e) {
         try {
-            const data = JSON.parse(e.target.result);
-            if (!data.products && !data.sales) {
-                alert("Ghalat file format! Yeh Korvexa POS ki backup file nahi hai.");
+            const backupJson = JSON.parse(e.target.result);
+
+            // Structure check (Purani format ya Nayi deep format dono support karega)
+            const backupData = backupJson.data || backupJson;
+
+            if (!backupData.products && !backupData.sales && !backupJson.products) {
+                alert("Ghalat file format! Yeh Korvexa POS ki authentic backup file nahi hai.");
                 return;
             }
 
-            const confirmMsg = `Kya aap waqai sara data restore karna chahte hain?\n\n` +
-                               `- Products: ${data.products?.length || 0}\n` +
-                               `- Sales: ${data.sales?.length || 0}\n` +
-                               `- Purchases: ${data.purchases?.length || 0}\n` +
-                               `- Expenses: ${data.expenses?.length || 0}\n\n` +
-                               `Yeh sara data Firebase Database par update hojayega!`;
+            const pCount = backupData.products?.length || backupJson.products?.length || 0;
+            const sCount = backupData.sales?.length || backupJson.sales?.length || 0;
+            const purCount = backupData.purchases?.length || backupJson.purchases?.length || 0;
+            const expCount = backupData.expenses?.length || backupJson.expenses?.length || 0;
+            const retCount = backupData.returns?.length || backupJson.returns?.length || 0;
+            const bCount = backupData.branches?.length || backupJson.branches?.length || 0;
+
+            const confirmMsg = 
+                `⚠️ DISASTER RECOVERY RESTORE CONFIRMATION ⚠️\n\n` +
+                `Kya aap waqai is file se mukammal data Cloud Database par wapas chadhana chahte hain?\n\n` +
+                `📦 Products: ${pCount}\n` +
+                `🛒 Sales Bills: ${sCount}\n` +
+                `📝 Purchases: ${purCount}\n` +
+                `💵 Expenses: ${expCount}\n` +
+                `↩️ Returns: ${retCount}\n` +
+                `🏢 Stores/Branches: ${bCount}\n\n` +
+                `Yeh amal tamam purani khali collections ko restore kar ke original state mein le aayega!`;
 
             if (!confirm(confirmMsg)) return;
 
-            Toast.fire({
-                icon: 'info',
-                title: 'Data restore ho raha hai, baraye meherbani intezar karein...'
+            // Loading alert
+            Swal.fire({
+                title: 'Data Cloud Par Restore Ho Raha Hai...',
+                html: 'Baraye meherbani browser tab band na karein. Tamam modules ka data sync kiya ja raha hai.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
             });
 
-            // 1. Products restore
-            if (data.products && Array.isArray(data.products)) {
-                for (let p of data.products) {
-                    const { id, ...pData } = p;
-                    if (id) await productsDB.doc(id).set(pData, { merge: true });
+            // Helper: 450 items ke chunks mein Firestore Batches commit karna (Firestore limit 500 hai)
+            const batchCommitCollection = async (collectionRef, itemsList) => {
+                if (!itemsList || !Array.isArray(itemsList) || itemsList.length === 0) return;
+
+                const chunkSize = 400;
+                for (let i = 0; i < itemsList.length; i += chunkSize) {
+                    const chunk = itemsList.slice(i, i + chunkSize);
+                    const batch = db.batch();
+
+                    chunk.forEach(item => {
+                        const docId = item.id || collectionRef.doc().id;
+                        const dataToSave = { ...item };
+                        delete dataToSave.id;
+
+                        // String dates ko timestamp compatible format dena
+                        if (dataToSave.timestamp && typeof dataToSave.timestamp === 'string') {
+                            dataToSave.timestamp = new Date(dataToSave.timestamp);
+                        }
+                        batch.set(collectionRef.doc(docId), dataToSave, { merge: true });
+                    });
+
+                    await batch.commit();
                 }
+            };
+
+            // 1. Products & Categories Restore
+            await batchCommitCollection(productsDB, backupData.products || backupJson.products);
+            await batchCommitCollection(categoriesDB, backupData.categories || backupJson.categories);
+
+            // 2. Purchaser Details & Vendors Restore
+            await batchCommitCollection(purchasesDB, backupData.purchases || backupJson.purchases);
+
+            // 3. Sales & Customer Ledger Restore
+            await batchCommitCollection(salesDB, backupData.sales || backupJson.sales);
+
+            // 4. Returns & Expenses Restore
+            await batchCommitCollection(returnsDB, backupData.returns || backupJson.returns);
+            await batchCommitCollection(expensesDB, backupData.expenses || backupJson.expenses);
+
+            // 5. Branches, Stock & Transfers Restore
+            await batchCommitCollection(branchesDB, backupData.branches || backupJson.branches);
+            await batchCommitCollection(branchStockDB, backupData.branchStock || backupJson.branchStock);
+            await batchCommitCollection(transfersDB, backupData.transfers || backupJson.transfers);
+
+            // 6. Cash Book & Drawer Entries Restore
+            await batchCommitCollection(cashEntriesDB, backupData.cashEntries || backupJson.cashEntries);
+
+            // 7. Users & Permissions Restore
+            await batchCommitCollection(usersDB, backupData.systemUsers || backupJson.systemUsers);
+
+            // 8. License & Settings Restore
+            const bSettings = backupJson.businessSettings;
+            if (bSettings) {
+                if (bSettings.name) localStorage.setItem('pos_biz_name', bSettings.name);
+                if (bSettings.phone) localStorage.setItem('pos_biz_phone', bSettings.phone);
+                if (bSettings.footerNote) localStorage.setItem('pos_biz_note', bSettings.footerNote);
+                if (bSettings.globalDiscount) localStorage.setItem('pos_global_discount', bSettings.globalDiscount);
+                if (bSettings.nextInvoiceNo) localStorage.setItem('pos_next_invoice_no', bSettings.nextInvoiceNo);
+                if (bSettings.activeTheme) localStorage.setItem('pos_active_theme', bSettings.activeTheme);
+                if (bSettings.barcodeConfig) localStorage.setItem('pos_barcode_custom_config', bSettings.barcodeConfig);
             }
 
-            // 2. Sales restore
-            if (data.sales && Array.isArray(data.sales)) {
-                for (let s of data.sales) {
-                    const { id, ...sData } = s;
-                    if (id) await salesDB.doc(id).set(sData, { merge: true });
-                }
+            if (backupJson.licenseControl && Object.keys(backupJson.licenseControl).length > 0) {
+                await licenseDB.doc('main_license').set(backupJson.licenseControl, { merge: true });
             }
 
-            // 3. Purchases restore
-            if (data.purchases && Array.isArray(data.purchases)) {
-                for (let pc of data.purchases) {
-                    const { id, ...pcData } = pc;
-                    if (id) await purchasesDB.doc(id).set(pcData, { merge: true });
-                }
-            }
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Kamyabi Say Restore Hogaya!',
+                text: 'Aapka mukammal data Cloud par wapas upload hogaya hai. System refresh ho raha hai...',
+                timer: 2000,
+                showConfirmButton: false
+            });
 
-            // 4. Expenses restore
-            if (data.expenses && Array.isArray(data.expenses)) {
-                for (let exp of data.expenses) {
-                    const { id, ...expData } = exp;
-                    if (id) await expensesDB.doc(id).set(expData, { merge: true });
-                }
-            }
-
-            // 5. Returns restore
-            if (data.returns && Array.isArray(data.returns)) {
-                for (let ret of data.returns) {
-                    const { id, ...retData } = ret;
-                    if (id) await returnsDB.doc(id).set(retData, { merge: true });
-                }
-            }
-
-            // 6. Settings restore
-            if (data.businessSettings) {
-                if (data.businessSettings.name) localStorage.setItem('pos_biz_name', data.businessSettings.name);
-                if (data.businessSettings.phone) localStorage.setItem('pos_biz_phone', data.businessSettings.phone);
-                if (data.businessSettings.footerNote) localStorage.setItem('pos_biz_note', data.businessSettings.footerNote);
-                if (data.businessSettings.globalDiscount) localStorage.setItem('pos_global_discount', data.businessSettings.globalDiscount);
-            }
-
-            alert("Kamyabi! Mukammal data local drive file se successfully restore aur sync hogaya hai.");
-            location.reload();
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
 
         } catch (err) {
-            alert("File parhne mein masla aaya: " + err.message);
+            console.error("Restore error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Restore Error',
+                text: 'Data restore karne mein masla aaya: ' + err.message
+            });
         } finally {
             input.value = '';
         }
@@ -11740,13 +11900,6 @@ window.restoreDataFromLocalFile = function(input) {
 
     reader.readAsText(file);
 };
-
-// Pehle se saved folder name dikhana (agar mojud ho)
-const savedFolder = localStorage.getItem('pos_local_folder_name');
-const folderPathEl = document.getElementById('local-drive-folder-path');
-if (savedFolder && folderPathEl) {
-    folderPathEl.value = `Folder: [ ${savedFolder} ] (Ready)`;
-}
 
 // ========================================================
 // REAL-TIME WI-FI & INTERNET CONNECTION DETECTOR (WITH CLOUD SYNC ALERT)
