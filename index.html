@@ -3925,13 +3925,49 @@ const auth = firebase.auth();
 
                // =========================================================================
                 // CASE A: AGAR PURANI PURCHASE EDIT HO RAHI HAI (GODOWN + SHOP AUTO-SYNC)
-                // =========================================================================
+               // ==================== NAYA CODE (ISKO PASTE KAREIN) ====================
                 if (window.editingPurchaseDocId) {
-                    saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Purchase & Stock Update Ho Raha Hai...";
+                    saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Purchase & Stock Sync Ho Raha Hai...";
 
                     const batch = db.batch();
 
-                    // Har item ka stock difference nikal kar Godown aur Shop dono ko adjust karein
+                    // 1. DHOONDEIN: Konsay items purani purchase mein thay lekin ab delete kardiye gaye hain (Jaise Acrylic Painting)
+                    const completelyRemovedItems = (window.editingOriginalPurchaseItems || []).filter(oldIt => {
+                        return !window.diagramPurchaseItems.some(newIt => 
+                            (oldIt.productId && newIt.productId === oldIt.productId) ||
+                            (oldIt.barcode && newIt.barcode && String(oldIt.barcode).trim() === String(newIt.barcode).trim()) ||
+                            (oldIt.name && newIt.name && oldIt.name.trim().toLowerCase() === newIt.name.trim().toLowerCase())
+                        );
+                    });
+
+                    // 2. DELETE HUE ITEMS KO GODOWN, SHOPS AUR POS SE MUKAMMAL KHATAM KAREIN
+                    for (let removedItem of completelyRemovedItems) {
+                        const matchedProduct = window.menuItems.find(p => 
+                            (removedItem.productId && p.id === removedItem.productId) ||
+                            (removedItem.barcode && p.barcode && String(p.barcode).trim() === String(removedItem.barcode).trim()) ||
+                            (removedItem.name && p.name && p.name.trim().toLowerCase() === removedItem.name.trim().toLowerCase())
+                        );
+
+                        if (matchedProduct) {
+                            // A. Shop / Branch Stock se delete karein
+                            const branchRecords = (window.branchStockList || []).filter(bs => 
+                                bs.productId === matchedProduct.id || 
+                                (bs.productBarcode && bs.productBarcode === matchedProduct.barcode)
+                            );
+                            for (let bRec of branchRecords) {
+                                batch.delete(branchStockDB.doc(bRec.id));
+                            }
+
+                            // B. Main Products Inventory se delete karein taake POS aur Barcodes mein show na ho
+                            batch.delete(productsDB.doc(matchedProduct.id));
+
+                            // In-memory list se bhi foran hata dein
+                            window.menuItems = window.menuItems.filter(p => p.id !== matchedProduct.id);
+                            window.branchStockList = window.branchStockList.filter(bs => bs.productId !== matchedProduct.id);
+                        }
+                    }
+
+                    // 3. BACHE HUE ITEMS KA STOCK ADJUST KAREIN
                     for (let prod of window.diagramPurchaseItems) {
                         const matchedProduct = window.menuItems.find(p => 
                             (prod.productId && p.id === prod.productId) ||
@@ -3949,7 +3985,7 @@ const auth = firebase.auth();
 
                         const oldQty = oldItem ? Number(oldItem.qty || 0) : 0;
                         const newQty = Number(prod.qty || 0);
-                        const diffQty = newQty - oldQty; // e.g. 4 - 6 = -2
+                        const diffQty = newQty - oldQty;
 
                         const newCost = Number(prod.cost !== undefined ? prod.cost : prod.costPrice) || 0;
                         const newSale = Number(prod.sale !== undefined ? prod.sale : prod.price) || 0;
@@ -3958,10 +3994,8 @@ const auth = firebase.auth();
                             let currentGodownStock = Number(matchedProduct.stock || 0);
 
                             if (diffQty < 0) {
-                                const neededDeduction = Math.abs(diffQty); // 2 pcs minus karne hain
-                                
+                                const neededDeduction = Math.abs(diffQty);
                                 if (currentGodownStock >= neededDeduction) {
-                                    // Godown mein stock mojood hai, godown se minus karein
                                     batch.update(productsDB.doc(matchedProduct.id), {
                                         stock: firebase.firestore.FieldValue.increment(diffQty),
                                         costPrice: newCost,
@@ -3970,13 +4004,8 @@ const auth = firebase.auth();
                                         barcode: prod.barcode || matchedProduct.barcode || '',
                                         img: prod.img || matchedProduct.img || ''
                                     });
-                                    matchedProduct.stock = currentGodownStock + diffQty;
                                 } else {
-                                    // Godown mein stock kam hai (maal shop transfer ho chuka hai)
-                                    const godownMinus = Math.max(0, currentGodownStock);
-                                    const remainingMinusFromShop = neededDeduction - godownMinus;
-
-                                    // 1. Godown stock 0 par set karein (negative nahi hone dega)
+                                    const remainingMinusFromShop = neededDeduction - Math.max(0, currentGodownStock);
                                     batch.update(productsDB.doc(matchedProduct.id), {
                                         stock: 0,
                                         costPrice: newCost,
@@ -3985,28 +4014,25 @@ const auth = firebase.auth();
                                         barcode: prod.barcode || matchedProduct.barcode || '',
                                         img: prod.img || matchedProduct.img || ''
                                     });
-                                    matchedProduct.stock = 0;
 
-                                    // 2. Shop (Branch) ke stock se minus karein
                                     const branchStockRecords = (window.branchStockList || []).filter(bs => bs.productId === matchedProduct.id);
                                     let toDeduct = remainingMinusFromShop;
-
                                     for (let bRec of branchStockRecords) {
                                         if (toDeduct <= 0) break;
                                         const curBQty = Number(bRec.qty || 0);
-                                        const deductFromThis = Math.min(curBQty, toDeduct);
-
-                                        batch.update(branchStockDB.doc(bRec.id), {
-                                            qty: firebase.firestore.FieldValue.increment(-deductFromThis),
-                                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                                        });
-
-                                        bRec.qty = Math.max(0, curBQty - deductFromThis);
-                                        toDeduct -= deductFromThis;
+                                        const deductThis = Math.min(curBQty, toDeduct);
+                                        if (curBQty - deductThis <= 0) {
+                                            batch.delete(branchStockDB.doc(bRec.id));
+                                        } else {
+                                            batch.update(branchStockDB.doc(bRec.id), {
+                                                qty: firebase.firestore.FieldValue.increment(-deductThis),
+                                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                            });
+                                        }
+                                        toDeduct -= deductThis;
                                     }
                                 }
                             } else {
-                                // Agar quantity barhai hai (e.g. 4 se 6 ki)
                                 batch.update(productsDB.doc(matchedProduct.id), {
                                     stock: firebase.firestore.FieldValue.increment(diffQty),
                                     costPrice: newCost,
@@ -4015,14 +4041,7 @@ const auth = firebase.auth();
                                     barcode: prod.barcode || matchedProduct.barcode || '',
                                     img: prod.img || matchedProduct.img || ''
                                 });
-                                matchedProduct.stock = currentGodownStock + diffQty;
                             }
-
-                            matchedProduct.costPrice = newCost;
-                            matchedProduct.price = newSale;
-                            matchedProduct.name = prod.name;
-                            prod.productId = matchedProduct.id;
-
                         } else {
                             const newDocRef = productsDB.doc();
                             batch.set(newDocRef, {
@@ -4041,7 +4060,7 @@ const auth = firebase.auth();
                         }
                     }
 
-                    // 3. Purchase document update
+                    // 4. Purchase Order Update Karein
                     batch.update(purchasesDB.doc(window.editingPurchaseDocId), {
                         vendorName: purchaserName,
                         vendorPhone: purchaserPhone,
@@ -4055,18 +4074,15 @@ const auth = firebase.auth();
                         lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    // Commit all updates
                     await batch.commit();
 
                     Toast.fire({
                         icon: 'success',
-                        title: 'Purchase Order aur Shop Stock dono kamyabi say sync hogaye!'
+                        title: 'Purchase Order, Godown aur Shop Stock sab sync hogaye!'
                     });
 
-                    // Edit state reset karein
                     window.editingPurchaseDocId = null;
                     window.editingOriginalPurchaseItems = [];
-
                 } else {
                     // =========================================================================
                     // CASE B: AGAR NAYI PURCHASE SAVE HO RAHI HAI
@@ -5896,22 +5912,53 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 // =========================================================
 // AUTO-PURGE: REMOVE ORPHANED SHOP STOCKS (FOR H267, H268, ETC.)
 // =========================================================
+// ==================== NAYA CODE (ISKO PASTE KAREIN) ====================
+// =========================================================
+// AUTO-PURGE: REMOVE DELETED PURCHASES FROM SHOP STOCK & POS
+// =========================================================
 async function cleanupDeletedProductsFromShopStock() {
-    if (!window.branchStockList || !window.menuItems) return;
+    if (!window.purchasesList || !window.branchStockList) return;
 
+    // Tamam purchases ke active items ke barcodes aur names jama karein
+    const activePurchaseItemNames = new Set();
+    const activePurchaseBarcodes = new Set();
+
+    window.purchasesList.forEach(pur => {
+        (pur.items || []).forEach(it => {
+            if (it.name) activePurchaseItemNames.add(it.name.trim().toLowerCase());
+            if (it.barcode) activePurchaseBarcodes.add(String(it.barcode).trim());
+        });
+        if (pur.productName) activePurchaseItemNames.add(pur.productName.trim().toLowerCase());
+        if (pur.barcode) activePurchaseBarcodes.add(String(pur.barcode).trim());
+    });
+
+    // 1. Shop Stock se wo items delete karein jo kisi bhi purchase mein mojood nahi hain
     for (let bStock of window.branchStockList) {
-        // Agar shop stock wala item main menuItems mein exist hi nahi karta
-        const existsInMain = window.menuItems.some(p => p.id === bStock.productId || (p.barcode && p.barcode === bStock.productBarcode));
-        
-        if (!existsInMain) {
+        const nameMatch = bStock.productName && activePurchaseItemNames.has(bStock.productName.trim().toLowerCase());
+        const barcodeMatch = bStock.productBarcode && activePurchaseBarcodes.has(String(bStock.productBarcode).trim());
+
+        if (!nameMatch && !barcodeMatch) {
             try {
                 await branchStockDB.doc(bStock.id).delete();
-                console.log(`Removed deleted item from Shop Stock: ${bStock.productName}`);
+                console.log(`Cleaned phantom item from Shop Stock: ${bStock.productName}`);
+            } catch(e) {}
+        }
+    }
+
+    // 2. Main products se bhi wo items delete karein jo kisi purchase mein nahi hain
+    for (let prod of (window.menuItems || [])) {
+        const nameMatch = prod.name && activePurchaseItemNames.has(prod.name.trim().toLowerCase());
+        const barcodeMatch = prod.barcode && activePurchaseBarcodes.has(String(prod.barcode).trim());
+
+        if (!nameMatch && !barcodeMatch) {
+            try {
+                await productsDB.doc(prod.id).delete();
+                console.log(`Cleaned phantom product from POS: ${prod.name}`);
             } catch(e) {}
         }
     }
 }
-setTimeout(cleanupDeletedProductsFromShopStock, 2500);
+setTimeout(cleanupDeletedProductsFromShopStock, 2000);
 
         window.addToCart = function(itemId) {
     const item = window.menuItems.find(i => i.id === itemId);
