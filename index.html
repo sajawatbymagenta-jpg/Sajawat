@@ -5716,6 +5716,32 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                     window.renderTransferHistoryReports();
                 }
             });
+
+            // CLOUD LIVE SYNC: Store Settings & Discount Listener (Har Laptop Par Live Sync)
+            settingsDB.doc('store_settings').onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    localStorage.setItem('pos_biz_name', data.bizName || 'SAJAWAT BY MAGENTA');
+                    localStorage.setItem('pos_biz_phone', data.bizPhone || '(0300) 1234567');
+                    localStorage.setItem('pos_biz_note', data.bizNote || 'YOUR WORK OUR IDENTITY. Thank you for your business!');
+                    localStorage.setItem('pos_global_discount', (data.globalDiscount !== undefined ? data.globalDiscount : 0).toString());
+                    if (data.nextInvoiceNo) {
+                        localStorage.setItem('pos_next_invoice_no', data.nextInvoiceNo.toString());
+                    }
+
+                    // Input fields ko bhi update karein agar settings page khula ho
+                    const discInput = document.getElementById('store-global-discount');
+                    if (discInput) discInput.value = data.globalDiscount || 0;
+
+                    // Dukan ka naam aur POS live refresh karein
+                    if (typeof window.applyBusinessBrandInfo === 'function') {
+                        window.applyBusinessBrandInfo();
+                    }
+                    if (typeof window.filterMenu === 'function') {
+                        window.filterMenu();
+                    }
+                }
+            });
         }
 
 cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
@@ -7935,21 +7961,25 @@ window.showInvoiceModal = function(sale) {
 
         
 // =========================================================
-// BUSINESS BRANDING & SETTINGS ENGINE (LIVE UPDATE HAR JAGA)
+// BUSINESS BRANDING & SETTINGS ENGINE (CLOUD LIVE SYNC HAR LAPTOP PAR)
 // =========================================================
 window.applyBusinessBrandInfo = function() {
     const bName = localStorage.getItem('pos_biz_name') || 'SAJAWAT BY MAGENTA';
     const bPhone = localStorage.getItem('pos_biz_phone') || '(0300) 1234567';
     const bNote = localStorage.getItem('pos_biz_note') || 'YOUR WORK OUR IDENTITY. Thank you for your business!';
+    const globalDisc = parseFloat(localStorage.getItem('pos_global_discount')) || 0;
 
     // 1. Settings page ke inputs
     const nameInput = document.getElementById('restaurant-name');
     const phoneInput = document.getElementById('restaurant-number');
-   const noteInput = document.getElementById('invoice-note');
+    const noteInput = document.getElementById('invoice-note');
     const nextInvInput = document.getElementById('setting-next-invoice-no');
+    const discInput = document.getElementById('store-global-discount');
+
     if (nameInput) nameInput.value = bName;
     if (phoneInput) phoneInput.value = bPhone;
-  if (noteInput) noteInput.value = bNote;
+    if (noteInput) noteInput.value = bNote;
+    if (discInput) discInput.value = globalDisc;
 
     // Database check: Settings mein hamesha asal agla invoice number dikhayein
     let maxInvCheck = 0;
@@ -7976,28 +8006,55 @@ window.applyBusinessBrandInfo = function() {
 // Page load hote hi settings load karein
 window.applyBusinessBrandInfo();
 
-document.getElementById('save-settings-btn')?.addEventListener('click', () => {
-    const bName = document.getElementById('restaurant-name')?.value.trim();
-    const bPhone = document.getElementById('restaurant-number')?.value.trim();
-    const bNote = document.getElementById('invoice-note')?.value.trim();
+// Save Settings Button: Firebase Cloud + LocalStorage Dono Mein Save Hoga
+document.getElementById('save-settings-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('save-settings-btn');
+    const bName = document.getElementById('restaurant-name')?.value.trim() || 'SAJAWAT BY MAGENTA';
+    const bPhone = document.getElementById('restaurant-number')?.value.trim() || '(0300) 1234567';
+    const bNote = document.getElementById('invoice-note')?.value.trim() || 'YOUR WORK OUR IDENTITY. Thank you for your business!';
     const globalDisc = parseFloat(document.getElementById('store-global-discount')?.value) || 0;
     const nextInvNo = parseInt(document.getElementById('setting-next-invoice-no')?.value) || 1;
 
-    if (bName) localStorage.setItem('pos_biz_name', bName);
-    if (bPhone) localStorage.setItem('pos_biz_phone', bPhone);
-    if (bNote) localStorage.setItem('pos_biz_note', bNote);
-    localStorage.setItem('pos_global_discount', globalDisc);
-    localStorage.setItem('pos_next_invoice_no', nextInvNo.toString());
+    try {
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Cloud Par Save Ho Raha Hai...";
+        }
 
-    // Har jaga naam aur number foran update karein
-    window.applyBusinessBrandInfo();
+        // 1. Local browser mein save karein
+        localStorage.setItem('pos_biz_name', bName);
+        localStorage.setItem('pos_biz_phone', bPhone);
+        localStorage.setItem('pos_biz_note', bNote);
+        localStorage.setItem('pos_global_discount', globalDisc.toString());
+        localStorage.setItem('pos_next_invoice_no', nextInvNo.toString());
 
-    if (typeof window.filterMenu === 'function') window.filterMenu();
+        // 2. Firebase Cloud Database mein save karein (Taake tamam laptops par chal jaye)
+        await settingsDB.doc('store_settings').set({
+            bizName: bName,
+            bizPhone: bPhone,
+            bizNote: bNote,
+            globalDiscount: globalDisc,
+            nextInvoiceNo: nextInvNo,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
 
-    if (window.Toast) {
-        Toast.fire({ icon: 'success', title: 'Business Name aur Settings update ho gayin!' });
-    } else {
-        alert("Business Name aur Settings update ho gayin!");
+        // Har jaga naam, discount aur POS update karein
+        window.applyBusinessBrandInfo();
+        if (typeof window.filterMenu === 'function') window.filterMenu();
+
+        if (window.Toast) {
+            Toast.fire({ icon: 'success', title: 'Settings Cloud Par Save Hogayin! Tamam Devices Par Sync Hogayi.' });
+        } else {
+            alert("Settings Cloud Par Save Hogayin! Tamam Devices Par Sync Hogayi.");
+        }
+    } catch (err) {
+        console.error("Cloud settings save error:", err);
+        alert("Settings save karne mein masla aaya: " + err.message);
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = "<i class='bx bx-check'></i> Save Settings";
+        }
     }
 });
 
