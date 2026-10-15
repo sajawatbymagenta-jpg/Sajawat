@@ -5795,7 +5795,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             });
         };
 
-      window.filterMenu = function() {
+     window.filterMenu = function() {
     const searchTerm = (document.getElementById('menu-search')?.value || '').toLowerCase().trim();
     const activeBtn = document.querySelector('#pos-category-filters button.active');
     const activeCategory = activeBtn ? activeBtn.dataset.category : 'all';
@@ -5803,24 +5803,9 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     const menuGrid = document.getElementById('menu-grid');
     if (!menuGrid) return;
 
-    if (!selectedBranch) {
-        menuGrid.innerHTML = `
-            <div class="empty-placeholder" style="grid-column: 1/-1; padding: 40px 20px;">
-                <i class='bx bx-error-circle' style="font-size:3.5rem; color:#ef4444; display:block; margin-bottom:10px;"></i>
-                <h3 style="color:#0f172a; margin-bottom:6px;">Main Godown Se Direct Sale Mana Hai!</h3>
-                <p style="color:#64748b; font-size:0.9rem;">
-                    Cheezein sirf Shop se bikti hain. Upar se pehle Shop select karein.
-                </p>
-            </div>
-        `;
-        return;
-    }
-
     const filteredItems = [];
 
-    // Sirf wahi product aayenge jo menuItems (Main Inventory) mein zinda hain aur jinki purchase active hai
     (window.menuItems || []).forEach(item => {
-        // Validation check: Agar product ka record valid na ho to ignore karein
         if (!item || !item.id) return;
 
         const matchesCategory = (activeCategory === 'all' || item.category === activeCategory);
@@ -5828,22 +5813,24 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                                (item.barcode && String(item.barcode).toLowerCase().includes(searchTerm)));
 
         if (matchesCategory && matchesSearch) {
-            // Selected shop ka stock nikalna
-            const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && (bs.productId === item.id || (bs.productBarcode && bs.productBarcode === item.barcode)));
-            const branchQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+            // 1. Branch/Shop ka stock check karein
+            let branchQty = 0;
+            if (selectedBranch && selectedBranch !== 'all') {
+                const bStockRecord = (window.branchStockList || []).find(bs => 
+                    bs.branchId === selectedBranch && 
+                    (bs.productId === item.id || (bs.productBarcode && bs.productBarcode === item.barcode))
+                );
+                branchQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+            }
 
-            // Total combined stock check (Agar item purchase se delete ho chuka hai to POS mein nahi aayega)
-            const godownStock = Number(item.stock || 0);
-            const allStoresStock = (window.branchStockList || [])
-                .filter(bs => bs.productId === item.id)
-                .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
+            // 2. Main Godown ka stock
+            const godownQty = Number(item.stock || 0);
 
-            const hasValidInventory = (godownStock + allStoresStock) > 0;
+            // AGAR Shop par stock 0 ho lekin Godown mein maal mojood ho, tab bhi POS par show ho:
+            const displayQty = branchQty > 0 ? branchQty : godownQty;
 
-            // Agar Shop main maal nahi hai tou Godown ka stock POS par show hoga
-            const displayQty = branchQty > 0 ? branchQty : godownStock; 
-
-            if (displayQty > 0 && hasValidInventory) {
+            // Agar total stock 0 se bara hai toh item lazmi show karein
+            if (displayQty > 0) {
                 filteredItems.push({
                     ...item,
                     currentBranchStock: displayQty
@@ -5858,8 +5845,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
         menuGrid.innerHTML = `
             <div class="empty-placeholder" style="grid-column: 1/-1;">
                 <i class='bx bx-box' style="font-size:3rem; display:block; margin-bottom:8px;"></i>
-                Is Shop par filhal koi stock dastyab nahi hai.<br>
-                <small style="color:#64748b;">(Main Godown se is Shop par 'Product to Move Store' ke zariye stock transfer karein)</small>
+                Is Store/Godown par filhal koi stock dastyab nahi hai.
             </div>
         `;
         return;
@@ -5869,8 +5855,6 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
     filteredItems.forEach(item => {
         const displayStock = item.currentBranchStock;
-        const branchTag = `<div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:4px;"><i class='bx bx-store'></i> Shop Stock</div>`;
-
         const originalPrice = parseFloat(item.price || 0);
         let finalSellingPrice = originalPrice;
         let priceDisplayHtml = `Rs. ${originalPrice.toLocaleString()}`;
@@ -5879,9 +5863,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
         if (globalDiscountPercent > 0) {
             const discountAmount = (originalPrice * globalDiscountPercent) / 100;
             finalSellingPrice = Math.max(0, originalPrice - discountAmount);
-            
             discountBadgeHtml = `<div style="position:absolute; top:35px; right:10px; background:#ef4444; color:white; padding:2px 7px; border-radius:6px; font-size:0.72rem; font-weight:800; z-index:2;">${globalDiscountPercent}% OFF</div>`;
-            
             priceDisplayHtml = `
                 <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500; margin-right: 5px;">Rs. ${originalPrice.toLocaleString()}</span>
                 <span style="color:#10b981; font-weight:800;">Rs. ${finalSellingPrice.toLocaleString()}</span>
@@ -5901,15 +5883,10 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             ${imageHtml}
             <h4>${item.name}</h4>
             <p class="selling-p">${priceDisplayHtml}</p>
-            ${branchTag}
         `;
         card.addEventListener('click', () => addToCart(item.id));
         menuGrid.appendChild(card);
     });
-
-    if (typeof window.updateDashboardMetrics === 'function') {
-        window.updateDashboardMetrics();
-    }
 };
 
 
@@ -7626,7 +7603,7 @@ window.applyUserPermissions = function(user) {
         }
 
         // Realtime data load hone ke 2 second baad auto-run karein
-        setTimeout(autoFixNegativeStockDiscrepancies, 2000);
+// setTimeout(autoFixNegativeStockDiscrepancies, 2000);
 
 // POS Charge Button Event Listener (100% OFFLINE-READY)
             document.getElementById('charge-btn')?.addEventListener('click', () => { 
