@@ -4259,7 +4259,7 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
 
                     const displaySerial = item.serialNo || item.poNumber || '-';
 
-                   tbody.innerHTML += `
+                tbody.innerHTML += `
                         <tr>
                             <td>
                                 <strong style="color:var(--primary);">${displaySerial}</strong><br>
@@ -4282,6 +4282,7 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                             <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
                             <td class="action-btns">
                                 <button class="btn-edit" onclick="openEditPurchaseModal('${item.id}')" title="Edit Purchase & Stock"><i class='bx bx-edit'></i> Edit</button>
+                                <button class="btn-delete" onclick="deletePurchaserWithCompleteStock('${item.id}')" title="Purchaser & Stock Mukammal Delete Karein"><i class='bx bx-trash'></i> Delete</button>
                                 ${payDueActionBtn}
                                 ${due <= 0 ? `<span style="color:#10b981; font-weight:700; font-size:0.82rem; margin-left:4px;"><i class='bx bx-check-circle'></i> Cleared</span>` : ''}
                             </td>
@@ -4299,6 +4300,154 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
             if (kpiPaid) kpiPaid.textContent = `Rs. ${totalPaidSum.toLocaleString()}`;
             if (kpiDue) kpiDue.textContent = `Rs. ${totalDueSum.toLocaleString()}`;
             if (kpiQty) kpiQty.textContent = `${totalItemsQty} pcs`;
+        };
+
+// =========================================================================
+        // PURCHASER DELETE FUNCTION (WITH CLEAN PROFESSIONAL ENGLISH ALERTS)
+        // =========================================================================
+        window.deletePurchaserWithCompleteStock = async function(purchaseId) {
+            const purchase = (window.purchasesList || []).find(p => p.id === purchaseId);
+            if (!purchase) {
+                alert("Purchase record not found!");
+                return;
+            }
+
+            const vendorName = purchase.vendorName || 'Purchaser';
+            const serialNo = purchase.serialNo || purchase.poNumber || 'Record';
+
+            const confirmResult = await Swal.fire({
+                title: 'Permanent Delete Warning!',
+                html: `
+                    <div style="text-align:left; font-size:0.9rem; color:#334155; line-height:1.6;">
+                        Are you sure you want to permanently delete <b>${vendorName}</b> (Bill: <b style="color:#0066ff;">${serialNo}</b>)?<br><br>
+                        <b style="color:#ef4444;">⚠️ This action will:</b>
+                        <ul style="margin-top:6px; padding-left:18px;">
+                            <li>Deduct/remove all purchased inventory from <b>Main Warehouse / Godown</b>.</li>
+                            <li>Deduct stock from <b>Assigned Shops/Stores</b> if already transferred.</li>
+                            <li>Completely remove the item from <b>POS & Barcode Screens</b> if stock reaches zero.</li>
+                        </ul>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, Delete Completely',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            // Professional Loading Screen
+            Swal.fire({
+                title: 'Deleting Inventory & Barcodes...',
+                html: 'Please wait while inventory database is synchronizing.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const batch = db.batch();
+
+                // Items list check (Diagram purchase items ya single product)
+                let itemsToDelete = purchase.items || [];
+                if (itemsToDelete.length === 0 && purchase.productName) {
+                    itemsToDelete = [{
+                        name: purchase.productName,
+                        barcode: purchase.barcode || '',
+                        qty: Number(purchase.qty || 1)
+                    }];
+                }
+
+                // Har item ko Godown aur Shops se deduct/delete karna
+                for (let item of itemsToDelete) {
+                    const deductQty = Number(item.qty || 1);
+
+                    // 1. Matching Product Main Godown mein dhoondein
+                    const matchedProduct = (window.menuItems || []).find(p => 
+                        (item.productId && p.id === item.productId) ||
+                        (item.barcode && p.barcode && String(p.barcode).trim() === String(item.barcode).trim()) ||
+                        (item.name && p.name && p.name.trim().toLowerCase() === String(item.name).trim().toLowerCase())
+                    );
+
+                    if (matchedProduct) {
+                        const currentGodownQty = Number(matchedProduct.stock || 0);
+
+                        // A. Shop/Branches se Stock Minus karein
+                        const branchRecords = (window.branchStockList || []).filter(bs => 
+                            bs.productId === matchedProduct.id ||
+                            (bs.productBarcode && matchedProduct.barcode && bs.productBarcode === matchedProduct.barcode)
+                        );
+
+                        let shopStockDeducted = 0;
+                        for (let bRec of branchRecords) {
+                            const curBQty = Number(bRec.qty || 0);
+                            if (curBQty > 0) {
+                                const minusShop = Math.min(curBQty, Math.max(0, deductQty - currentGodownQty));
+                                if (minusShop > 0) {
+                                    if (curBQty - minusShop <= 0) {
+                                        batch.delete(branchStockDB.doc(bRec.id));
+                                    } else {
+                                        batch.update(branchStockDB.doc(bRec.id), {
+                                            qty: firebase.firestore.FieldValue.increment(-minusShop),
+                                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        });
+                                    }
+                                    shopStockDeducted += minusShop;
+                                }
+                            }
+                        }
+
+                        // B. Main Godown Stock Minus karein ya Product mukammal delete karein
+                        const remainingGodownStock = currentGodownQty - (deductQty - shopStockDeducted);
+
+                        if (remainingGodownStock <= 0) {
+                            // Agar stock 0 ho jaye to POS aur Barcode dono se hata dein
+                            batch.delete(productsDB.doc(matchedProduct.id));
+                        } else {
+                            // Agar pehle se kuch stock tha to sirf khareedari wali qty minus karein
+                            batch.update(productsDB.doc(matchedProduct.id), {
+                                stock: firebase.firestore.FieldValue.increment(-(deductQty - shopStockDeducted))
+                            });
+                        }
+                    }
+                }
+
+                // 2. Purchaser Document ko Firestore se delete karein
+                batch.delete(purchasesDB.doc(purchaseId));
+
+                // Batch Commit (Cloud update)
+                await batch.commit();
+
+                // 3. Local Memory Arrays update
+                window.purchasesList = (window.purchasesList || []).filter(p => p.id !== purchaseId);
+
+                // 4. Auto Backup Update
+                if (typeof window.saveAllDataToLocalDrive === 'function') {
+                    window.saveAllDataToLocalDrive(true);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Purchaser Deleted Successfully!',
+                    text: 'Purchaser record, Godown stock, Shop stock, and barcodes have been successfully cleared.',
+                    timer: 2200,
+                    showConfirmButton: false
+                });
+
+                // Screens auto-refresh
+                if (typeof window.renderPurchaseDetailsView === 'function') window.renderPurchaseDetailsView();
+                if (typeof window.renderPurchaserReport === 'function') window.renderPurchaserReport();
+                if (typeof window.triggerGlobalAutoRefresh === 'function') window.triggerGlobalAutoRefresh();
+
+            } catch (err) {
+                console.error("Delete purchase error:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Delete Failed',
+                    text: 'An error occurred while deleting: ' + err.message
+                });
+            }
         };
 
         window.openPayVendorModal = function(purchaseId) {
