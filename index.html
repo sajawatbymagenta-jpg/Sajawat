@@ -5840,10 +5840,13 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
 
             const hasValidInventory = (godownStock + allStoresStock) > 0;
 
-            if (branchQty > 0 && hasValidInventory) {
+            // Agar Shop main maal nahi hai tou Godown ka stock POS par show hoga
+            const displayQty = branchQty > 0 ? branchQty : godownStock; 
+
+            if (displayQty > 0 && hasValidInventory) {
                 filteredItems.push({
                     ...item,
-                    currentBranchStock: branchQty
+                    currentBranchStock: displayQty
                 });
             }
         }
@@ -5909,57 +5912,8 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     }
 };
 
-// =========================================================
-// AUTO-PURGE: REMOVE ORPHANED SHOP STOCKS (FOR H267, H268, ETC.)
-// =========================================================
-// ==================== NAYA CODE (ISKO PASTE KAREIN) ====================
-// =========================================================
-// AUTO-PURGE: REMOVE DELETED PURCHASES FROM SHOP STOCK & POS
-// =========================================================
-async function cleanupDeletedProductsFromShopStock() {
-    if (!window.purchasesList || !window.branchStockList) return;
 
-    // Tamam purchases ke active items ke barcodes aur names jama karein
-    const activePurchaseItemNames = new Set();
-    const activePurchaseBarcodes = new Set();
-
-    window.purchasesList.forEach(pur => {
-        (pur.items || []).forEach(it => {
-            if (it.name) activePurchaseItemNames.add(it.name.trim().toLowerCase());
-            if (it.barcode) activePurchaseBarcodes.add(String(it.barcode).trim());
-        });
-        if (pur.productName) activePurchaseItemNames.add(pur.productName.trim().toLowerCase());
-        if (pur.barcode) activePurchaseBarcodes.add(String(pur.barcode).trim());
-    });
-
-    // 1. Shop Stock se wo items delete karein jo kisi bhi purchase mein mojood nahi hain
-    for (let bStock of window.branchStockList) {
-        const nameMatch = bStock.productName && activePurchaseItemNames.has(bStock.productName.trim().toLowerCase());
-        const barcodeMatch = bStock.productBarcode && activePurchaseBarcodes.has(String(bStock.productBarcode).trim());
-
-        if (!nameMatch && !barcodeMatch) {
-            try {
-                await branchStockDB.doc(bStock.id).delete();
-                console.log(`Cleaned phantom item from Shop Stock: ${bStock.productName}`);
-            } catch(e) {}
-        }
-    }
-
-    // 2. Main products se bhi wo items delete karein jo kisi purchase mein nahi hain
-    for (let prod of (window.menuItems || [])) {
-        const nameMatch = prod.name && activePurchaseItemNames.has(prod.name.trim().toLowerCase());
-        const barcodeMatch = prod.barcode && activePurchaseBarcodes.has(String(prod.barcode).trim());
-
-        if (!nameMatch && !barcodeMatch) {
-            try {
-                await productsDB.doc(prod.id).delete();
-                console.log(`Cleaned phantom product from POS: ${prod.name}`);
-            } catch(e) {}
-        }
-    }
-}
-setTimeout(cleanupDeletedProductsFromShopStock, 2000);
-
+// setTimeout(cleanupDeletedProductsFromShopStock, 2000);
         window.addToCart = function(itemId) {
     const item = window.menuItems.find(i => i.id === itemId);
     if (!item) return;
@@ -5970,12 +5924,16 @@ setTimeout(cleanupDeletedProductsFromShopStock, 2000);
         return;
     }
 
-    // Sirf is Shop ka stock check karein
+    // Shop ka stock check karein, agar wahan nahi hai tou Godown (main inventory) ka stock check karein
     const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === item.id);
-    const maxAvailable = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+    const branchQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+    const godownQty = Number(item.stock || 0);
+    
+    // Asal Available Quantity
+    const maxAvailable = branchQty > 0 ? branchQty : godownQty;
 
     if (maxAvailable <= 0) {
-        alert(`"${item.name}" ka stock is Shop par khatam (OUT OF STOCK) hai! Godown se transfer karein.`);
+        alert(`"${item.name}" ka stock Shop aur Godown dono main khatam (OUT OF STOCK) hai!`);
         window.filterMenu();
         return;
     }
