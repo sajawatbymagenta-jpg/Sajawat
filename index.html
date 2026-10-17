@@ -1220,7 +1220,7 @@
                     </a>
                     <ul class="sub-menu">
                         <li><a href="#" onclick="switchView('profit-loss')"><i class='bx bx-coin-stack'></i>Profit & Loss</a></li>
-                        <li><a href="#" onclick="switchView('stock-report')"><i class='bx bx-archive-in'></i>Stock Report</a></li>
+<li><a href="#" onclick="switchView('stock-audit')"><i class='bx bx-check-shield'></i>Stock Audit</a></li>
                         <li><a href="#" onclick="switchView('purchaser-report')"><i class='bx bx-file-blank'></i>Purchaser Report</a></li>
                         <li><a href="#" onclick="switchView('return-report')"><i class='bx bx-undo'></i>Return Report</a></li>
                         <li><a href="#" onclick="switchView('expense-report')"><i class='bx bx-receipt'></i>Expense Report</a></li>
@@ -2115,6 +2115,84 @@
                     </div>
                 </div>
             </div>
+
+
+<!-- STOCK AUDIT & VERIFICATION VIEW -->
+            <div id="stock-audit-view" class="view">
+                <div class="content-wrapper" style="width: 100%; max-width: 100%; padding: 22px 30px;">
+                    <div class="fullscreen-report-wrapper">
+                        
+                        <!-- Top Header & Controls -->
+                        <div class="pl-top-bar" style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 18px 24px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+                            <div>
+                                <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+                                    <i class='bx bx-check-shield' style="color:#f59e0b;"></i> Stock Audit & Verification
+                                </h2>
+                                <p style="color: #64748b; font-size: 0.88rem;">Barcode scanner se physical stock verify karein. Scan karte jayein, system khud tally karega.</p>
+                            </div>
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <div class="pos-branch-select-box" style="padding: 8px 14px; background: #fffcf2; border: 1.5px solid #f59e0b;">
+                                    <label style="font-weight: 700; color: #b45309; font-size: 0.88rem;"><i class='bx bx-map-pin'></i> Select Area:</label>
+                                    <select id="audit-branch-filter" style="font-weight: 800; color: #b45309; background: transparent; border: none; outline: none;">
+                                        <option value="godown">Main Godown (Warehouse Only)</option>
+                                    </select>
+                                </div>
+                                <button class="save-btn" id="btn-start-audit" style="background: #10b981; background-image: none; padding: 10px 20px;" onclick="toggleAuditMode()">
+                                    <i class='bx bx-play-circle'></i> Start Audit
+                                </button>
+                                <button class="outline-btn" id="btn-export-audit-pdf" style="display: none;" onclick="downloadAuditPDF()">
+                                    <i class='bx bxs-file-pdf'></i> Export PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPI Cards (3 Cards) -->
+                        <div class="pl-kpi-grid" style="margin-top: 15px;">
+                            <div class="pl-kpi-card" style="border-top: 4px solid #0ea5e9;">
+                                <div class="kpi-header"><span class="kpi-title">EXPECTED UNITS</span><div class="kpi-icon" style="background: #e0f2fe; color: #0ea5e9;"><i class='bx bx-box'></i></div></div>
+                                <div class="kpi-value" id="audit-kpi-expected" style="color: #0f172a;">0</div>
+                                <div class="kpi-subtitle">System ke mutabiq kul stock</div>
+                            </div>
+                            <div class="pl-kpi-card" style="border-top: 4px solid #10b981;">
+                                <div class="kpi-header"><span class="kpi-title">SCANNED UNITS</span><div class="kpi-icon" style="background: #dcfce7; color: #10b981;"><i class='bx bx-barcode-reader'></i></div></div>
+                                <div class="kpi-value" id="audit-kpi-scanned" style="color: #10b981;">0</div>
+                                <div class="kpi-subtitle">Aap ne jitna scan kar liya</div>
+                            </div>
+                            <div class="pl-kpi-card" style="border-top: 4px solid #ef4444;">
+                                <div class="kpi-header"><span class="kpi-title">MISSING / SHORT</span><div class="kpi-icon" style="background: #fee2e2; color: #ef4444;"><i class='bx bx-error-circle'></i></div></div>
+                                <div class="kpi-value" id="audit-kpi-missing" style="color: #ef4444;">0</div>
+                                <div class="kpi-subtitle">Jo physically nahi mila ya kam hai</div>
+                            </div>
+                        </div>
+
+                        <!-- Audit Table -->
+                        <div class="stock-table-wrapper" style="margin-top: 15px;">
+                            <table class="custom-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">Sr#</th>
+                                        <th style="width: 15%;">Barcode</th>
+                                        <th style="width: 35%;">Product Name</th>
+                                        <th style="width: 15%; text-align: center;">Expected (System)</th>
+                                        <th style="width: 15%; text-align: center;">Scanned (Physical)</th>
+                                        <th style="width: 15%; text-align: center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-tbody">
+                                    <tr>
+                                        <td colspan="6" class="empty-placeholder" style="padding: 30px; text-align: center;">
+                                            <i class='bx bx-play-circle' style="font-size: 3rem; color: #cbd5e1; display: block; margin-bottom: 10px;"></i>
+                                            "Start Audit" par click karein aur barcode gun se scanning shuru karein.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
 
             <!-- 13. PURCHASER REPORT VIEW -->
             <div id="purchaser-report-view" class="view">
@@ -6387,15 +6465,18 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 barcodeGunBuffer = "";
             }
 
-            if (e.key === 'Enter') {
+           if (e.key === 'Enter') {
                 if (barcodeGunBuffer.length >= 3) {
                     e.preventDefault();
                     const scannedCode = barcodeGunBuffer.trim();
                     barcodeGunBuffer = "";
 
                     const isTransferActive = document.getElementById('branch-transfer-view')?.classList.contains('active');
+                    const isAuditActive = document.getElementById('stock-audit-view')?.classList.contains('active');
                     
-                    if (isTransferActive && typeof window.handleTransferScannedBarcode === 'function') {
+                    if (isAuditActive && window.isAuditRunning) {
+                        window.processAuditScan(scannedCode);
+                    } else if (isTransferActive && typeof window.handleTransferScannedBarcode === 'function') {
                         window.handleTransferScannedBarcode(scannedCode);
                     } else {
                         processScannedCode(scannedCode);
@@ -6656,6 +6737,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                         'product-barcodes': p.purchaser,
                         'profit-loss': p.reports,
                         'stock-report': p.reports,
+                        'stock-audit': p.reports,
                         'purchaser-report': p.reports,
                         'return-report': p.reports,
                         'expense-report': p.reports,
@@ -6687,6 +6769,7 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 'product-barcodes': 'Product Barcodes',
                 'profit-loss': 'Profit & Loss Financial Analytics',
                 'stock-report': 'Stock Inventory Report',
+                'stock-audit': 'Stock Audit & Verification',
                 'purchaser-report': 'Purchaser & Vendor Procurement Report',
                 'return-report': 'Product Returns Report',
                 'expense-report': 'Store Expenses Report',
@@ -13336,6 +13419,245 @@ window.captureProductSnapshot = async function() {
                 ]
             });
         };
+
+// =========================================================================
+// STOCK AUDIT & VERIFICATION ENGINE (LOGIC & PDF)
+// =========================================================================
+
+window.isAuditRunning = false;
+window.auditDataList = [];
+
+// 1. Dropdown Populate Karein
+window.initStockAuditView = function() {
+    const selectEl = document.getElementById('audit-branch-filter');
+    if (!selectEl) return;
+    
+    // Agar audit run nahi ho raha to dropdown populate karein
+    if (!window.isAuditRunning) {
+        const currentSelected = selectEl.value || 'godown';
+        selectEl.innerHTML = `<option value="godown">Main Godown (Warehouse Only)</option>`;
+        (window.branchesList || []).forEach(branch => {
+            selectEl.innerHTML += `<option value="${branch.id}">${branch.name} - ${branch.area}</option>`;
+        });
+        selectEl.value = currentSelected;
+    }
+};
+
+// 2. Start / Stop Audit Button
+window.toggleAuditMode = function() {
+    const btn = document.getElementById('btn-start-audit');
+    const branchSelect = document.getElementById('audit-branch-filter');
+    const pdfBtn = document.getElementById('btn-export-audit-pdf');
+
+    if (!window.isAuditRunning) {
+        // --- START AUDIT ---
+        const selectedBranch = branchSelect.value;
+        const products = window.menuItems || [];
+        
+        window.auditDataList = [];
+        
+        products.forEach(p => {
+            let expectedQty = 0;
+            if (selectedBranch === 'godown') {
+                expectedQty = Number(p.stock || 0);
+            } else {
+                const bStockRecord = (window.branchStockList || []).find(bs => bs.branchId === selectedBranch && bs.productId === p.id);
+                expectedQty = bStockRecord ? Number(bStockRecord.qty || 0) : 0;
+            }
+
+            // Sirf wo items list mein dalein jinka expected stock 0 se zyada ho
+            if (expectedQty > 0) {
+                window.auditDataList.push({
+                    id: p.id,
+                    barcode: p.barcode || 'N/A',
+                    name: p.name || 'Unknown',
+                    expected: expectedQty,
+                    scanned: 0
+                });
+            }
+        });
+
+        if (window.auditDataList.length === 0) {
+            alert("No stock found in the system for this location. Audit cannot be started.");
+            return;
+        }
+
+        window.isAuditRunning = true;
+        branchSelect.disabled = true;
+        btn.innerHTML = `<i class='bx bx-stop-circle'></i> Stop & Finalize Audit`;
+        btn.style.background = "#ef4444"; // Red color for stop
+        pdfBtn.style.display = "block";
+
+        Toast.fire({ icon: 'info', title: 'Audit Shuru Ho Gaya Hai. Barcode Gun Se Scan Karein!' });
+        window.renderAuditTable();
+
+    } else {
+        // --- STOP AUDIT ---
+        if(confirm("Kya aap waqai Audit rokna chahte hain? Aap PDF export kar saktay hain.")) {
+            window.isAuditRunning = false;
+            branchSelect.disabled = false;
+            btn.innerHTML = `<i class='bx bx-play-circle'></i> Start Audit`;
+            btn.style.background = "#10b981"; // Green color
+        }
+    }
+};
+
+// 3. Process Barcode Scan (Yeh function event listener se call hoga)
+window.processAuditScan = function(rawBarcode) {
+    if (!rawBarcode || !window.isAuditRunning) return;
+    
+    const code = String(rawBarcode).trim().toLowerCase();
+    
+    // Find item in audit list
+    const matchedIndex = window.auditDataList.findIndex(item => String(item.barcode).toLowerCase() === code);
+
+    if (matchedIndex !== -1) {
+        window.auditDataList[matchedIndex].scanned += 1;
+        
+        // Beep Sound
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 1200; // High pitch for audit success
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
+
+        // Table dobara draw karein
+        window.renderAuditTable();
+    } else {
+        Toast.fire({ icon: 'error', title: `Barcode [${rawBarcode}] system list mein nahi mila!` });
+    }
+};
+
+// 4. Render Table and update KPIs
+window.renderAuditTable = function() {
+    const tbody = document.getElementById('audit-tbody');
+    const expKpi = document.getElementById('audit-kpi-expected');
+    const scanKpi = document.getElementById('audit-kpi-scanned');
+    const missKpi = document.getElementById('audit-kpi-missing');
+
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    let totalExpected = 0;
+    let totalScanned = 0;
+    let totalMissing = 0;
+
+    // Sorting: Jo items miss ho rahe hain wo upar aayenge (taake dhondne mein asani ho)
+    const sortedList = [...window.auditDataList].sort((a, b) => {
+        const missA = a.expected - a.scanned;
+        const missB = b.expected - b.scanned;
+        return missB - missA; // Highest missing first
+    });
+
+    sortedList.forEach((item, idx) => {
+        totalExpected += item.expected;
+        totalScanned += item.scanned;
+        
+        let missing = item.expected - item.scanned;
+        if (missing > 0) totalMissing += missing;
+
+        let statusHtml = '';
+        let rowStyle = '';
+
+        if (item.scanned === item.expected) {
+            statusHtml = `<span style="background: #dcfce7; color: #16a34a; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;"><i class='bx bx-check'></i> Matched</span>`;
+            rowStyle = 'background: #f8fafc; opacity: 0.8;'; // Halke grey mein takay clear wale side ho jayein
+        } else if (item.scanned > item.expected) {
+            const excess = item.scanned - item.expected;
+            statusHtml = `<span style="background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;"><i class='bx bx-plus'></i> Excess (${excess})</span>`;
+        } else {
+            statusHtml = `<span style="background: #fee2e2; color: #dc2626; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;"><i class='bx bx-minus'></i> Short (${missing})</span>`;
+        }
+
+        tbody.innerHTML += `
+            <tr style="${rowStyle}">
+                <td>${idx + 1}</td>
+                <td><code>${item.barcode}</code></td>
+                <td><strong>${item.name}</strong></td>
+                <td style="text-align: center; font-weight: 800; font-size: 1.05rem;">${item.expected}</td>
+                <td style="text-align: center; font-weight: 800; font-size: 1.05rem; color: #10b981;">${item.scanned}</td>
+                <td style="text-align: center;">${statusHtml}</td>
+            </tr>
+        `;
+    });
+
+    if (expKpi) expKpi.textContent = totalExpected;
+    if (scanKpi) scanKpi.textContent = totalScanned;
+    if (missKpi) missKpi.textContent = totalMissing;
+};
+
+// 5. Generate PDF Report
+window.downloadAuditPDF = function() {
+    if (window.auditDataList.length === 0) {
+        alert("Report banane ke liye data nahi hai!");
+        return;
+    }
+
+    const selectEl = document.getElementById('audit-branch-filter');
+    const locationName = selectEl.options[selectEl.selectedIndex].text;
+
+    let totalExpected = 0;
+    let totalScanned = 0;
+    let totalMissing = 0;
+
+    const rows = window.auditDataList.map((item, idx) => {
+        totalExpected += item.expected;
+        totalScanned += item.scanned;
+        let missing = item.expected - item.scanned;
+        if (missing > 0) totalMissing += missing;
+
+        let statusText = 'Matched';
+        if (item.scanned > item.expected) statusText = `Excess (+${item.scanned - item.expected})`;
+        if (item.scanned < item.expected) statusText = `Short (-${missing})`;
+
+        return [
+            String(idx + 1),
+            item.barcode,
+            item.name,
+            String(item.expected),
+            String(item.scanned),
+            statusText
+        ];
+    });
+
+    window.generateProfessionalPDF({
+        reportTitle: `PHYSICAL STOCK AUDIT & VERIFICATION`,
+        periodText: `Location: ${locationName}`,
+        fileName: `Stock_Audit_${new Date().toISOString().slice(0, 10)}`,
+        orientation: 'portrait',
+        kpis: [
+            { label: 'Expected System Stock', value: `${totalExpected} units`, color: '#0ea5e9' },
+            { label: 'Physical Scanned', value: `${totalScanned} units`, color: '#10b981' },
+            { label: 'Missing / Short', value: `${totalMissing} units`, color: '#ef4444' }
+        ],
+        headers: [
+            { title: 'Sr#', align: 'center' },
+            { title: 'Barcode', align: 'left' },
+            { title: 'Product Name', align: 'left' },
+            { title: 'System', align: 'center' },
+            { title: 'Physical', align: 'center' },
+            { title: 'Status Variance', align: 'center' }
+        ],
+        rows: rows,
+        totals: [
+            'AUDIT TOTALS',
+            '-',
+            '-',
+            String(totalExpected),
+            String(totalScanned),
+            `Short: ${totalMissing}`
+        ]
+    });
+};
+
+
    </script>
 
 <!-- MODAL: ADVANCED BARCODE PRINT VIEW & INTERACTIVE SETTINGS -->
