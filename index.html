@@ -1212,7 +1212,7 @@
                 <li id="nav-returns"><a href="#" onclick="switchView('return')"><i class='bx bx-undo'></i><span class="links_name">Return Management</span></a></li>
                 <li id="nav-expenses"><a href="#" onclick="switchView('expense')"><i class='bx bx-wallet'></i><span class="links_name">Expenses</span></a></li>
 
-                <li class="has-submenu" id="nav-reports">
+<li class="has-submenu" id="nav-reports">
                     <a href="#" onclick="toggleSubmenu(event, this)">
                         <i class='bx bx-line-chart'></i>
                         <span class="links_name">Reports</span>
@@ -1220,7 +1220,8 @@
                     </a>
                     <ul class="sub-menu">
                         <li><a href="#" onclick="switchView('profit-loss')"><i class='bx bx-coin-stack'></i>Profit & Loss</a></li>
-<li><a href="#" onclick="switchView('stock-audit')"><i class='bx bx-check-shield'></i>Stock Audit</a></li>
+                        <li><a href="#" onclick="switchView('stock-report')"><i class='bx bx-archive-in'></i>Stock Report</a></li>
+                        <li><a href="#" onclick="switchView('stock-audit')"><i class='bx bx-check-shield'></i>Stock Audit</a></li>
                         <li><a href="#" onclick="switchView('purchaser-report')"><i class='bx bx-file-blank'></i>Purchaser Report</a></li>
                         <li><a href="#" onclick="switchView('return-report')"><i class='bx bx-undo'></i>Return Report</a></li>
                         <li><a href="#" onclick="switchView('expense-report')"><i class='bx bx-receipt'></i>Expense Report</a></li>
@@ -6801,8 +6802,9 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 window.renderTransferHistoryReports();
             }
             if(v === 'purchase-details') window.renderPurchaseDetailsView();
-            if(v === 'profit-loss') window.renderProfitLossReport();
+           if(v === 'profit-loss') window.renderProfitLossReport();
             if(v === 'stock-report') window.renderStockReport();
+            if(v === 'stock-audit') window.initStockAuditView(); /* YE NAYI LINE ADD KAREIN */
             if(v === 'purchaser-report') window.renderPurchaserReport();
             if(v === 'return-report') window.renderReturnReport();
             if(v === 'expense-report') window.renderExpenseReport();
