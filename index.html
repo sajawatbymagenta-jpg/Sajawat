@@ -4338,7 +4338,6 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
 
             if (!confirmResult.isConfirmed) return;
 
-            // Professional Loading Screen
             Swal.fire({
                 title: 'Deleting Inventory & Barcodes...',
                 html: 'Please wait while inventory database is synchronizing.',
@@ -4349,7 +4348,6 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
             try {
                 const batch = db.batch();
 
-                // Items list check (Diagram purchase items ya single product)
                 let itemsToDelete = purchase.items || [];
                 if (itemsToDelete.length === 0 && purchase.productName) {
                     itemsToDelete = [{
@@ -4359,11 +4357,9 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                     }];
                 }
 
-                // Har item ko Godown aur Shops se deduct/delete karna
                 for (let item of itemsToDelete) {
                     const deductQty = Number(item.qty || 1);
 
-                    // 1. Matching Product Main Godown mein dhoondein
                     const matchedProduct = (window.menuItems || []).find(p => 
                         (item.productId && p.id === item.productId) ||
                         (item.barcode && p.barcode && String(p.barcode).trim() === String(item.barcode).trim()) ||
@@ -4371,58 +4367,79 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                     );
 
                     if (matchedProduct) {
-                        const currentGodownQty = Number(matchedProduct.stock || 0);
+                        let currentGodownQty = Number(matchedProduct.stock || 0);
+                        let remainingToDeduct = deductQty;
 
-                        // A. Shop/Branches se Stock Minus karein
-                        const branchRecords = (window.branchStockList || []).filter(bs => 
-                            bs.productId === matchedProduct.id ||
-                            (bs.productBarcode && matchedProduct.barcode && bs.productBarcode === matchedProduct.barcode)
-                        );
+                        // Step 1: Pehle Godown se stock minus karein
+                        if (currentGodownQty >= remainingToDeduct) {
+                            currentGodownQty -= remainingToDeduct;
+                            remainingToDeduct = 0;
+                        } else {
+                            remainingToDeduct -= currentGodownQty;
+                            currentGodownQty = 0;
+                        }
 
-                        let shopStockDeducted = 0;
-                        for (let bRec of branchRecords) {
-                            const curBQty = Number(bRec.qty || 0);
-                            if (curBQty > 0) {
-                                const minusShop = Math.min(curBQty, Math.max(0, deductQty - currentGodownQty));
-                                if (minusShop > 0) {
-                                    if (curBQty - minusShop <= 0) {
+                        // Step 2: Agar Godown me stock khatam ho jaye aur deduct karna baqi ho, toh Shop se minus karein
+                        if (remainingToDeduct > 0) {
+                            const branchRecords = (window.branchStockList || []).filter(bs => 
+                                bs.productId === matchedProduct.id ||
+                                (bs.productBarcode && matchedProduct.barcode && bs.productBarcode === matchedProduct.barcode)
+                            );
+
+                            for (let bRec of branchRecords) {
+                                if (remainingToDeduct <= 0) break;
+                                
+                                const curBQty = Number(bRec.qty || 0);
+                                if (curBQty > 0) {
+                                    const deductFromShop = Math.min(curBQty, remainingToDeduct);
+                                    remainingToDeduct -= deductFromShop;
+                                    
+                                    if (curBQty - deductFromShop <= 0) {
                                         batch.delete(branchStockDB.doc(bRec.id));
+                                        // Local Memory Foran Update
+                                        window.branchStockList = window.branchStockList.filter(x => x.id !== bRec.id);
                                     } else {
                                         batch.update(branchStockDB.doc(bRec.id), {
-                                            qty: firebase.firestore.FieldValue.increment(-minusShop),
+                                            qty: firebase.firestore.FieldValue.increment(-deductFromShop),
                                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                                         });
+                                        // Local Memory Foran Update
+                                        const localBranch = window.branchStockList.find(x => x.id === bRec.id);
+                                        if(localBranch) localBranch.qty = curBQty - deductFromShop;
                                     }
-                                    shopStockDeducted += minusShop;
                                 }
                             }
                         }
 
-                        // B. Main Godown Stock Minus karein ya Product mukammal delete karein
-                        const remainingGodownStock = currentGodownQty - (deductQty - shopStockDeducted);
+                        // Step 3: Product ko Delete ya Update karein (Stock 0 hone par POS se hamesha ke liye ghayab ho jayega)
+                        const remainingBranchStock = (window.branchStockList || [])
+                            .filter(bs => bs.productId === matchedProduct.id)
+                            .reduce((sum, bs) => sum + Number(bs.qty || 0), 0);
 
-                        if (remainingGodownStock <= 0) {
-                            // Agar stock 0 ho jaye to POS aur Barcode dono se hata dein
+                        if (currentGodownQty <= 0 && remainingBranchStock <= 0) {
                             batch.delete(productsDB.doc(matchedProduct.id));
+                            // UI ko foran saaf karne ke liye local array se nikal dein
+                            window.menuItems = window.menuItems.filter(m => m.id !== matchedProduct.id);
                         } else {
-                            // Agar pehle se kuch stock tha to sirf khareedari wali qty minus karein
                             batch.update(productsDB.doc(matchedProduct.id), {
-                                stock: firebase.firestore.FieldValue.increment(-(deductQty - shopStockDeducted))
+                                stock: currentGodownQty
                             });
+                            // Local array update
+                            const localProd = window.menuItems.find(m => m.id === matchedProduct.id);
+                            if(localProd) localProd.stock = currentGodownQty;
                         }
                     }
                 }
 
-                // 2. Purchaser Document ko Firestore se delete karein
+                // Purchase Record Khatam
                 batch.delete(purchasesDB.doc(purchaseId));
 
-                // Batch Commit (Cloud update)
+                // Cloud Par Data Bhejein
                 await batch.commit();
 
-                // 3. Local Memory Arrays update
+                // Purchase list me se foran item hata dein
                 window.purchasesList = (window.purchasesList || []).filter(p => p.id !== purchaseId);
 
-                // 4. Auto Backup Update
                 if (typeof window.saveAllDataToLocalDrive === 'function') {
                     window.saveAllDataToLocalDrive(true);
                 }
@@ -4430,15 +4447,17 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Purchaser Deleted Successfully!',
-                    text: 'Purchaser record, Godown stock, Shop stock, and barcodes have been successfully cleared.',
-                    timer: 2200,
+                    text: 'Purchaser record aur uska stock mukammal taur par delete ho gaya hai.',
+                    timer: 2500,
                     showConfirmButton: false
                 });
 
-                // Screens auto-refresh
+                // Sab Screens Ko Live Refresh Karein
                 if (typeof window.renderPurchaseDetailsView === 'function') window.renderPurchaseDetailsView();
                 if (typeof window.renderPurchaserReport === 'function') window.renderPurchaserReport();
-                if (typeof window.triggerGlobalAutoRefresh === 'function') window.triggerGlobalAutoRefresh();
+                if (typeof window.filterMenu === 'function') window.filterMenu();
+                if (typeof window.renderAllProductBarcodesView === 'function') window.renderAllProductBarcodesView();
+                if (typeof window.renderStockReport === 'function') window.renderStockReport();
 
             } catch (err) {
                 console.error("Delete purchase error:", err);
