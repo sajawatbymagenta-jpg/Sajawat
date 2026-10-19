@@ -12436,6 +12436,7 @@ updateNetworkStatus();
                         cart.push({
                             id: it.id,
                             name: it.name,
+                            costPrice: it.costPrice !== undefined ? it.costPrice : 0, // Cost Price safe rahegi
                             price: it.price,
                             originalPrice: it.originalPrice || it.price,
                             qty: it.qty,
