@@ -539,108 +539,131 @@
 
         .empty-placeholder { text-align: center; color: #94a3b8; padding: 30px; font-style: italic; width: 100%; }
 
-       /* Professional Supermarket Thermal Receipt Styling */
+       /* High-Definition Bold & Spacious Thermal Receipt Styling */
         .invoice-content { 
             background: #ffffff; 
-            padding: 16px 14px; 
+            padding: 16px 10px 24px 10px; 
             border-radius: 8px; 
             width: 100%; 
             max-width: 380px; 
+            box-sizing: border-box;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
             margin: auto; 
-            font-family: 'Courier New', Courier, monospace, 'Plus Jakarta Sans', sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             color: #000000;
+            -webkit-font-smoothing: antialiased;
         }
         .inv-receipt-banner {
-            border-top: 1.5px dashed #000;
-            border-bottom: 1.5px dashed #000;
-            padding: 4px 0;
-            margin: 8px 0;
+            border-top: 2px dashed #000000;
+            border-bottom: 2px dashed #000000;
+            padding: 6px 0;
+            margin: 10px 0 10px 0;
             text-align: center;
             font-weight: 900;
-            font-size: 13px;
-            letter-spacing: 1px;
+            font-size: 15px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
+            color: #000000;
         }
         .inv-meta-grid {
-            font-size: 11px;
-            line-height: 1.4;
-            margin-bottom: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            font-weight: 800;
+            color: #000000;
         }
         .inv-meta-row {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 3px;
         }
         .invoice-table { 
             width: 100%; 
+            table-layout: fixed; /* Fixes column overflow */
             border-collapse: collapse; 
-            margin: 6px 0; 
-            font-size: 11px; 
+            margin: 8px 0 10px 0; 
+            font-size: 11.5px; 
+            color: #000000;
         }
         .invoice-table thead tr { 
-            border-top: 1px dashed #000; 
-            border-bottom: 1px dashed #000; 
+            border-top: 1.5px dashed #000000; 
+            border-bottom: 1.5px dashed #000000; 
         }
         .invoice-table th { 
-            padding: 4px 2px; 
-            text-align: left; 
-            font-weight: 800; 
-            font-size: 10.5px;
+            padding: 6px 2px; 
+            font-weight: 900; 
+            font-size: 11px;
+            color: #000000;
+            text-transform: uppercase;
         }
         .invoice-table td { 
-            padding: 4px 2px; 
+            padding: 6px 2px; 
             vertical-align: top;
+            color: #000000;
+            word-break: break-word;
         }
         .inv-item-row {
-            border-bottom: 1px dotted #ccc;
+            border-bottom: 1.5px dotted #94a3b8;
         }
         .inv-counts-bar {
             display: flex;
             justify-content: space-between;
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
-            padding: 3px 0;
-            font-size: 11px;
-            font-weight: 800;
-            margin: 4px 0 8px 0;
+            border-top: 2px dashed #000000;
+            border-bottom: 2px dashed #000000;
+            padding: 7px 0;
+            font-size: 13.5px;
+            font-weight: 900;
+            margin: 8px 0 14px 0;
+            color: #000000;
         }
         .invoice-summary { 
-            border-bottom: 1px dashed #000; 
-            padding-bottom: 6px; 
-            margin-bottom: 6px;
-            font-size: 11.5px; 
+            border-bottom: 2px dashed #000000; 
+            padding-bottom: 10px; 
+            margin-bottom: 12px;
+            font-size: 13.5px; 
+            font-weight: 800;
+            color: #000000;
         }
         .invoice-summary p { 
             display: flex; 
             justify-content: space-between; 
-            margin-bottom: 3px; 
+            margin-bottom: 6px; 
+            color: #000000;
         }
         .inv-saved-box {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 5px 0;
-            font-size: 15px;
+            padding: 8px 0;
+            font-size: 17px;
             font-weight: 900;
-            border-bottom: 1px dashed #000;
-            margin-bottom: 6px;
+            border-bottom: 2px dashed #000000;
+            margin-bottom: 12px;
+            color: #000000;
         }
         .inv-user-counter {
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 12px;
             text-transform: uppercase;
+            color: #000000;
         }
         .invoice-footer { 
             text-align: center; 
-            font-size: 9.5px; 
-            line-height: 1.35; 
-            margin-top: 6px; 
+            font-size: 12px; 
+            line-height: 1.6; 
+            margin-top: 14px; 
+            color: #000000;
+            font-weight: 700;
         }
-        .invoice-footer b { font-size: 10.5px; }
-        .invoice-actions { display: flex; gap: 10px; margin-top: 14px; }
+        .invoice-footer b { 
+            font-size: 13.5px; 
+            font-weight: 900;
+            color: #000000;
+        }
+        .invoice-actions { display: flex; gap: 10px; margin-top: 18px; }
 
       /* Normal screen par barcode print area hamesha mukammal hidden rahega */
         #barcode-print-area {
@@ -673,7 +696,7 @@
                 display: none !important;
             }
 
-            /* 3. Invoice Receipt Styling for POS-80C Thermal Printer */
+            /* 3. High-Contrast, Long & Bold Receipt for 80mm Thermal Printer */
             #invoice-modal.visible {
                 position: static !important;
                 inset: auto !important;
@@ -691,36 +714,54 @@
                 left: auto !important;
                 top: auto !important;
                 width: 100% !important;
-                max-width: 78mm !important;
+                max-width: 72mm !important; /* Perfect fit for 80mm roll without edge clipping */
                 margin: 0 auto !important;
-                padding: 3mm 2mm !important;
+                padding: 2mm 2mm 12mm 2mm !important;
+                box-sizing: border-box !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                page-break-after: avoid !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+
+            .invoice-table {
+                width: 100% !important;
+                table-layout: fixed !important;
             }
 
             #invoice-modal .invoice-content * {
                 color: #000000 !important;
                 visibility: visible !important;
+                font-weight: 800 !important; /* Forces thermal printer to print pitch-black and bold */
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
-            .invoice-header, .invoice-summary {
-                border-top: 1.5px dashed #000000 !important;
-                border-bottom: 1.5px dashed #000000 !important;
+            .inv-receipt-banner,
+            .invoice-summary,
+            .inv-counts-bar,
+            .inv-saved-box {
+                border-color: #000000 !important;
+                border-width: 2px !important;
             }
 
-            .invoice-table th, .invoice-table td {
-                border-bottom: 1px dashed #000000 !important;
+            .invoice-table th, 
+            .invoice-table td {
                 color: #000000 !important;
-                font-weight: 600 !important;
-                padding: 4px 2px !important;
+                font-weight: 800 !important;
+                padding: 6px 2px !important;
             }
 
-            .qrcode-wrapper {
-                margin: 8px 0 !important;
+            .inv-item-row {
+                border-bottom: 1.5px dotted #000000 !important;
+            }
+
+            #invoice-barcode-svg {
+                margin: 8px auto !important;
+                height: 48px !important;
+                display: block !important;
             }
 
             /* 4. Invoice print ke waqt barcode area hide rahe */
@@ -1404,6 +1445,22 @@
                     <div class="order-summary">
                         <div class="summary-line"><span>Subtotal</span><span id="subtotal-amount">Rs. 0</span></div>
                         <div class="summary-line total"><span>Total Payable</span><span id="total-amount">Rs. 0</span></div>
+
+                        <!-- LIVE CASH TENDERED & CHANGE DUE CALCULATOR -->
+                        <div id="pos-change-calc-box" style="margin: 10px 0; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 10px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label for="pos-cash-received-input" style="font-weight: 800; font-size: 0.85rem; color: #166534; display: flex; align-items: center; gap: 4px; margin: 0;">
+                                    <i class='bx bx-money' style="font-size: 1.1rem;"></i> Cash Received:
+                                </label>
+                                <input type="number" id="pos-cash-received-input" placeholder="Cash" min="0" oninput="calculatePosChangeReturn()" 
+                                       style="width: 110px; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #16a34a; font-weight: 900; font-size: 1rem; color: #0f172a; text-align: right; outline: none; background: #ffffff;">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #86efac; padding-top: 6px;">
+                                <span id="pos-change-return-label" style="font-weight: 800; font-size: 0.86rem; color: #166534;">Change Due:</span>
+                                <strong id="pos-change-return-disp" style="font-size: 1.15rem; font-weight: 900; color: #15803d; letter-spacing: -0.3px;">Rs. 0</strong>
+                            </div>
+                        </div>
+
                         <button class="charge-btn" id="charge-btn">Charge Rs. 0</button>
                     </div>
                 </aside>
@@ -3060,14 +3117,14 @@
                 </div>
             </div>
 
-           <!-- Items Table (Barcode & Description Alag Alag) -->
+           <!-- Items Table (Fixed Widths: No Edge Clipping) -->
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th style="width: 48%;">Barcode & Description</th>
+                        <th style="width: 44%; text-align: left;">Description</th>
                         <th style="width: 12%; text-align: center;">Qty</th>
-                        <th style="width: 20%; text-align: right;">Price</th>
-                        <th style="width: 20%; text-align: right;">Total</th>
+                        <th style="width: 22%; text-align: right;">Price</th>
+                        <th style="width: 22%; text-align: right;">Total</th>
                     </tr>
                 </thead>
                 <tbody id="invoice-items-body"></tbody>
@@ -3079,12 +3136,14 @@
                 <span>No Of Item: <span id="inv-items-count">0</span></span>
             </div>
 
-            <!-- Summary -->
+            <!-- Summary (With Cash Tendered & Change Return) -->
             <div class="invoice-summary">
                 <p><span>Gross Total:</span> <span id="invoice-subtotal">0.00</span></p>
                 <p><span>(-)TotalDisc:</span> <span id="invoice-discount">0.00</span></p>
                 <p style="font-size: 12.5px; font-weight: 800;"><span>Net Total:</span> <span id="invoice-total">0.00</span></p>
                 <p><span>Payment (<span id="invoice-payment-method">Cash</span>):</span> <span id="invoice-paid-received">0.00</span></p>
+                <p id="inv-row-cash-given" style="display:none; font-weight: 700;"><span>Cash Tendered:</span> <span id="invoice-cash-given">0.00</span></p>
+                <p id="inv-row-cash-change" style="display:none; font-weight: 800; color:#000000;"><span>Change Due:</span> <span id="invoice-cash-change">0.00</span></p>
             </div>
 
             <!-- Prominent 'You Saved' Box -->
@@ -6186,8 +6245,48 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             window.renderCart();
         };
 
+        // REAL-TIME CHANGE & CASH BACK CALCULATOR (NO CALCULATOR NEEDED)
+        window.calculatePosChangeReturn = function() {
+            const grossSubtotal = cart.reduce((a, b) => a + (Number(b.originalPrice || b.price || 0) * b.qty), 0);
+            const discountedSubtotal = cart.reduce((a, b) => a + (Number(b.price || 0) * b.qty), 0);
+            const totalDiscount = (grossSubtotal - discountedSubtotal);
+            const grandTotal = Math.max(0, grossSubtotal - totalDiscount);
+
+            const cashInput = document.getElementById('pos-cash-received-input');
+            const returnDisp = document.getElementById('pos-change-return-disp');
+            const returnLabel = document.getElementById('pos-change-return-label');
+            if (!returnDisp) return;
+
+            const receivedVal = parseFloat(cashInput?.value);
+
+            // Default state when input is empty or invalid
+            if (isNaN(receivedVal) || receivedVal <= 0) {
+                returnDisp.textContent = 'Rs. 0';
+                returnDisp.style.color = '#15803d';
+                if (returnLabel) returnLabel.textContent = 'Change Due:';
+                return;
+            }
+
+            const diff = receivedVal - grandTotal;
+
+            if (diff >= 0) {
+                // Customer paid exact or surplus amount (Green display)
+                returnDisp.textContent = `Rs. ${diff.toLocaleString()}`;
+                returnDisp.style.color = '#15803d';
+                if (returnLabel) returnLabel.textContent = 'Change Due:';
+            } else {
+                // Customer paid less than total amount (Red warning)
+                returnDisp.textContent = `Rs. ${Math.abs(diff).toLocaleString()} (Short)`;
+                returnDisp.style.color = '#ef4444';
+                if (returnLabel) returnLabel.textContent = 'Balance Due / Short:';
+            }
+        };
+
         window.clearCart = function() {
             cart = [];
+            const cashInput = document.getElementById('pos-cash-received-input');
+            if (cashInput) cashInput.value = '';
+            window.calculatePosChangeReturn();
             window.renderCart();
         };
 
@@ -6218,11 +6317,10 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
             updateSummary();
         };
 
-      function updateSummary() {
+        function updateSummary() {
             const grossSubtotal = cart.reduce((a, b) => a + (Number(b.originalPrice || b.price || 0) * b.qty), 0);
             const discountedSubtotal = cart.reduce((a, b) => a + (Number(b.price || 0) * b.qty), 0);
             
-            // Ab sirf Settings wala Store Discount hi calculate hoga
             const totalDiscount = (grossSubtotal - discountedSubtotal);
             const grandTotal = Math.max(0, grossSubtotal - totalDiscount);
 
@@ -6236,6 +6334,9 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 let btnLabel = window.currentPaymentMode === 'Credit' ? 'Charge (Credit)' : 'Charge';
                 chgBtn.textContent = `${btnLabel} Rs. ${grandTotal.toLocaleString()}`;
             }
+
+            // Automatically recalculate change whenever cart items or quantities change
+            window.calculatePosChangeReturn();
         }
 
         // =========================================================
@@ -7923,10 +8024,17 @@ window.applyUserPermissions = function(user) {
                 const now = new Date();
                 const invDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
+                // Capture cash received and calculate change
+                const rawCashReceived = parseFloat(document.getElementById('pos-cash-received-input')?.value);
+                const cashReceived = (!isNaN(rawCashReceived) && rawCashReceived > 0) ? rawCashReceived : total;
+                const cashChangeDue = Math.max(0, cashReceived - total);
+
                 const saleRecord = {
                     invoiceId: invId, date: invDate, customerName: custName, customerPhone: custPhone,
                     paymentMode: finalPaymentMode, paymentStatus: paymentStatus,
                     branchId: selectedBranch, branchName: branchNameRecorded,
+                    cashGiven: cashReceived,
+                    cashChange: cashChangeDue,
                    items: cart.map(i => ({ 
                         id: i.id, 
                         name: i.name, 
@@ -7979,15 +8087,22 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
                     showInvoiceModal(saleRecord);
                     // window.print(); // Yeh line hata di taake printer box disturb na kare
 
-                    // Cart khali karein aur reset karein
+// Reset cart and clear cash input
                     cart = [];
                     const discEl = document.getElementById('manual-discount-input');
                     const cNameEl = document.getElementById('pos-cust-name');
                     const cPhoneEl = document.getElementById('pos-cust-phone');
+                    const cashInEl = document.getElementById('pos-cash-received-input');
+                    
                     if (discEl) discEl.value = '';
                     if (cNameEl) cNameEl.value = '';
                     if (cPhoneEl) cPhoneEl.value = '';
+                    if (cashInEl) cashInEl.value = '';
+                    
                     window.setPaymentMode('Cash');
+                    if (typeof window.calculatePosChangeReturn === 'function') {
+                        window.calculatePosChangeReturn();
+                    }
                     window.renderCart();
                     if (typeof window.filterMenu === 'function') window.filterMenu();
 
@@ -7997,9 +8112,11 @@ if (typeof window.saveAllDataToLocalDrive === 'function') {
             });
 
 window.showInvoiceModal = function(sale) {
-    // 1. Settings se aapki dukan ka live naam, phone aur note uthayega
+    if (!sale) return;
+
+    // 1. Business Info
     const currentBizName = localStorage.getItem('pos_biz_name') || 'SAJAWAT BY MAGENTA';
-    const currentBizPhone = localStorage.getItem('pos_biz_phone') || '0332 7909930';
+    const currentBizPhone = localStorage.getItem('pos_biz_phone') || '03133444459';
     const currentBizNote = localStorage.getItem('pos_biz_note') || 'YOUR WORK OUR IDENTITY. Thank you for your business!';
 
     const restNameEl = document.getElementById('invoice-restaurant-name');
@@ -8007,17 +8124,12 @@ window.showInvoiceModal = function(sale) {
     const restAddressEl = document.getElementById('invoice-branch-address');
     const restNoteEl = document.getElementById('invoice-footer-note');
 
-    // Aapka apna Business Name, Branch aur Phone yahan set hoga
     if (restNameEl) restNameEl.textContent = currentBizName;
     if (restPhoneEl) restPhoneEl.textContent = currentBizPhone;
-    
-    // POS par jo store/branch chuni gayi hogi wahi address aayega
-    if (restAddressEl) {
-        restAddressEl.textContent = sale.branchName || 'Main Store';
-    }
+    if (restAddressEl) restAddressEl.textContent = sale.branchName || 'Main Store';
     if (restNoteEl) restNoteEl.textContent = currentBizNote;
 
-    // 2. Bill Number, Date aur Time
+    // 2. Bill Meta
     const invIdEl = document.getElementById('invoice-id');
     const invDateEl = document.getElementById('invoice-date');
     const invTimeEl = document.getElementById('invoice-time-display');
@@ -8025,15 +8137,15 @@ window.showInvoiceModal = function(sale) {
 
     if (invIdEl) invIdEl.textContent = sale.invoiceId || '000';
     
-    // Date & Time alag format karna
     const rawDate = sale.date || '';
     if (invDateEl) invDateEl.textContent = rawDate.substring(0, 10) || new Date().toISOString().slice(0, 10);
-    if (invTimeEl) invTimeEl.textContent = rawDate.length > 11 ? rawDate.substring(11) : new Date().toLocaleTimeString();
+    if (invTimeEl) invTimeEl.textContent = rawDate.length > 11 ? rawDate.substring(11, 16) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     if (custEl) custEl.textContent = (sale.customerName && sale.customerName !== 'Walk-in') ? sale.customerName : 'Cash Customer';
 
-    // 3. Items Table (Item Barcode Number + Name)
+    // 3. Items Rendering with Controlled Column Percentages (No Cutting)
     const tbody = document.getElementById('invoice-items-body');
     let totalPieces = 0;
+    let computedGross = 0;
     const itemsList = sale.items || [];
 
     if (tbody) {
@@ -8043,56 +8155,29 @@ window.showInvoiceModal = function(sale) {
             totalPieces += qty;
             const price = Number(item.price || 0);
             const lineTotal = qty * price;
+            computedGross += lineTotal;
 
-            // Barcode dhoondna: agar sale mein na ho to inventory menuItems se uthayega
             const originalProd = (window.menuItems || []).find(m => m.id === item.id || m.name === item.name);
-            const barcodeNumber = item.barcode || (originalProd ? originalProd.barcode : '') || '100' + item.id.substring(0, 4);
+            const barcodeNumber = item.barcode || (originalProd ? originalProd.barcode : '') || '';
 
             tbody.innerHTML += `
                 <tr class="inv-item-row">
-                    <td>
-                        <div style="font-size: 10px; font-weight: 900; color: #000; letter-spacing: 0.5px;">${barcodeNumber}</div>
-                        <div style="font-weight: 700; font-size: 10.5px;">${item.name}</div>
+                    <td style="width: 44%; padding: 5px 2px;">
+                        ${barcodeNumber ? `<div style="font-size: 10px; font-weight: 900; color: #000; letter-spacing: 0.3px;">${barcodeNumber}</div>` : ''}
+                        <div style="font-weight: 900; font-size: 11.5px; color: #000; line-height: 1.25;">${item.name}</div>
                     </td>
-                    <td style="text-align: center; font-weight:700;">${qty}</td>
-                    <td style="text-align: right;">${price.toFixed(2)}</td>
-                    <td style="text-align: right; font-weight: 800;">${lineTotal.toFixed(2)}</td>
+                    <td style="width: 12%; text-align: center; font-weight: 900; font-size: 12px; padding: 5px 2px;">${qty}</td>
+                    <td style="width: 22%; text-align: right; font-weight: 800; font-size: 11.5px; padding: 5px 2px;">${price.toFixed(2)}</td>
+                    <td style="width: 22%; text-align: right; font-weight: 900; font-size: 12px; padding: 5px 2px;">${lineTotal.toFixed(2)}</td>
                 </tr>
             `;
         });
     }
 
-    // Modal show karein
-    document.getElementById('invoice-modal')?.classList.add('visible');
-
-    // 4. Pure Bill ka Scanner Barcode Draw Karna (Lines wala barcode)
-    setTimeout(() => {
-        try {
-            const billBarcodeVal = String(sale.invoiceId || '000').padStart(6, '0');
-            JsBarcode("#invoice-barcode-svg", billBarcodeVal, {
-                format: "CODE128",
-                width: 1.4,
-                height: 30,
-                displayValue: true,
-                fontSize: 10,
-                font: "Courier New",
-                margin: 0
-            });
-        } catch(e) {
-            console.warn("Barcode draw error:", e);
-        }
-    }, 80);
-
-    // 4. Qty Count & Number of Items
-    const totalQtyEl = document.getElementById('inv-total-qty');
-    const itemsCountEl = document.getElementById('inv-items-count');
-    if (totalQtyEl) totalQtyEl.textContent = totalPieces;
-    if (itemsCountEl) itemsCountEl.textContent = itemsList.length;
-
-    // 5. Financial Summary (Gross, Discount, Net, You Saved)
-    const grossTotal = Number(sale.subtotal || sale.total || 0);
+    // 4. Financial Totals (Fix: Calculates properly and assigns values to HTML)
+    const grossTotal = Number(sale.subtotal) > 0 ? Number(sale.subtotal) : computedGross;
     const discTotal = Number(sale.discount || 0);
-    const netTotal = Number(sale.total || 0);
+    const netTotal = Number(sale.total) > 0 ? Number(sale.total) : Math.max(0, grossTotal - discTotal);
 
     const subEl = document.getElementById('invoice-subtotal');
     const discEl = document.getElementById('invoice-discount');
@@ -8101,20 +8186,45 @@ window.showInvoiceModal = function(sale) {
     const paidRecEl = document.getElementById('invoice-paid-received');
     const youSavedEl = document.getElementById('inv-you-saved-val');
 
+    // Values assign ho rahi hain taake 0.00 na aaye
     if (subEl) subEl.textContent = grossTotal.toFixed(2);
     if (discEl) discEl.textContent = discTotal > 0 ? discTotal.toFixed(2) : '0.00';
     if (totEl) totEl.textContent = netTotal.toFixed(2);
-    if (payModeEl) payModeEl.textContent = sale.paymentMode || 'Cash';
+    if (payModeEl) payModeEl.textContent = (sale.paymentMode || 'Cash').split('-')[0].trim();
     if (paidRecEl) paidRecEl.textContent = netTotal.toFixed(2);
     if (youSavedEl) youSavedEl.textContent = discTotal > 0 ? discTotal.toFixed(2) : '0.00';
 
-    // 6. User / Cashier Name
+    // 5. Cash Tendered (Given) & Change Due
+    const rowGiven = document.getElementById('inv-row-cash-given');
+    const rowChange = document.getElementById('inv-row-cash-change');
+    const valGiven = document.getElementById('invoice-cash-given');
+    const valChange = document.getElementById('invoice-cash-change');
+
+    const cashGivenVal = Number(sale.cashGiven || 0);
+    if (cashGivenVal >= netTotal && cashGivenVal > 0 && rowGiven && rowChange) {
+        rowGiven.style.display = 'flex';
+        rowChange.style.display = 'flex';
+        if (valGiven) valGiven.textContent = cashGivenVal.toFixed(2);
+        const changeVal = Number(sale.cashChange !== undefined ? sale.cashChange : (cashGivenVal - netTotal));
+        if (valChange) valChange.textContent = changeVal.toFixed(2);
+    } else if (rowGiven && rowChange) {
+        rowGiven.style.display = 'none';
+        rowChange.style.display = 'none';
+    }
+
+    // 6. Counts
+    const totalQtyEl = document.getElementById('inv-total-qty');
+    const itemsCountEl = document.getElementById('inv-items-count');
+    if (totalQtyEl) totalQtyEl.textContent = totalPieces;
+    if (itemsCountEl) itemsCountEl.textContent = itemsList.length;
+
+    // 7. Cashier Details
     const currentUserStr = sessionStorage.getItem('pos_current_user');
-    let cashierName = 'COUNTER1';
+    let cashierName = 'SUPERMASTER';
     if (currentUserStr) {
         try {
             const u = JSON.parse(currentUserStr);
-            cashierName = u.username || u.name || 'COUNTER1';
+            cashierName = u.username || u.name || 'SUPERMASTER';
         } catch(e) {}
     }
     const cashierEl = document.getElementById('inv-cashier-name');
@@ -8122,7 +8232,24 @@ window.showInvoiceModal = function(sale) {
     if (cashierEl) cashierEl.textContent = cashierName.toUpperCase();
     if (counterEl) counterEl.textContent = cashierName.toUpperCase();
 
-    // 7. QR Code yahan se mukammal khatam kar diya gaya hai
+    // 8. Barcode Rendering
+    setTimeout(() => {
+        try {
+            const billBarcodeVal = String(sale.invoiceId || '000').padStart(6, '0');
+            JsBarcode("#invoice-barcode-svg", billBarcodeVal, {
+                format: "CODE128",
+                width: 1.5,
+                height: 40,
+                displayValue: true,
+                fontSize: 11,
+                font: "Arial",
+                textMargin: 3,
+                margin: 0
+            });
+        } catch(e) {}
+    }, 60);
+
+    // Show Modal
     document.getElementById('invoice-modal')?.classList.add('visible');
 };
 
