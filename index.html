@@ -1260,13 +1260,13 @@
                         <i class='bx bx-chevron-down submenu-arrow'></i>
                     </a>
                     <ul class="sub-menu">
-                        <li><a href="#" onclick="switchView('profit-loss')"><i class='bx bx-coin-stack'></i>Profit & Loss</a></li>
-                        <li><a href="#" onclick="switchView('stock-report')"><i class='bx bx-archive-in'></i>Stock Report</a></li>
-                        <li><a href="#" onclick="switchView('stock-audit')"><i class='bx bx-check-shield'></i>Stock Audit</a></li>
-                        <li><a href="#" onclick="switchView('purchaser-report')"><i class='bx bx-file-blank'></i>Purchaser Report</a></li>
-                        <li><a href="#" onclick="switchView('return-report')"><i class='bx bx-undo'></i>Return Report</a></li>
-                        <li><a href="#" onclick="switchView('expense-report')"><i class='bx bx-receipt'></i>Expense Report</a></li>
-                        <li><a href="#" onclick="switchView('cashbook-report')"><i class='bx bx-book-open'></i>Cash Book Report</a></li>
+                        <li id="subnav-rep-profit-loss"><a href="#" onclick="switchView('profit-loss')"><i class='bx bx-coin-stack'></i>Profit & Loss</a></li>
+                        <li id="subnav-rep-stock-report"><a href="#" onclick="switchView('stock-report')"><i class='bx bx-archive-in'></i>Stock Report</a></li>
+                        <li id="subnav-rep-stock-audit"><a href="#" onclick="switchView('stock-audit')"><i class='bx bx-check-shield'></i>Stock Audit</a></li>
+                        <li id="subnav-rep-purchaser-report"><a href="#" onclick="switchView('purchaser-report')"><i class='bx bx-file-blank'></i>Purchaser Report</a></li>
+                        <li id="subnav-rep-return-report"><a href="#" onclick="switchView('return-report')"><i class='bx bx-undo'></i>Return Report</a></li>
+                        <li id="subnav-rep-expense-report"><a href="#" onclick="switchView('expense-report')"><i class='bx bx-receipt'></i>Expense Report</a></li>
+                        <li id="subnav-rep-cashbook-report"><a href="#" onclick="switchView('cashbook-report')"><i class='bx bx-book-open'></i>Cash Book Report</a></li>
                     </ul>
                 </li>
 
@@ -3224,6 +3224,18 @@
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-all-reports"> All Reports (Master Financial Audit)</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;"><input type="checkbox" id="perm-settings"> Settings</label>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:var(--primary); font-weight:700;"><input type="checkbox" id="perm-users"> Users & Access</label>
+            </div>
+
+           <!-- REPORTS SUB-MODULES ACCESS CONTROL -->
+            <label style="font-weight: 700; margin-bottom: 8px; display: block; color: #0284c7;"><i class='bx bx-line-chart'></i> Individual Reports Access (Select which reports user can see):</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f0f9ff; padding: 14px; border-radius: 12px; border: 1.5px solid #bae6fd; margin-bottom: 16px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-profit-loss"> Profit & Loss</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-stock-report"> Stock Report</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-stock-audit"> Stock Audit</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-purchaser-report"> Purchaser Report</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-return-report"> Return Report</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-expense-report"> Expense Report</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer; color:#0f172a; font-weight:600;"><input type="checkbox" id="perm-rep-cashbook-report"> Cash Book Report</label>
             </div>
 
             <!-- STOCK REPORT COLUMNS CONTROL -->
@@ -6830,6 +6842,15 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                 const currentUser = JSON.parse(currentUserStr);
                 if (currentUser.role !== 'superadmin' && currentUser.role !== 'supermaster') {
                     const p = currentUser.permissions || {};
+                    const subRep = p.subReports || {
+                        profitLoss: (p.reports !== false),
+                        stockReport: (p.reports !== false),
+                        stockAudit: (p.reports !== false),
+                        purchaserReport: (p.reports !== false),
+                        returnReport: (p.reports !== false),
+                        expenseReport: (p.reports !== false),
+                        cashbookReport: (p.reports !== false)
+                    };
                     const viewPermMap = {
                         'dashboard': p.dashboard,
                         'pos': p.pos,
@@ -6837,13 +6858,13 @@ cashEntriesDB.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
                         'purchase-details': p.purchaser,
                         'branch-transfer': p.purchaser,
                         'product-barcodes': p.purchaser,
-                        'profit-loss': p.reports,
-                        'stock-report': p.reports,
-                        'stock-audit': p.reports,
-                        'purchaser-report': p.reports,
-                        'return-report': p.reports,
-                        'expense-report': p.reports,
-                        'cashbook-report': p.reports,
+                        'profit-loss': (p.reports && subRep.profitLoss),
+                        'stock-report': (p.reports && subRep.stockReport),
+                        'stock-audit': (p.reports && subRep.stockAudit),
+                        'purchaser-report': (p.reports && subRep.purchaserReport),
+                        'return-report': (p.reports && subRep.returnReport),
+                        'expense-report': (p.reports && subRep.expenseReport),
+                        'cashbook-report': (p.reports && subRep.cashbookReport),
                         'sell': p.sales,
                         'all-reports': p.allReports,
                         'return': p.returns,
@@ -7578,7 +7599,6 @@ window.openUserAccessModal = function(userId) {
         (window.branchesList || []).forEach(b => {
             branchSelect.innerHTML += `<option value="${b.id}">${b.name} (${b.area})</option>`;
         });
-        // User ko jo store pehle se mila hua hai usko select karein
         branchSelect.value = user.assignedBranch || 'all';
     }
 
@@ -7597,6 +7617,25 @@ window.openUserAccessModal = function(userId) {
     setCheck('perm-settings', p.settings);
     setCheck('perm-users', p.users);
 
+    // Individual Reports Access Checkboxes
+    const defaultRepAccess = (p.reports !== false);
+    const subRep = p.subReports || {
+        profitLoss: defaultRepAccess,
+        stockReport: defaultRepAccess,
+        stockAudit: defaultRepAccess,
+        purchaserReport: defaultRepAccess,
+        returnReport: defaultRepAccess,
+        expenseReport: defaultRepAccess,
+        cashbookReport: defaultRepAccess
+    };
+    setCheck('perm-rep-profit-loss', subRep.profitLoss);
+    setCheck('perm-rep-stock-report', subRep.stockReport);
+    setCheck('perm-rep-stock-audit', subRep.stockAudit);
+    setCheck('perm-rep-purchaser-report', subRep.purchaserReport);
+    setCheck('perm-rep-return-report', subRep.returnReport);
+    setCheck('perm-rep-expense-report', subRep.expenseReport);
+    setCheck('perm-rep-cashbook-report', subRep.cashbookReport);
+
     // Stock Report Columns Checkboxes
     const cols = p.stockCols || { barcode: true, product: true, costPrice: true, sellingPrice: true, totalStock: true };
     setCheck('perm-col-barcode', cols.barcode);
@@ -7609,21 +7648,36 @@ window.openUserAccessModal = function(userId) {
     document.getElementById('user-access-modal')?.classList.add('visible');
 };
 
-// 3. User Access Save karne ka function (Database mein Store + Permissions save karega)
+// 3. User Access Save karne ka function (Database mein Store + Individual Reports Permissions save karega)
 window.saveUserPermissions = async function() {
     const userId = document.getElementById('perm-user-id').value;
     const status = document.getElementById('perm-user-status').value;
     
-    // Assigned branch ka faisla
     const branchSelect = document.getElementById('perm-user-branch');
     const assignedBranch = branchSelect ? branchSelect.value : 'all';
+
+    // Sub-reports values
+    const subReportsPerms = {
+        profitLoss: document.getElementById('perm-rep-profit-loss')?.checked || false,
+        stockReport: document.getElementById('perm-rep-stock-report')?.checked || false,
+        stockAudit: document.getElementById('perm-rep-stock-audit')?.checked || false,
+        purchaserReport: document.getElementById('perm-rep-purchaser-report')?.checked || false,
+        returnReport: document.getElementById('perm-rep-return-report')?.checked || false,
+        expenseReport: document.getElementById('perm-rep-expense-report')?.checked || false,
+        cashbookReport: document.getElementById('perm-rep-cashbook-report')?.checked || false
+    };
+
+    // Agar kam az kam 1 report check ho to main reports menu khud active ho jaye
+    const hasAnySubReport = Object.values(subReportsPerms).some(v => v === true);
+    const reportsMainChecked = document.getElementById('perm-reports').checked;
 
     // Nayi permissions tayyar karein
     const newPermissions = {
         dashboard: document.getElementById('perm-dashboard').checked,
         pos: document.getElementById('perm-pos').checked,
         purchaser: document.getElementById('perm-purchaser').checked,
-        reports: document.getElementById('perm-reports').checked,
+        reports: reportsMainChecked && hasAnySubReport,
+        subReports: subReportsPerms,
         sales: document.getElementById('perm-sales').checked,
         returns: document.getElementById('perm-returns').checked,
         expenses: document.getElementById('perm-expenses').checked,
@@ -7640,7 +7694,6 @@ window.saveUserPermissions = async function() {
     };
 
     try {
-        // Firebase Firestore update
         await usersDB.doc(userId).update({
             status: status,
             assignedBranch: assignedBranch,
@@ -7648,7 +7701,6 @@ window.saveUserPermissions = async function() {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Agar current logged-in user ki apni permission change hui hai to foran local session update karein
         const currentSession = sessionStorage.getItem('pos_current_user');
         if (currentSession) {
             try {
@@ -7662,9 +7714,8 @@ window.saveUserPermissions = async function() {
             } catch(e) {}
         }
 
-        // Popup close karein
         window.closeUserAccessModal();
-        alert("User Permissions aur Store Access kamyabi say update hogaye!");
+        alert("User Permissions aur Individual Reports Access kamyabi say update hogaye!");
     } catch(e) {
         alert("Error saving permissions: " + e.message);
     }
@@ -7678,7 +7729,38 @@ window.applyUserPermissions = function(user) {
 
     const isSuper = (user.role === 'superadmin' || user.role === 'supermaster');
 
-    // Sidebar items ki mapping
+    const p = user.permissions || {};
+    const subRep = p.subReports || {
+        profitLoss: (p.reports !== false),
+        stockReport: (p.reports !== false),
+        stockAudit: (p.reports !== false),
+        purchaserReport: (p.reports !== false),
+        returnReport: (p.reports !== false),
+        expenseReport: (p.reports !== false),
+        cashbookReport: (p.reports !== false)
+    };
+
+    // Sub-reports mapping: Har report ki alag li ID
+    const subRepItems = {
+        'subnav-rep-profit-loss': subRep.profitLoss,
+        'subnav-rep-stock-report': subRep.stockReport,
+        'subnav-rep-stock-audit': subRep.stockAudit,
+        'subnav-rep-purchaser-report': subRep.purchaserReport,
+        'subnav-rep-return-report': subRep.returnReport,
+        'subnav-rep-expense-report': subRep.expenseReport,
+        'subnav-rep-cashbook-report': subRep.cashbookReport
+    };
+
+    let anySubRepAllowed = false;
+    Object.keys(subRepItems).forEach(subId => {
+        const el = document.getElementById(subId);
+        if (!el) return;
+        const allowed = isSuper || (subRepItems[subId] === true && p.reports !== false);
+        el.style.display = allowed ? '' : 'none';
+        if (allowed) anySubRepAllowed = true;
+    });
+
+    // Sidebar main items ki mapping
     const navItems = {
         'nav-dashboard': { perm: 'dashboard', view: 'dashboard' },
         'nav-pos': { perm: 'pos', view: 'pos' },
@@ -7692,15 +7774,21 @@ window.applyUserPermissions = function(user) {
         'nav-users': { perm: 'users', view: 'users' }
     };
 
-    const p = user.permissions || {};
     let firstPermittedView = null;
 
     Object.keys(navItems).forEach(navId => {
         const itemEl = document.getElementById(navId);
         if (!itemEl) return;
 
-        const permKey = navItems[navId].perm;
-        const isAllowed = isSuper || (p[permKey] === true);
+        let isAllowed = isSuper;
+        if (!isSuper) {
+            if (navId === 'nav-reports') {
+                isAllowed = (p.reports === true && anySubRepAllowed);
+            } else {
+                const permKey = navItems[navId].perm;
+                isAllowed = (p[permKey] === true);
+            }
+        }
 
         if (isAllowed) {
             itemEl.style.display = '';
@@ -7708,18 +7796,15 @@ window.applyUserPermissions = function(user) {
                 firstPermittedView = navItems[navId].view;
             }
         } else {
-            // Jin modules ka access nahi hai wo sidebar se mukammal gayab (hidden) ho jayenge
             itemEl.style.display = 'none';
         }
     });
 
-    // Dev License Buttons control
     const devBtn = document.getElementById('super-master-header-btn');
     const sidebarDev = document.getElementById('nav-dev-license');
     if (devBtn) devBtn.style.display = (user.role === 'supermaster') ? 'flex' : 'none';
     if (sidebarDev) sidebarDev.style.display = (user.role === 'supermaster') ? 'block' : 'none';
 
-    // Agar user kisi disallowed view par khada hai to usko pehle allowed view par bhej dein
     if (!isSuper && firstPermittedView) {
         const activeView = document.querySelector('.view.active');
         const activeId = activeView ? activeView.id.replace('-view', '') : '';
@@ -7731,12 +7816,13 @@ window.applyUserPermissions = function(user) {
             'purchase-details': p.purchaser,
             'branch-transfer': p.purchaser,
             'product-barcodes': p.purchaser,
-            'profit-loss': p.reports,
-            'stock-report': p.reports,
-            'purchaser-report': p.reports,
-            'return-report': p.reports,
-            'expense-report': p.reports,
-            'cashbook-report': p.reports,
+            'profit-loss': (p.reports && subRep.profitLoss),
+            'stock-report': (p.reports && subRep.stockReport),
+            'stock-audit': (p.reports && subRep.stockAudit),
+            'purchaser-report': (p.reports && subRep.purchaserReport),
+            'return-report': (p.reports && subRep.returnReport),
+            'expense-report': (p.reports && subRep.expenseReport),
+            'cashbook-report': (p.reports && subRep.cashbookReport),
             'sell': p.sales,
             'all-reports': p.allReports,
             'return': p.returns,
