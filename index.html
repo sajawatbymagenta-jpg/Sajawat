@@ -3117,14 +3117,15 @@
                 </div>
             </div>
 
-           <!-- Items Table (Fixed Widths: No Edge Clipping) -->
+           <!-- Items Table (J. Dot Style JGP Layout) -->
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th style="width: 44%; text-align: left;">Description</th>
-                        <th style="width: 12%; text-align: center;">Qty</th>
-                        <th style="width: 22%; text-align: right;">Price</th>
-                        <th style="width: 22%; text-align: right;">Total</th>
+                        <th style="width: 36%; text-align: left;">PRODUCT</th>
+                        <th style="width: 10%; text-align: center;">QTY</th>
+                        <th style="width: 17%; text-align: right;">PRICE</th>
+                        <th style="width: 17%; text-align: right;">PROMO</th>
+                        <th style="width: 20%; text-align: right;">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody id="invoice-items-body"></tbody>
@@ -8246,15 +8247,26 @@ window.showInvoiceModal = function(sale) {
             const originalProd = (window.menuItems || []).find(m => m.id === item.id || m.name === item.name);
             const barcodeNumber = item.barcode || (originalProd ? originalProd.barcode : '') || '';
 
+            const origPrice = Number(item.originalPrice || item.price || 0);
+            
+            // J. Dot ki tarah discount percentage calculate karna
+            let discountText = '';
+            if (origPrice > price) {
+                const discPerc = Math.round(((origPrice - price) / origPrice) * 100);
+                discountText = `<div style="font-size: 9px; font-weight: 700; color: #000; margin-top: 3px;">Offer disc. ${discPerc} %</div>`;
+            }
+
             tbody.innerHTML += `
                 <tr class="inv-item-row">
-                    <td style="width: 44%; padding: 5px 2px;">
+                    <td style="width: 36%; padding: 5px 2px; vertical-align: top;">
                         ${barcodeNumber ? `<div style="font-size: 10px; font-weight: 900; color: #000; letter-spacing: 0.3px;">${barcodeNumber}</div>` : ''}
-                        <div style="font-weight: 900; font-size: 11.5px; color: #000; line-height: 1.25;">${item.name}</div>
+                        <div style="font-weight: 900; font-size: 11px; color: #000; line-height: 1.25;">${item.name}</div>
+                        ${discountText}
                     </td>
-                    <td style="width: 12%; text-align: center; font-weight: 900; font-size: 12px; padding: 5px 2px;">${qty}</td>
-                    <td style="width: 22%; text-align: right; font-weight: 800; font-size: 11.5px; padding: 5px 2px;">${price.toFixed(2)}</td>
-                    <td style="width: 22%; text-align: right; font-weight: 900; font-size: 12px; padding: 5px 2px;">${lineTotal.toFixed(2)}</td>
+                    <td style="width: 10%; text-align: center; font-weight: 900; font-size: 11px; padding: 5px 2px; vertical-align: top;">${qty}</td>
+                    <td style="width: 17%; text-align: right; font-weight: 800; font-size: 11px; padding: 5px 2px; vertical-align: top;">${origPrice.toFixed(2)}</td>
+                    <td style="width: 17%; text-align: right; font-weight: 800; font-size: 11px; padding: 5px 2px; vertical-align: top;">${price.toFixed(2)}</td>
+                    <td style="width: 20%; text-align: right; font-weight: 900; font-size: 11.5px; padding: 5px 2px; vertical-align: top;">${lineTotal.toFixed(2)}</td>
                 </tr>
             `;
         });
