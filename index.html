@@ -8122,15 +8122,18 @@ window.applyUserPermissions = function(user) {
                     branchId: selectedBranch, branchName: branchNameRecorded,
                     cashGiven: cashReceived,
                     cashChange: cashChangeDue,
-                   items: cart.map(i => ({ 
-                        id: i.id, 
-                        name: i.name, 
-                        barcode: (i.barcode || ''), 
-                        qty: i.qty, 
-                        costPrice: (i.costPrice || 0), 
-                        price: i.price,
-                        originalPrice: (i.originalPrice || i.price)
-                    })),
+                   items: cart.map(i => {
+                        const trueCost = window.getRealProductCostPrice ? window.getRealProductCostPrice(i) : Number(i.costPrice || 0);
+                        return { 
+                            id: i.id, 
+                            name: i.name, 
+                            barcode: (i.barcode || ''), 
+                            qty: i.qty, 
+                            costPrice: trueCost, 
+                            price: i.price,
+                            originalPrice: (i.originalPrice || i.price)
+                        };
+                    }),
                     subtotal: grossSubtotal, tax: 0, discount: totalDiscountVal, total: total,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -8546,8 +8549,7 @@ document.getElementById('save-settings-btn')?.addEventListener('click', async ()
                 let totalCogs = 0;
                 window.salesHistory.forEach(s => {
                     (s.items || []).forEach(it => {
-                        const originalProd = window.menuItems.find(m => m.id === it.id);
-                        const cp = it.costPrice !== undefined ? Number(it.costPrice) : (originalProd ? Number(originalProd.costPrice || 0) : 0);
+                        const cp = window.getRealProductCostPrice ? window.getRealProductCostPrice(it) : Number(it.costPrice || 0);
                         totalCogs += (cp * Number(it.qty || 1));
                     });
                 });
@@ -10198,10 +10200,154 @@ const nextRetSeq = (window.returnsList ? window.returnsList.length : 0) + 1; con
             });
         };
 
+
+
 // =========================================================================
+// REAL COST PRICE RESOLVER & DIRECT COST EDITOR ENGINE
+// =========================================================================
+window.getRealProductCostPrice = function(it) {
+    if (!it) return 0;
+
+    const itName = (it.name || '').trim().toLowerCase();
+    const itBarcode = (it.barcode || '').trim().toLowerCase();
+    const itId = it.id || it.productId || '';
+    const origPrice = Number(it.originalPrice || it.price || 0);
+
+    // 1. Pehle Purchaser Module (window.purchasesList) se asal khareed rate dhoondein
+    const purchases = window.purchasesList || [];
+    for (let p of purchases) {
+        if (p.items && Array.isArray(p.items)) {
+            const match = p.items.find(pi => {
+                const pId = pi.productId || pi.id || '';
+                const pBc = (pi.barcode || '').trim().toLowerCase();
+                const pNm = (pi.name || '').trim().toLowerCase();
+
+                if (itId && pId && pId === itId) return true;
+                if (itBarcode && pBc && pBc === itBarcode) return true;
+                if (itName && pNm && pNm === itName) return true;
+                return false;
+            });
+
+            if (match) {
+                const c = Number(match.cost !== undefined ? match.cost : match.costPrice);
+                if (!isNaN(c) && c > 0) return c;
+            }
+        } else if (p.productName) {
+            const pNm = (p.productName || '').trim().toLowerCase();
+            const pBc = (p.barcode || '').trim().toLowerCase();
+            if ((itName && pNm === itName) || (itBarcode && pBc && pBc === itBarcode)) {
+                const c = Number(p.costPrice !== undefined ? p.costPrice : p.cost);
+                if (!isNaN(c) && c > 0) return c;
+            }
+        }
+    }
+
+    // 2. Main Inventory (menuItems / productsDB) check karein
+    const prod = (window.menuItems || []).find(m => {
+        const mId = m.id || '';
+        const mBc = (m.barcode || '').trim().toLowerCase();
+        const mNm = (m.name || '').trim().toLowerCase();
+
+        if (itId && mId && mId === itId) return true;
+        if (itBarcode && mBc && mBc === itBarcode) return true;
+        if (itName && mNm && mNm === itName) return true;
+        return false;
+    });
+
+    if (prod) {
+        const prodCost = Number(prod.costPrice !== undefined ? prod.costPrice : prod.cost);
+        const prodPrice = Number(prod.price || 0);
+
+        // Agar costPrice mojood hai aur ghalati se selling price ke barabar nahi hai
+        if (!isNaN(prodCost) && prodCost > 0 && prodCost !== prodPrice && prodCost !== origPrice) {
+            return prodCost;
+        }
+        if (!isNaN(prodCost) && prodCost > 0 && prodPrice === 0) {
+            return prodCost;
+        }
+    }
+
+    // 3. Agar it.costPrice sale invoice par mojood hai aur wo sale price nahi hai
+    const savedCost = Number(it.costPrice);
+    if (!isNaN(savedCost) && savedCost > 0 && savedCost !== origPrice && savedCost !== Number(it.price || 0)) {
+        return savedCost;
+    }
+
+    if (prod) {
+        const prodCost = Number(prod.costPrice !== undefined ? prod.costPrice : prod.cost);
+        if (!isNaN(prodCost) && prodCost > 0) return prodCost;
+    }
+
+    if (!isNaN(savedCost) && savedCost > 0) return savedCost;
+
+    return 0;
+};
+
+// 1-Click Direct Cost Edit Function (Table se direct cost theek karne ke liye)
+window.quickEditProductCost = async function(prodId, prodName, currentCost) {
+    const { value: newCost } = await Swal.fire({
+        title: `Edit Cost Price`,
+        html: `<b>${prodName}</b> ki asal Kharid (Cost) Price darj karein:`,
+        input: 'number',
+        inputValue: currentCost || '',
+        inputPlaceholder: 'Enter cost price (e.g. 35000)',
+        showCancelButton: true,
+        confirmButtonColor: '#0066ff',
+        confirmButtonText: 'Save Cost Price',
+        cancelButtonText: 'Cancel'
+    });
+
+    if (newCost !== undefined && newCost !== null && !isNaN(parseFloat(newCost))) {
+        const parsedCost = parseFloat(newCost);
+        try {
+            // 1. productsDB mein update
+            if (prodId) {
+                await productsDB.doc(prodId).update({ costPrice: parsedCost });
+                const localProd = (window.menuItems || []).find(m => m.id === prodId);
+                if (localProd) localProd.costPrice = parsedCost;
+            }
+
+            // 2. Sales History mein bhi update taake report live update ho jaye
+            const batch = db.batch();
+            let countUpdated = 0;
+            (window.salesHistory || []).forEach(s => {
+                let saleModified = false;
+                const updatedItems = (s.items || []).map(it => {
+                    if (it.id === prodId || (it.name && it.name.trim().toLowerCase() === prodName.trim().toLowerCase())) {
+                        saleModified = true;
+                        return { ...it, costPrice: parsedCost };
+                    }
+                    return it;
+                });
+
+                if (saleModified && s.id) {
+                    batch.update(salesDB.doc(s.id), { items: updatedItems });
+                    s.items = updatedItems;
+                    countUpdated++;
+                }
+            });
+
+            if (countUpdated > 0) {
+                await batch.commit();
+            }
+
+            Toast.fire({ icon: 'success', title: `Cost Price update hogayi! Report refresh ho rahi hai.` });
+            if (typeof window.renderProfitLossReport === 'function') window.renderProfitLossReport();
+            if (typeof window.updateDashboardMetrics === 'function') window.updateDashboardMetrics();
+
+        } catch (err) {
+            alert("Cost update karne mein masla aaya: " + err.message);
+        }
+    }
+};
+
+
+        // =========================================================================
 // 1. PROFIT & LOSS FINANCIAL ANALYTICS (SCREEN 11) - UPDATED
 // =========================================================================
 window.currentPLPreset = 'all';
+
+
 
 window.setPLPreset = function(type) {
     window.currentPLPreset = type;
@@ -10330,7 +10476,8 @@ window.renderProfitLossReport = function() {
     filteredSales.forEach(s => {
         (s.items || []).forEach(it => {
             const originalProd = (window.menuItems || []).find(m => m.id === it.id);
-            const costPrice = Number(it.costPrice !== undefined ? it.costPrice : (originalProd ? originalProd.costPrice : 0)) || 0;
+            // Asal Kharid Rate uthana (Purchases list se match kar ke)
+            const costPrice = window.getRealProductCostPrice ? window.getRealProductCostPrice(it) : (Number(it.costPrice) || 0);
             const salePrice = Number(it.price || 0);
             const qty = Number(it.qty || 1);
 
@@ -10341,6 +10488,9 @@ window.renderProfitLossReport = function() {
             totalGrossRevenue += lineSale;
             totalGrossCogs += lineCost;
 
+            const safeName = (it.name || 'Product').replace(/'/g, "\\'");
+            const prodId = it.id || (originalProd ? originalProd.id : '');
+
             rowsHtml += `
                 <tr>
                     <td style="text-align: left; padding: 12px 14px;">
@@ -10348,11 +10498,18 @@ window.renderProfitLossReport = function() {
                         <span style="color: #64748b; font-size: 0.8rem; margin-left: 4px;">(inv #${s.invoiceId || '-'})</span>
                     </td>
                     <td style="text-align: center; font-weight: 800; color: #1e293b; padding: 12px 14px;">${qty}</td>
-                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">Rs. ${costPrice.toLocaleString()}</td>
+                    <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 700;">
+                        Rs. ${costPrice.toLocaleString()}
+                        <button type="button" onclick="quickEditProductCost('${prodId}', '${safeName}', ${costPrice})" title="Edit Cost Price" style="border:none; background:transparent; color:#3b82f6; cursor:pointer; font-size:14px; margin-left:4px;">
+                            <i class='bx bx-edit'></i>
+                        </button>
+                    </td>
                     <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 600;">Rs. ${salePrice.toLocaleString()}</td>
                     <td style="text-align: right; color: #475569; padding: 12px 14px; font-weight: 700;">Rs. ${lineCost.toLocaleString()}</td>
                     <td style="text-align: right; font-weight: 800; color: #0f172a; padding: 12px 14px;">Rs. ${lineSale.toLocaleString()}</td>
-                    <td style="text-align: right; font-weight: 900; color: ${lineProfit >= 0 ? '#16a34a' : '#ef4444'}; padding: 12px 14px;">Rs. ${lineProfit.toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: 900; color: ${lineProfit >= 0 ? '#16a34a' : '#ef4444'}; padding: 12px 14px;">
+                        ${lineProfit >= 0 ? 'Rs. ' + lineProfit.toLocaleString() : 'Rs. -' + Math.abs(lineProfit).toLocaleString()}
+                    </td>
                 </tr>
             `;
         });
@@ -10510,8 +10667,7 @@ window.downloadCleanProfitLossPDF = function() {
 
     filteredSales.forEach(s => {
         (s.items || []).forEach(it => {
-            const originalProd = (window.menuItems || []).find(m => m.id === it.id);
-            const cost = it.costPrice !== undefined ? Number(it.costPrice) : (originalProd ? Number(originalProd.costPrice || 0) : 0);
+            const cost = window.getRealProductCostPrice ? window.getRealProductCostPrice(it) : (Number(it.costPrice) || 0);
             const sale = Number(it.price || 0);
             const qty = Number(it.qty || 1);
 
@@ -10528,7 +10684,9 @@ window.downloadCleanProfitLossPDF = function() {
                     <td style="text-align: center;">${qty}</td>
                     <td style="text-align: right;">Rs. ${lineCost.toFixed(2)}</td>
                     <td style="text-align: right;">Rs. ${lineSale.toFixed(2)}</td>
-                    <td style="text-align: right; font-weight: 700; color: ${lineProfit >= 0 ? '#16a34a' : '#dc2626'};">Rs. ${lineProfit.toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: 700; color: ${lineProfit >= 0 ? '#16a34a' : '#dc2626'};">
+                        ${lineProfit >= 0 ? 'Rs. ' + lineProfit.toFixed(2) : '(Rs. ' + Math.abs(lineProfit).toFixed(2) + ')'}
+                    </td>
                 </tr>
             `;
         });
